@@ -138,6 +138,15 @@ const DEFAULTS: PublicKnowledgeEntry[] = [
 
 let cachedEntries: PublicKnowledgeEntry[] = [...DEFAULTS]
 let syncInProgress = false
+let lastSyncError: string | null = null
+
+export function getLastSyncError(): string | null {
+  return lastSyncError
+}
+
+export function clearSyncError(): void {
+  lastSyncError = null
+}
 
 function broadcastChange() {
   if (typeof window !== 'undefined') {
@@ -181,13 +190,19 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
 }
 
-async function syncToServer(): Promise<boolean> {
-  if (syncInProgress) return false
+async function syncToServer(): Promise<{ ok: boolean; error?: string }> {
+  if (syncInProgress) return { ok: false, error: '同步正在进行中' }
   syncInProgress = true
   try {
     const token = getAuthToken()
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (token) headers['Authorization'] = `Bearer ${token}`
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+      console.debug('[public-knowledge] Auth token present, length:', token.length)
+      console.debug('[public-knowledge] Token starts with:', token.substring(0, 20) + '...')
+    } else {
+      console.warn('[public-knowledge] No auth token found!')
+    }
 
     const res = await fetch('/api/public-knowledge', {
       method: 'PUT',
@@ -196,19 +211,26 @@ async function syncToServer(): Promise<boolean> {
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: '请求失败' }))
+      const errorMsg = `同步失败 (${res.status}): ${err.error || '未知错误'}`
       console.error('[public-knowledge] Sync failed:', res.status, err.error)
-      return false
+      lastSyncError = errorMsg
+      return { ok: false, error: errorMsg }
     }
-    return true
-  } catch (e) {
+    const result = await res.json()
+    console.debug('[public-knowledge] Sync success:', result)
+    lastSyncError = null
+    return { ok: true }
+  } catch (e: any) {
+    const errorMsg = `同步请求异常: ${e?.message || e}`
     console.error('[public-knowledge] Sync error:', e)
-    return false
+    lastSyncError = errorMsg
+    return { ok: false, error: errorMsg }
   } finally {
     syncInProgress = false
   }
 }
 
-export async function savePublicEntry(entry: PublicKnowledgeEntry): Promise<boolean> {
+export async function savePublicEntry(entry: PublicKnowledgeEntry): Promise<{ ok: boolean; error?: string }> {
   const index = cachedEntries.findIndex(e => e.id === entry.id)
   if (index >= 0) {
     cachedEntries[index] = entry
@@ -219,29 +241,29 @@ export async function savePublicEntry(entry: PublicKnowledgeEntry): Promise<bool
   return syncToServer()
 }
 
-export async function createPublicEntry(data: Omit<PublicKnowledgeEntry, 'id'>): Promise<{ entry: PublicKnowledgeEntry; synced: boolean }> {
+export async function createPublicEntry(data: Omit<PublicKnowledgeEntry, 'id'>): Promise<{ entry: PublicKnowledgeEntry; synced: boolean; syncError?: string }> {
   const entry: PublicKnowledgeEntry = { ...data, id: generateId() }
   cachedEntries.push(entry)
   broadcastChange()
-  const synced = await syncToServer()
-  return { entry, synced }
+  const result = await syncToServer()
+  return { entry, synced: result.ok, syncError: result.error }
 }
 
-export async function deletePublicEntry(id: string): Promise<boolean> {
+export async function deletePublicEntry(id: string): Promise<{ ok: boolean; error?: string }> {
   cachedEntries = cachedEntries.filter(e => e.id !== id)
   broadcastChange()
   return syncToServer()
 }
 
-export async function togglePublicEntry(id: string): Promise<boolean> {
+export async function togglePublicEntry(id: string): Promise<{ ok: boolean; error?: string }> {
   const entry = cachedEntries.find(e => e.id === id)
-  if (!entry) return false
+  if (!entry) return { ok: false, error: '条目不存在' }
   entry.enabled = !entry.enabled
   broadcastChange()
   return syncToServer()
 }
 
-export async function resetPublicKnowledgeBase(): Promise<boolean> {
+export async function resetPublicKnowledgeBase(): Promise<{ ok: boolean; error?: string }> {
   cachedEntries = DEFAULTS.map(e => ({ ...e }))
   broadcastChange()
   return syncToServer()

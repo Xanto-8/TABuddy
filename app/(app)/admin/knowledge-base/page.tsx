@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Eye, EyeOff, Shield } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Eye, EyeOff, Shield, Bug, ChevronDown, ChevronRight, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import {
@@ -18,6 +18,7 @@ import {
 } from '@/lib/public-knowledge-store'
 import { useAuth } from '@/lib/auth-store'
 import { toast } from 'sonner'
+import { getLastSyncError, clearSyncError } from '@/lib/public-knowledge-store'
 
 const TYPE_CONFIG: Record<PublicKnowledgeEntry['type'], { label: string; icon: React.ReactNode; color: string }> = {
   link: {
@@ -63,6 +64,41 @@ export default function AdminKnowledgeBasePage() {
   const [editingEntry, setEditingEntry] = useState<PublicKnowledgeEntry | null>(null)
   const [form, setForm] = useState<Omit<PublicKnowledgeEntry, 'id'>>({ ...emptyForm })
   const [keywordsText, setKeywordsText] = useState('')
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
+  const [diagToken, setDiagToken] = useState<string | null>(null)
+  const [diagTokenDecoded, setDiagTokenDecoded] = useState<string>('')
+  const [diagSyncError, setDiagSyncError] = useState<string | null>(null)
+  const [diagRedis, setDiagRedis] = useState<string>('未检测')
+  const [diagChecking, setDiagChecking] = useState(false)
+
+  const runDiagnostics = useCallback(async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_token') : null
+    setDiagToken(token)
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token))
+        setDiagTokenDecoded(JSON.stringify(decoded, null, 2))
+      } catch {
+        setDiagTokenDecoded('解码失败')
+      }
+    } else {
+      setDiagTokenDecoded('未登录/无token')
+    }
+    setDiagSyncError(getLastSyncError())
+    setDiagChecking(true)
+    try {
+      const res = await fetch('/api/debug', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setDiagRedis(JSON.stringify(data, null, 2))
+      } else {
+        setDiagRedis(`请求失败: ${res.status}`)
+      }
+    } catch {
+      setDiagRedis('网络请求异常')
+    }
+    setDiagChecking(false)
+  }, [])
 
   useEffect(() => {
     if (isAuthenticated && user && !user.isAdmin) {
@@ -122,13 +158,13 @@ export default function AdminKnowledgeBasePage() {
     }
     try {
       if (editingEntry) {
-        const ok = await savePublicEntry({ ...data, id: editingEntry.id })
-        if (ok) toast.success('公共条目已更新')
-        else toast.error('条目已更新，但同步到服务器失败')
+        const result = await savePublicEntry({ ...data, id: editingEntry.id })
+        if (result.ok) toast.success('公共条目已更新')
+        else toast.error(result.error || '条目已更新，但同步到服务器失败')
       } else {
-        const { synced } = await createPublicEntry(data)
+        const { synced, syncError } = await createPublicEntry(data)
         if (synced) toast.success('公共条目已添加')
-        else toast.error('条目已添加，但同步到服务器失败')
+        else toast.error(syncError || '条目已添加，但同步到服务器失败')
       }
     } catch {
       toast.error('保存失败，请重试')
@@ -139,23 +175,23 @@ export default function AdminKnowledgeBasePage() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('确定要删除该公共知识条目吗？')) return
-    const ok = await deletePublicEntry(id)
-    if (ok) toast.success('条目已删除')
-    else toast.error('删除失败，请重试')
+    const result = await deletePublicEntry(id)
+    if (result.ok) toast.success('条目已删除')
+    else toast.error(result.error || '删除失败，请重试')
     loadEntries()
   }
 
   const handleToggle = async (id: string) => {
-    const ok = await togglePublicEntry(id)
-    if (!ok) toast.error('操作失败，请重试')
+    const result = await togglePublicEntry(id)
+    if (!result.ok) toast.error(result.error || '操作失败，请重试')
     loadEntries()
   }
 
   const handleReset = async () => {
     if (!window.confirm('确定要重置为默认公共知识库吗？自定义修改将全部丢失。')) return
-    const ok = await resetPublicKnowledgeBase()
-    if (ok) toast.success('已重置为默认公共知识库')
-    else toast.error('重置失败，请重试')
+    const result = await resetPublicKnowledgeBase()
+    if (result.ok) toast.success('已重置为默认公共知识库')
+    else toast.error(result.error || '重置失败，请重试')
     loadEntries()
   }
 
@@ -204,6 +240,49 @@ export default function AdminKnowledgeBasePage() {
             placeholder="搜索公共知识库条目..."
             className="w-full h-10 pl-10 pr-4 text-sm rounded-xl border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
+        </div>
+
+        <div className="border border-border rounded-xl overflow-hidden">
+          <button
+            onClick={() => { setShowDiagnostics(!showDiagnostics); if (!showDiagnostics) runDiagnostics() }}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              <Bug className="w-3.5 h-3.5" />
+              诊断信息
+              {diagSyncError && <XCircle className="w-3 h-3 text-destructive" />}
+            </span>
+            {showDiagnostics ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          </button>
+          {showDiagnostics && (
+            <div className="px-4 pb-3 space-y-2 text-[11px] font-mono border-t border-border pt-2">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-20 shrink-0">Auth Token:</span>
+                <span className={diagToken ? 'text-green-600' : 'text-red-500'}>
+                  {diagToken ? `存在 (${diagToken.length}字符)` : '不存在'}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Token 解码:</span>
+                <pre className="mt-0.5 p-1.5 rounded bg-muted/50 text-[10px] break-all whitespace-pre-wrap">{diagTokenDecoded}</pre>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground w-20 shrink-0">上次同步:</span>
+                <span className={diagSyncError ? 'text-red-500' : 'text-green-600'}>
+                  {diagSyncError || '成功'}
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">服务器状态 (Redis):</span>
+                  <button onClick={runDiagnostics} disabled={diagChecking} className="text-primary hover:text-primary/80 transition-colors">
+                    <RefreshCw className={cn('w-3 h-3', diagChecking && 'animate-spin')} />
+                  </button>
+                </div>
+                <pre className="mt-0.5 p-1.5 rounded bg-muted/50 text-[10px] break-all whitespace-pre-wrap max-h-32 overflow-auto">{diagRedis}</pre>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-3">

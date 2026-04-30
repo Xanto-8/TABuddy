@@ -182,30 +182,43 @@ async function readData(): Promise<PublicKnowledgeEntryDTO[]> {
   if (redis) {
     try {
       const raw = await redis.get<unknown>(KV_KEY)
+      console.log(`[public-knowledge] readData: redis.get returned type=${typeof raw}, isArray=${Array.isArray(raw)}`)
       if (raw) {
         if (typeof raw === 'string') {
-          return JSON.parse(raw) as PublicKnowledgeEntryDTO[]
+          const parsed = JSON.parse(raw) as PublicKnowledgeEntryDTO[]
+          console.log(`[public-knowledge] readData: parsed string to array(${parsed.length})`)
+          return parsed
+        }
+        if (Array.isArray(raw)) {
+          console.log(`[public-knowledge] readData: auto-parsed array(${raw.length})`)
         }
         return raw as PublicKnowledgeEntryDTO[]
       }
+      console.log('[public-knowledge] readData: key not found, seeding defaults')
       const serialized = JSON.stringify(DEFAULT_DATA)
       await redis.set(KV_KEY, serialized)
       return DEFAULT_DATA
-    } catch {
+    } catch (e) {
+      console.error('[public-knowledge] readData: redis failed, falling back to file:', e)
       return readFromFile()
     }
   }
+  console.log('[public-knowledge] readData: redis not available, using file')
   return readFromFile()
 }
 
 async function writeData(data: PublicKnowledgeEntryDTO[]): Promise<void> {
   if (redis) {
     try {
+      console.log(`[public-knowledge] writeData: writing ${data.length} entries to Redis`)
       await redis.set(KV_KEY, JSON.stringify(data))
-    } catch {
+      console.log('[public-knowledge] writeData: Redis write success')
+    } catch (e) {
+      console.error('[public-knowledge] writeData: Redis write failed, falling back to file:', e)
       writeToFile(data)
     }
   } else {
+    console.log('[public-knowledge] writeData: redis not available, writing to file')
     writeToFile(data)
   }
 }
@@ -243,9 +256,29 @@ export async function PUT(request: NextRequest) {
   const redisStatus = redis ? 'connected' : 'not_available'
   console.log(`[public-knowledge] PUT called, redis=${redisStatus}`)
   try {
+    const authHeader = request.headers.get('authorization')
+    console.log(`[public-knowledge] Auth header present: ${!!authHeader}`)
+    if (authHeader) {
+      const tokenPrefix = authHeader.startsWith('Bearer ') ? authHeader.substring(0, 30) + '...' : 'NOT Bearer format'
+      console.log(`[public-knowledge] Auth header: ${tokenPrefix}`)
+    }
+
     if (!verifyAdminToken(request)) {
-      console.warn('[public-knowledge] PUT auth failed')
-      return NextResponse.json({ error: '无权限，仅管理员可修改公共知识库' }, { status: 403 })
+      let reason = 'unknown'
+      if (!authHeader) reason = 'no_auth_header'
+      else if (!authHeader.startsWith('Bearer ')) reason = 'not_bearer'
+      else {
+        try {
+          const token = authHeader.slice(7)
+          const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'))
+          if (decoded.username !== 'admin') reason = `username_is_${decoded.username}`
+          else reason = 'unknown_decode_ok_but_failed'
+        } catch (e: any) {
+          reason = `decode_error: ${e?.message || e}`
+        }
+      }
+      console.warn(`[public-knowledge] PUT auth failed, reason: ${reason}`)
+      return NextResponse.json({ error: `无权限: ${reason}` }, { status: 403 })
     }
 
     const body = await request.json()
@@ -255,10 +288,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '数据格式错误' }, { status: 400 })
     }
 
-    console.log(`[public-knowledge] PUT writing ${data.length} entries`)
+    console.log(`[public-knowledge] PUT writing ${data.length} entries, redis=${redisStatus}`)
     await writeData(data)
     console.log('[public-knowledge] PUT write succeeded')
-    return NextResponse.json({ success: true, count: data.length })
+    return NextResponse.json({ success: true, count: data.length, redis: redisStatus })
   } catch (error) {
     console.error('[public-knowledge] PUT error:', error)
     return NextResponse.json({ error: '写入失败' }, { status: 500 })
