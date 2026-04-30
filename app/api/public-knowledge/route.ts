@@ -224,8 +224,11 @@ function verifyAdminToken(request: NextRequest): boolean {
 // ---- Route handlers ----
 
 export async function GET() {
+  const redisStatus = redis ? 'connected' : 'not_available'
+  console.log(`[public-knowledge] GET called, redis=${redisStatus}, KV_KEY=${KV_KEY}`)
   try {
     const data = await readData()
+    console.log(`[public-knowledge] GET returning ${data.length} entries (first id: ${data[0]?.id})`)
     return NextResponse.json(data)
   } catch (error) {
     console.error('[public-knowledge] GET error:', error)
@@ -234,8 +237,11 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const redisStatus = redis ? 'connected' : 'not_available'
+  console.log(`[public-knowledge] PUT called, redis=${redisStatus}`)
   try {
     if (!verifyAdminToken(request)) {
+      console.warn('[public-knowledge] PUT auth failed')
       return NextResponse.json({ error: '无权限，仅管理员可修改公共知识库' }, { status: 403 })
     }
 
@@ -246,7 +252,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '数据格式错误' }, { status: 400 })
     }
 
+    console.log(`[public-knowledge] PUT writing ${data.length} entries`)
     await writeData(data)
+    console.log('[public-knowledge] PUT write succeeded')
     return NextResponse.json({ success: true, count: data.length })
   } catch (error) {
     console.error('[public-knowledge] PUT error:', error)
