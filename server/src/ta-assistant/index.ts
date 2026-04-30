@@ -1,0 +1,8 @@
+export { TaAssistantModule } from './ta-assistant.module'
+export { TaAssistantService } from './ta-assistant.service'
+export type { ChatRequest, ChatResponse, KnowledgeMatchResponse, AiResponse } from './ta-assistant.service'
+export { KnowledgeMatcherService } from './knowledge-matcher.service'
+export { DeepseekChatService } from './deepseek-chat.service'
+export type { ChatContext } from './deepseek-chat.service'
+export { knowledgeBase } from './knowledge.config'
+export type { KnowledgeEntry } from './knowledge.config'
