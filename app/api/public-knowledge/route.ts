@@ -181,9 +181,12 @@ function writeToFile(data: PublicKnowledgeEntryDTO[]): void {
 async function readData(): Promise<PublicKnowledgeEntryDTO[]> {
   if (redis) {
     try {
-      const raw = await redis.get<string>(KV_KEY)
+      const raw = await redis.get<unknown>(KV_KEY)
       if (raw) {
-        return JSON.parse(raw) as PublicKnowledgeEntryDTO[]
+        if (typeof raw === 'string') {
+          return JSON.parse(raw) as PublicKnowledgeEntryDTO[]
+        }
+        return raw as PublicKnowledgeEntryDTO[]
       }
       const serialized = JSON.stringify(DEFAULT_DATA)
       await redis.set(KV_KEY, serialized)
