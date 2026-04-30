@@ -137,6 +137,7 @@ const DEFAULTS: PublicKnowledgeEntry[] = [
 ]
 
 let cachedEntries: PublicKnowledgeEntry[] = [...DEFAULTS]
+let syncInProgress = false
 
 function broadcastChange() {
   if (typeof window !== 'undefined') {
@@ -144,15 +145,27 @@ function broadcastChange() {
   }
 }
 
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return localStorage.getItem('tabuddy_token')
+  } catch {
+    return null
+  }
+}
+
 export async function loadPublicKnowledgeBase(): Promise<void> {
   try {
-    const res = await fetch('/api/public-knowledge')
+    const res = await fetch('/api/public-knowledge', { cache: 'no-store' })
     if (res.ok) {
       const data: PublicKnowledgeEntry[] = await res.json()
       cachedEntries = data
       broadcastChange()
+    } else {
+      console.error('[public-knowledge] Load failed:', res.status, await res.text())
     }
-  } catch {
+  } catch (e) {
+    console.error('[public-knowledge] Load error:', e)
   }
 }
 
@@ -168,18 +181,34 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
 }
 
-async function syncToServer() {
+async function syncToServer(): Promise<boolean> {
+  if (syncInProgress) return false
+  syncInProgress = true
   try {
-    await fetch('/api/public-knowledge', {
+    const token = getAuthToken()
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch('/api/public-knowledge', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ data: cachedEntries }),
     })
-  } catch {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: '请求失败' }))
+      console.error('[public-knowledge] Sync failed:', res.status, err.error)
+      return false
+    }
+    return true
+  } catch (e) {
+    console.error('[public-knowledge] Sync error:', e)
+    return false
+  } finally {
+    syncInProgress = false
   }
 }
 
-export function savePublicEntry(entry: PublicKnowledgeEntry): void {
+export async function savePublicEntry(entry: PublicKnowledgeEntry): Promise<boolean> {
   const index = cachedEntries.findIndex(e => e.id === entry.id)
   if (index >= 0) {
     cachedEntries[index] = entry
@@ -187,36 +216,35 @@ export function savePublicEntry(entry: PublicKnowledgeEntry): void {
     cachedEntries.push(entry)
   }
   broadcastChange()
-  syncToServer()
+  return syncToServer()
 }
 
-export function createPublicEntry(data: Omit<PublicKnowledgeEntry, 'id'>): PublicKnowledgeEntry {
+export async function createPublicEntry(data: Omit<PublicKnowledgeEntry, 'id'>): Promise<{ entry: PublicKnowledgeEntry; synced: boolean }> {
   const entry: PublicKnowledgeEntry = { ...data, id: generateId() }
   cachedEntries.push(entry)
   broadcastChange()
-  syncToServer()
-  return entry
+  const synced = await syncToServer()
+  return { entry, synced }
 }
 
-export function deletePublicEntry(id: string): void {
+export async function deletePublicEntry(id: string): Promise<boolean> {
   cachedEntries = cachedEntries.filter(e => e.id !== id)
   broadcastChange()
-  syncToServer()
+  return syncToServer()
 }
 
-export function togglePublicEntry(id: string): void {
+export async function togglePublicEntry(id: string): Promise<boolean> {
   const entry = cachedEntries.find(e => e.id === id)
-  if (entry) {
-    entry.enabled = !entry.enabled
-    broadcastChange()
-    syncToServer()
-  }
+  if (!entry) return false
+  entry.enabled = !entry.enabled
+  broadcastChange()
+  return syncToServer()
 }
 
-export function resetPublicKnowledgeBase(): void {
+export async function resetPublicKnowledgeBase(): Promise<boolean> {
   cachedEntries = DEFAULTS.map(e => ({ ...e }))
   broadcastChange()
-  syncToServer()
+  return syncToServer()
 }
 
 export function matchPublicKnowledgeBase(query: string): PublicKnowledgeEntry | null {

@@ -3,6 +3,8 @@ import fs from 'fs'
 import path from 'path'
 import { redis, KV_KEY } from '@/lib/server/redis'
 
+export const dynamic = 'force-dynamic'
+
 interface PublicKnowledgeEntryDTO {
   id: string
   keywords: string[]
@@ -205,15 +207,38 @@ async function writeData(data: PublicKnowledgeEntryDTO[]): Promise<void> {
   }
 }
 
+// ---- Auth helper ----
+
+function verifyAdminToken(request: NextRequest): boolean {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return false
+    const token = authHeader.slice(7)
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'))
+    return decoded.username === 'admin'
+  } catch {
+    return false
+  }
+}
+
 // ---- Route handlers ----
 
 export async function GET() {
-  const data = await readData()
-  return NextResponse.json(data)
+  try {
+    const data = await readData()
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('[public-knowledge] GET error:', error)
+    return NextResponse.json({ error: '读取数据失败' }, { status: 500 })
+  }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    if (!verifyAdminToken(request)) {
+      return NextResponse.json({ error: '无权限，仅管理员可修改公共知识库' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { data } = body as { data: PublicKnowledgeEntryDTO[] }
 
@@ -222,8 +247,9 @@ export async function PUT(request: NextRequest) {
     }
 
     await writeData(data)
-    return NextResponse.json({ success: true })
-  } catch {
+    return NextResponse.json({ success: true, count: data.length })
+  } catch (error) {
+    console.error('[public-knowledge] PUT error:', error)
     return NextResponse.json({ error: '写入失败' }, { status: 500 })
   }
 }

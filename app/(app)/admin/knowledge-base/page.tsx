@@ -17,6 +17,7 @@ import {
   loadPublicKnowledgeBase,
 } from '@/lib/public-knowledge-store'
 import { useAuth } from '@/lib/auth-store'
+import { toast } from 'sonner'
 
 const TYPE_CONFIG: Record<PublicKnowledgeEntry['type'], { label: string; icon: React.ReactNode; color: string }> = {
   link: {
@@ -112,39 +113,50 @@ export default function AdminKnowledgeBasePage() {
     setShowEditor(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim()) return
     const data = {
       ...form,
       keywords: keywordsText.split(/[,，、\s]+/).filter(Boolean),
       url: form.url || undefined,
     }
-    if (editingEntry) {
-      savePublicEntry({ ...data, id: editingEntry.id })
-    } else {
-      createPublicEntry(data)
+    try {
+      if (editingEntry) {
+        const ok = await savePublicEntry({ ...data, id: editingEntry.id })
+        if (ok) toast.success('公共条目已更新')
+        else toast.error('条目已更新，但同步到服务器失败')
+      } else {
+        const { synced } = await createPublicEntry(data)
+        if (synced) toast.success('公共条目已添加')
+        else toast.error('条目已添加，但同步到服务器失败')
+      }
+    } catch {
+      toast.error('保存失败，请重试')
     }
     setShowEditor(false)
     loadEntries()
   }
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('确定要删除该公共知识条目吗？')) {
-      deletePublicEntry(id)
-      loadEntries()
-    }
-  }
-
-  const handleToggle = (id: string) => {
-    togglePublicEntry(id)
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('确定要删除该公共知识条目吗？')) return
+    const ok = await deletePublicEntry(id)
+    if (ok) toast.success('条目已删除')
+    else toast.error('删除失败，请重试')
     loadEntries()
   }
 
-  const handleReset = () => {
-    if (window.confirm('确定要重置为默认公共知识库吗？自定义修改将全部丢失。')) {
-      resetPublicKnowledgeBase()
-      loadEntries()
-    }
+  const handleToggle = async (id: string) => {
+    const ok = await togglePublicEntry(id)
+    if (!ok) toast.error('操作失败，请重试')
+    loadEntries()
+  }
+
+  const handleReset = async () => {
+    if (!window.confirm('确定要重置为默认公共知识库吗？自定义修改将全部丢失。')) return
+    const ok = await resetPublicKnowledgeBase()
+    if (ok) toast.success('已重置为默认公共知识库')
+    else toast.error('重置失败，请重试')
+    loadEntries()
   }
 
   if (!user?.isAdmin) {

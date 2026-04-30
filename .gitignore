@@ -51,3 +51,4 @@ public/uploads/*
 # Server
 server/dist/
 server/node_modules/
+.vercel
