@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from './auth-utils'
 import { prisma } from './prisma'
 
-export type Role = 'superadmin' | 'classadmin' | 'student'
+export type Role = 'superadmin' | 'classadmin' | 'assistant' | 'student'
 
 export interface TokenUser {
   userId: string
@@ -41,7 +41,7 @@ export function requireRole(tokenUser: TokenUser | null, allowedRoles: Role[]): 
 export function requireOwnClassGroup(tokenUser: TokenUser | null, targetClassGroupId: string | null): boolean {
   if (!tokenUser) return false
   if (tokenUser.role === 'superadmin') return true
-  if (tokenUser.role === 'classadmin' || tokenUser.role === 'student') {
+  if (tokenUser.role === 'classadmin' || tokenUser.role === 'assistant' || tokenUser.role === 'student') {
     return tokenUser.classGroupId === targetClassGroupId
   }
   return false

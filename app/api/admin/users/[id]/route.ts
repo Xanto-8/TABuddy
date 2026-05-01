@@ -13,7 +13,7 @@ export async function PATCH(
 
   try {
     const body = await request.json()
-    const { username, password, role, classGroupId } = body
+    const { username, password, displayName, role, classGroupId } = body
 
     const user = await prisma.user.findUnique({ where: { id } })
     if (!user) {
@@ -38,6 +38,10 @@ export async function PATCH(
         return NextResponse.json({ error: '密码长度不能少于6位' }, { status: 400 })
       }
       updateData.password = password
+    }
+
+    if (displayName !== undefined) {
+      updateData.displayName = displayName
     }
 
     if (role !== undefined) {
@@ -65,6 +69,7 @@ export async function PATCH(
       select: {
         id: true,
         username: true,
+        displayName: true,
         role: true,
         classGroupId: true,
         password: true,
