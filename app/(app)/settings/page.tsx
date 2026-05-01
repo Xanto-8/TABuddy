@@ -1,482 +1,310 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { PageContainer } from '@/components/ui/page-container'
+import { useState, useRef } from 'react'
+import { useAuth } from '@/lib/auth-store'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useAuth } from '@/lib/auth-store'
-import { useTheme } from 'next-themes'
-import { getKnowledgeBase } from '@/lib/knowledge-base-store'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-import { User, Shield, Sun, Moon, Bell, BellRing, BookOpen, Lock, Mail, Smartphone, Download, Eye, EyeOff, Camera } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { User, Camera, Save, Lock, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
+function getColor(name?: string) {
+  if (!name) return 'bg-primary/10 text-primary'
+  const colors = [
+    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
+  ]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
+function getInitials(name?: string) {
+  if (!name) return '?'
+  return name.substring(0, 2).toUpperCase()
+}
+
+function getRoleLabel(role?: string) {
+  switch (role) {
+    case 'superadmin': return '超级管理员'
+    case 'classadmin': return '班级管理员'
+    case 'assistant': return '助教'
+    default: return '学生'
+  }
+}
 
 export default function SettingsPage() {
-  const { user } = useAuth()
-  const { theme, setTheme } = useTheme()
-
-  return (
-    <PageContainer>
-      <div className="space-y-8 max-w-4xl">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">设置</h1>
-          <p className="text-muted-foreground mt-1">管理个人信息、系统偏好与数据安全</p>
-        </div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-          <ProfileSection user={user} />
-          <SystemSettingsSection theme={theme} setTheme={setTheme} />
-          <DataSecuritySection user={user} />
-        </motion.div>
-      </div>
-    </PageContainer>
-  )
-}
-
-function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      <div className="px-6 py-4 border-b border-border bg-muted/30">
-        <h2 className="text-base font-semibold text-foreground">{title}</h2>
-        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
-      </div>
-      <div className="px-6 py-5">
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function ProfileSection({ user }: { user: { username: string; role?: string; avatar?: string } | null }) {
-  const { updateAvatar, getToken } = useAuth()
-  const [nickname, setNickname] = useState('')
-  const [oldPassword, setOldPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showOldPwd, setShowOldPwd] = useState(false)
-  const [showNewPwd, setShowNewPwd] = useState(false)
-  const [savingName, setSavingName] = useState(false)
-  const [changingPwd, setChangingPwd] = useState(false)
-  const [loginTime] = useState(() => new Date().toLocaleString('zh-CN'))
-  const [avatarError, setAvatarError] = useState(false)
+  const { user, updateProfile, updateAvatar, getToken } = useAuth()
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const roleLabel = (r?: string) => {
-    switch (r) {
-      case 'superadmin': return '超级管理员'
-      case 'classadmin': return '班级管理员'
-      case 'assistant': return '助教'
-      default: return '助教'
-    }
-  }
-  const isSuperAdmin = user?.role === 'superadmin'
-  const profileLabel = roleLabel(user?.role)
-  const displayName = nickname || roleLabel(user?.role)
+  const [username, setUsername] = useState(user?.username || '')
+  const [displayName, setDisplayName] = useState(user?.displayName || '')
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">请先登录</h2>
+          <Button className="mt-4" onClick={() => router.push('/login')}>
+            前往登录
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: '请选择图片文件' })
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: '图片大小不能超过 2MB' })
+      return
+    }
+
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string
-      updateAvatar(dataUrl)
-      setAvatarError(false)
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string
+      setAvatarPreview(dataUrl)
+      await updateAvatar(dataUrl)
+      setAvatarPreview(null)
+      setMessage({ type: 'success', text: '头像已更新' })
+      setTimeout(() => setMessage(null), 3000)
     }
     reader.readAsDataURL(file)
     e.target.value = ''
   }
 
-  const handleSaveName = async () => {
-    if (!nickname.trim()) {
-      toast.error('请输入昵称')
+  const handleSave = async () => {
+    setSaving(true)
+    setMessage(null)
+
+    const fields: { username?: string; displayName?: string } = {}
+    if (username !== user.username) {
+      fields.username = username
+    }
+    if (displayName !== user.displayName) {
+      fields.displayName = displayName
+    }
+
+    if (Object.keys(fields).length === 0) {
+      setMessage({ type: 'success', text: '没有需要修改的内容' })
+      setSaving(false)
       return
     }
-    setSavingName(true)
-    await new Promise(r => setTimeout(r, 400))
-    setSavingName(false)
-    toast.success('昵称已更新')
+
+    const ok = await updateProfile(fields)
+    if (ok) {
+      setMessage({ type: 'success', text: '个人信息已保存' })
+      setTimeout(() => setMessage(null), 3000)
+    } else {
+      setMessage({ type: 'error', text: '保存失败，请重试' })
+    }
+    setSaving(false)
   }
 
   const handleChangePassword = async () => {
-    if (!oldPassword) { toast.error('请输入当前密码'); return }
-    if (!newPassword) { toast.error('请输入新密码'); return }
-    if (newPassword !== confirmPassword) { toast.error('两次输入的新密码不一致'); return }
-    if (newPassword.length < 6) { toast.error('新密码至少6位'); return }
-    setChangingPwd(true)
-    try {
-      const token = getToken()
-      if (!token) { toast.error('未登录'); return }
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ oldPassword, newPassword }),
-      })
-      const result = await res.json()
-      if (result.data) {
-        setOldPassword('')
-        setNewPassword('')
-        setConfirmPassword('')
-        toast.success('密码修改成功')
-      } else {
-        toast.error(result.error || '修改失败')
-      }
-    } catch {
-      toast.error('网络错误')
-    } finally {
-      setChangingPwd(false)
-    }
+    router.push('/login?tab=change-password')
   }
 
+  const currentAvatar = avatarPreview || user.avatar || ''
+
   return (
-    <SectionCard title="个人信息" description="管理你的个人资料和登录信息">
-      <div className="space-y-6">
-        <div className="flex items-center gap-5">
-          <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4 md:space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">个人信息</h1>
+        <p className="text-sm text-muted-foreground mt-1">管理你的个人资料和账号信息</p>
+      </div>
+
+      {message && (
+        <div
+          className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${
+            message.type === 'success'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+          }`}
+        >
+          {message.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+          {message.text}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <User className="w-5 h-5" />
+            头像
+          </CardTitle>
+          <CardDescription>点击头像上传新图片（支持 JPG、PNG，最大 2MB）</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center gap-6">
+          <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleAvatarChange}
               className="hidden"
+              onChange={handleFileChange}
             />
-            {user?.avatar && !avatarError ? (
-              <div className="h-16 w-16 rounded-full overflow-hidden">
+            {currentAvatar ? (
+              <div className="h-20 w-20 rounded-full overflow-hidden ring-2 ring-border group-hover:ring-primary transition-all">
                 <img
-                  src={user.avatar}
-                  alt="头像"
+                  src={currentAvatar}
+                  alt="avatar"
                   className="h-full w-full object-cover"
-                  onError={() => setAvatarError(true)}
                 />
               </div>
             ) : (
-              <div className={cn(
-                'h-16 w-16 rounded-full flex items-center justify-center shrink-0 text-2xl',
-                isSuperAdmin
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                  : 'bg-gradient-to-r from-primary to-secondary text-white'
-              )}>
-                {isSuperAdmin ? <Shield className="w-7 h-7" /> : <User className="w-7 h-7" />}
+              <div className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold ring-2 ring-border group-hover:ring-primary transition-all ${getColor(user.displayName || user.username)}`}>
+                {getInitials(user.displayName || user.username)}
               </div>
             )}
             <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="w-5 h-5 text-white" />
+              <Camera className="w-6 h-6 text-white" />
             </div>
           </div>
-          <div>
-            <p className="text-base font-semibold text-foreground">{displayName}</p>
-            <p className="text-sm text-muted-foreground">@{user?.username}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{user.displayName || user.username}</p>
+            <p className="text-sm text-muted-foreground truncate">@{user.username}</p>
           </div>
-          <div className="ml-auto">
-            <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
-              {profileLabel}
-            </span>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-muted/40 border border-border/50">
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">账号</p>
-            <p className="text-sm font-medium text-foreground">{user?.username}</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <User className="w-5 h-5" />
+            基本信息
+          </CardTitle>
+          <CardDescription>修改你的账号名称和显示昵称</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="username">用户名（账号名）</Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="输入用户名"
+            />
+            <p className="text-xs text-muted-foreground">修改后下次登录请使用新用户名</p>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">所属机构</p>
-            <p className="text-sm font-medium text-foreground">新东方国际教育</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">当前登录</p>
-            <p className="text-sm font-medium text-foreground">{loginTime}</p>
-          </div>
-        </div>
 
-        <div className="space-y-4 pt-2">
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-foreground mb-1.5">昵称 / 姓名</label>
-              <input
-                type="text"
-                value={nickname}
-                onChange={e => setNickname(e.target.value)}
-                placeholder="输入你的昵称"
-                className="w-full h-10 px-4 text-sm rounded-xl border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              />
+          <div className="space-y-2">
+            <Label htmlFor="displayName">姓名 / 昵称</Label>
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder={user.username}
+            />
+            <p className="text-xs text-muted-foreground">显示在系统中的名称</p>
+          </div>
+
+          <div className="pt-2 flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>预览：</span>
             </div>
-            <Button size="sm" onClick={handleSaveName} disabled={savingName || !nickname.trim()}>
-              {savingName ? '保存中...' : '保存'}
+            <div className="flex items-center gap-2">
+              {currentAvatar ? (
+                <div className="h-8 w-8 rounded-full overflow-hidden ring-1 ring-border">
+                  <img src={currentAvatar} alt="" className="h-full w-full object-cover" />
+                </div>
+              ) : (
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${getColor(displayName || username)}`}>
+                  {getInitials(displayName || username)}
+                </div>
+              )}
+              <div className="text-sm">
+                <p className="font-medium leading-tight">{displayName || username}</p>
+                <p className="text-xs text-muted-foreground">@{username}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Button onClick={handleSave} disabled={saving} className="gap-2">
+              <Save className="w-4 h-4" />
+              {saving ? '保存中...' : '保存修改'}
             </Button>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="border-t border-border pt-4">
-            <p className="text-sm font-medium text-foreground mb-3">修改密码</p>
-            <div className="space-y-3">
-              <div className="relative">
-                <label className="block text-xs text-muted-foreground mb-1">当前密码</label>
-                <div className="relative">
-                  <input
-                    type={showOldPwd ? 'text' : 'password'}
-                    value={oldPassword}
-                    onChange={e => setOldPassword(e.target.value)}
-                    placeholder="输入当前密码"
-                    className="w-full h-10 px-4 pr-10 text-sm rounded-xl border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowOldPwd(!showOldPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showOldPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="relative">
-                  <label className="block text-xs text-muted-foreground mb-1">新密码</label>
-                  <div className="relative">
-                    <input
-                      type={showNewPwd ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      placeholder="新密码（至少6位）"
-                      className="w-full h-10 px-4 pr-10 text-sm rounded-xl border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPwd(!showNewPwd)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">确认新密码</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="再次输入新密码"
-                    className="w-full h-10 px-4 text-sm rounded-xl border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleChangePassword}
-                  disabled={changingPwd || !oldPassword || !newPassword || !confirmPassword}
-                >
-                  {changingPwd ? '修改中...' : '修改密码'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </SectionCard>
-  )
-}
-
-function SystemSettingsSection({ theme, setTheme }: { theme: string | undefined; setTheme: (theme: string) => void }) {
-  const [notifications, setNotifications] = useState({
-    assistant: true,
-    classReminder: true,
-    homeworkReminder: true,
-  })
-
-  return (
-    <SectionCard title="系统设置" description="自定义界面偏好与消息通知">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-              {theme === 'dark' ? <Moon className="w-5 h-5 text-amber-600 dark:text-amber-400" /> : <Sun className="w-5 h-5 text-amber-600" />}
-            </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Lock className="w-5 h-5" />
+            安全设置
+          </CardTitle>
+          <CardDescription>管理你的账号安全</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-foreground">外观模式</p>
-              <p className="text-xs text-muted-foreground">{theme === 'dark' ? '深色模式' : '浅色模式'}</p>
+              <p className="font-medium">修改密码</p>
+              <p className="text-sm text-muted-foreground">建议定期更换密码以保护账号安全</p>
             </div>
+            <Button variant="outline" onClick={handleChangePassword}>
+              修改密码
+            </Button>
           </div>
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted border border-border">
-            <button
-              onClick={() => setTheme('light')}
-              className={`px-3 py-1.5 text-xs rounded-lg transition-all ${theme !== 'dark' ? 'bg-background shadow-sm text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <Sun className="w-3.5 h-3.5 inline-block mr-1" />
-              浅色
-            </button>
-            <button
-              onClick={() => setTheme('dark')}
-              className={`px-3 py-1.5 text-xs rounded-lg transition-all ${theme === 'dark' ? 'bg-background shadow-sm text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <Moon className="w-3.5 h-3.5 inline-block mr-1" />
-              深色
-            </button>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="border-t border-border pt-5">
-          <div className="flex items-center gap-2 mb-4">
-            <BellRing className="w-4 h-4 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">消息通知设置</p>
-          </div>
-          <div className="space-y-3">
-            <ToggleRow
-              icon={<Bell className="w-4 h-4" />}
-              label="助手消息"
-              description="接收英语助教助手的智能回复与提醒"
-              checked={notifications.assistant}
-              onChange={v => setNotifications(p => ({ ...p, assistant: v }))}
-            />
-            <ToggleRow
-              icon={<BookOpen className="w-4 h-4" />}
-              label="班级提醒"
-              description="班级排课变动、考勤状态更新"
-              checked={notifications.classReminder}
-              onChange={v => setNotifications(p => ({ ...p, classReminder: v }))}
-            />
-            <ToggleRow
-              icon={<Download className="w-4 h-4" />}
-              label="作业提醒"
-              description="作业提交、批改完成、未交提醒"
-              checked={notifications.homeworkReminder}
-              onChange={v => setNotifications(p => ({ ...p, homeworkReminder: v }))}
-            />
-          </div>
-        </div>
-      </div>
-    </SectionCard>
-  )
-}
-
-function ToggleRow({ icon, label, description, checked, onChange }: {
-  icon: React.ReactNode; label: string; description: string; checked: boolean; onChange: (v: boolean) => void
-}) {
-  return (
-    <div className="flex items-center justify-between py-2">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-          {icon}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">{label}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${checked ? 'bg-primary' : 'bg-muted-foreground/30'}`}
-      >
-        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-5' : ''}`} />
-      </button>
-    </div>
-  )
-}
-
-function DataSecuritySection({ user }: { user: { username: string; role?: string } | null }) {
-  const [exporting, setExporting] = useState(false)
-
-  const handleExportKB = async () => {
-    setExporting(true)
-    await new Promise(r => setTimeout(r, 600))
-    try {
-      const kb = getKnowledgeBase()
-      const blob = new Blob([JSON.stringify(kb, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `tabuddy_knowledge_base_${user?.username}_${new Date().toISOString().slice(0, 10)}.json`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success('知识库已导出')
-    } catch {
-      toast.error('导出失败')
-    }
-    setExporting(false)
-  }
-
-  return (
-    <SectionCard title="数据与安全" description="备份数据和管理账号安全选项">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between p-4 rounded-xl bg-muted/40 border border-border/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <BookOpen className="w-5 h-5 text-primary" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <User className="w-5 h-5" />
+            账号信息
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between py-2 border-b border-border">
+              <dt className="text-muted-foreground">用户名</dt>
+              <dd className="font-medium">{user.username}</dd>
             </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">私有知识库</p>
-              <p className="text-xs text-muted-foreground">导出你的私有知识库数据为 JSON 文件</p>
+            <div className="flex justify-between py-2 border-b border-border">
+              <dt className="text-muted-foreground">显示名称</dt>
+              <dd className="font-medium">{user.displayName || '-'}</dd>
             </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleExportKB} disabled={exporting}>
-            <Download className="w-4 h-4 mr-1.5" />
-            {exporting ? '导出中...' : '导出备份'}
-          </Button>
-        </div>
-
-        <div className="border-t border-border pt-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Lock className="w-4 h-4 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">账号安全</p>
-          </div>
-          <div className="space-y-3">
-            <SecurityOptionRow
-              icon={<Smartphone className="w-4 h-4" />}
-              label="绑定手机号"
-              description="用于账号找回和身份验证"
-              status="未绑定"
-              actionLabel="去绑定"
-              onAction={() => toast.info('手机号绑定功能开发中')}
-            />
-            <SecurityOptionRow
-              icon={<Mail className="w-4 h-4" />}
-              label="绑定邮箱"
-              description="接收安全通知和密码找回"
-              status="未绑定"
-              actionLabel="去绑定"
-              onAction={() => toast.info('邮箱绑定功能开发中')}
-            />
-            <SecurityOptionRow
-              icon={<Lock className="w-4 h-4" />}
-              label="登录密码"
-              description="建议定期更换密码确保账号安全"
-              status="已设置"
-              statusClass="text-success"
-              actionLabel="修改"
-              onAction={() => {
-                document.querySelector('[placeholder="输入当前密码"]')?.scrollIntoView({ behavior: 'smooth' })
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </SectionCard>
-  )
-}
-
-function SecurityOptionRow({
-  icon, label, description, status, statusClass, actionLabel, onAction,
-}: {
-  icon: React.ReactNode; label: string; description: string; status: string; statusClass?: string; actionLabel: string; onAction: () => void
-}) {
-  return (
-    <div className="flex items-center justify-between py-2.5">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-          {icon}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">{label}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <span className={`text-xs ${statusClass || 'text-muted-foreground'}`}>{status}</span>
-        <Button variant="ghost" size="sm" className="text-xs h-8 px-3" onClick={onAction}>{actionLabel}</Button>
-      </div>
+            <div className="flex justify-between py-2 border-b border-border">
+              <dt className="text-muted-foreground">角色</dt>
+              <dd>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                  {getRoleLabel(user.role)}
+                </span>
+              </dd>
+            </div>
+            <div className="flex justify-between py-2">
+              <dt className="text-muted-foreground">用户 ID</dt>
+              <dd className="font-mono text-xs text-muted-foreground">{user.id}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
     </div>
   )
 }

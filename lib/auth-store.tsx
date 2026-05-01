@@ -24,6 +24,7 @@ interface AuthContextType extends AuthState {
   logout: () => void
   getToken: () => string | null
   updateAvatar: (avatarDataUrl: string) => Promise<void>
+  updateProfile: (fields: { username?: string; displayName?: string; avatar?: string }) => Promise<boolean>
 }
 
 async function verifyTokenFromBackend(token: string): Promise<{ user: AuthUser } | null> {
@@ -222,8 +223,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [state.user, state.token])
 
+  const updateProfile = useCallback(async (fields: { username?: string; displayName?: string; avatar?: string }): Promise<boolean> => {
+    if (!state.user) return false
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.token}`,
+        },
+        body: JSON.stringify(fields),
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        toast.error(result.error || '更新失败')
+        return false
+      }
+      const updatedUser = { ...state.user, ...result.data }
+      saveAuth(updatedUser, state.token || '')
+      setState(prev => ({
+        ...prev,
+        user: updatedUser,
+      }))
+      toast.success('个人信息已更新')
+      return true
+    } catch {
+      toast.error('网络错误，更新失败')
+      return false
+    }
+  }, [state.user, state.token])
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, getToken, updateAvatar }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, getToken, updateAvatar, updateProfile }}>
       {children}
     </AuthContext.Provider>
   )

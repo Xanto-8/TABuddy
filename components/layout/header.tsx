@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProgress } from '@/components/providers/progress-provider'
-import { Search, User, ChevronDown, Home, Menu, LogOut, Settings, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2, SearchX } from 'lucide-react'
+import { Search, User, ChevronDown, Home, Menu, LogOut, Settings, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2 } from 'lucide-react'
+import GlobalSearch from '@/components/GlobalSearch'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Button } from '@/components/ui/button'
 import { ConfettiEffect } from '@/components/ui/confetti-effect'
@@ -25,7 +26,6 @@ export function Header() {
   const [switching, setSwitching] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const profile = user ? ACCOUNT_PROFILES[user.username] : null
 
@@ -38,12 +38,6 @@ export function Header() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  useEffect(() => {
-    if (mobileSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus()
-    }
-  }, [mobileSearchOpen])
 
   const goHome = () => {
     setOpen(true)
@@ -86,15 +80,7 @@ export function Header() {
 
         {mobileSearchOpen ? (
           <div className="flex-1 flex items-center gap-2 min-w-0">
-            <div className="relative flex-1 max-w-full">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                ref={searchInputRef}
-                type="search"
-                placeholder="搜索任务、学生或资源..."
-                className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
+            <GlobalSearch className="flex-1 max-w-full" onResultClick={() => setMobileSearchOpen(false)} />
             <button
               onClick={() => setMobileSearchOpen(false)}
               className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -111,16 +97,7 @@ export function Header() {
             >
               <Search className="h-5 w-5" />
             </button>
-            <div className="hidden lg:block flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="search"
-                  placeholder="搜索任务、学生或资源..."
-                  className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
-              </div>
-            </div>
+            <GlobalSearch className="hidden lg:block flex-1 max-w-md" />
 
             <div className="hidden lg:block ml-6 w-64">
               {currentClass ? (
