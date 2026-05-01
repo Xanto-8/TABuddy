@@ -9,6 +9,16 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
+    optimizePackageImports: [
+      'lucide-react',
+      'recharts',
+      'date-fns',
+      'framer-motion',
+      'three',
+    ],
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -21,15 +31,6 @@ const nextConfig = {
       }
     }
     return config
-  },
-  experimental: {
-    optimizePackageImports: [
-      'lucide-react',
-      'recharts',
-      'date-fns',
-      'framer-motion',
-      'three',
-    ],
   },
 }
 
