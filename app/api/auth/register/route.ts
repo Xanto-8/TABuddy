@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
         username,
         password,
         displayName,
-        role: userCount === 0 ? 'admin' : 'ta',
+        role: userCount === 0 ? 'superadmin' : 'student',
       },
     })
 
-    const token = generateToken({ id: user.id, username: user.username, role: user.role })
+    const token = generateToken({ id: user.id, username: user.username, role: user.role, classGroupId: user.classGroupId })
 
     return successResponse({
       token,
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         username: user.username,
         displayName: user.displayName,
         role: user.role,
+        classGroupId: user.classGroupId,
       },
     }, 201)
   } catch (error) {

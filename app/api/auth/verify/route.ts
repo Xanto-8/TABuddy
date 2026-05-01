@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         displayName: user.displayName,
         role: user.role,
         avatar: user.avatar,
+        classGroupId: user.classGroupId,
       },
     })
   } catch (error) {

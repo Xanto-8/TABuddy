@@ -7,16 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model ClassGroup {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  users             User[]
+  knowledgeEntries  KnowledgeBaseEntry[]
+}
+
 model User {
   id          String   @id @default(cuid())
   username    String   @unique
   password    String
   displayName String   @default("")
-  role        String   @default("ta")
+  role        String   @default("student")
   avatar      String   @default("")
   settings    String   @default("{}")
+  lastActiveAt DateTime?
+  classGroupId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  classGroup ClassGroup? @relation(fields: [classGroupId], references: [id], onDelete: SetNull)
 
   classes          Class[]
   students         Student[]
@@ -259,6 +272,7 @@ model ReminderConfig {
 
 model KnowledgeBaseEntry {
   id        String   @id @default(cuid())
+  scope     String   @default("personal")
   title     String
   content   String
   category  String   @default("")
@@ -266,8 +280,10 @@ model KnowledgeBaseEntry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classGroupId String?
+  classGroup  ClassGroup? @relation(fields: [classGroupId], references: [id], onDelete: Cascade)
 }
 
 model UserStore {

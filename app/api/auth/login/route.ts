@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid username or password', 401)
     }
 
-    const token = generateToken({ id: user.id, username: user.username, role: user.role })
+    const token = generateToken({ id: user.id, username: user.username, role: user.role, classGroupId: user.classGroupId })
 
     return successResponse({
       token,
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
         displayName: user.displayName,
         role: user.role,
         avatar: user.avatar,
+        classGroupId: user.classGroupId,
       },
     })
   } catch (error) {

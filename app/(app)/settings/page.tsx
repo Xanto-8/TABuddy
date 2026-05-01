@@ -48,7 +48,7 @@ function SectionCard({ title, description, children }: { title: string; descript
   )
 }
 
-function ProfileSection({ user }: { user: { username: string; isAdmin: boolean; avatar?: string } | null }) {
+function ProfileSection({ user }: { user: { username: string; role?: string; avatar?: string } | null }) {
   const { updateAvatar } = useAuth()
   const [nickname, setNickname] = useState('')
   const [oldPassword, setOldPassword] = useState('')
@@ -62,8 +62,9 @@ function ProfileSection({ user }: { user: { username: string; isAdmin: boolean; 
   const [avatarError, setAvatarError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const profileLabel = user?.isAdmin ? '管理员' : '助教'
-  const displayName = nickname || (user?.isAdmin ? '管理员' : '助教老师')
+  const isSuperAdmin = user?.role === 'superadmin'
+  const profileLabel = isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '学生'
+  const displayName = nickname || (isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '学生')
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -128,11 +129,11 @@ function ProfileSection({ user }: { user: { username: string; isAdmin: boolean; 
             ) : (
               <div className={cn(
                 'h-16 w-16 rounded-full flex items-center justify-center shrink-0 text-2xl',
-                user?.isAdmin
+                isSuperAdmin
                   ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                   : 'bg-gradient-to-r from-primary to-secondary text-white'
               )}>
-                {user?.isAdmin ? <Shield className="w-7 h-7" /> : <User className="w-7 h-7" />}
+                {isSuperAdmin ? <Shield className="w-7 h-7" /> : <User className="w-7 h-7" />}
               </div>
             )}
             <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -349,7 +350,7 @@ function ToggleRow({ icon, label, description, checked, onChange }: {
   )
 }
 
-function DataSecuritySection({ user }: { user: { username: string; isAdmin: boolean } | null }) {
+function DataSecuritySection({ user }: { user: { username: string; role?: string } | null }) {
   const [exporting, setExporting] = useState(false)
 
   const handleExportKB = async () => {

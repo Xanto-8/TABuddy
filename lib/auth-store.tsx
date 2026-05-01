@@ -6,10 +6,9 @@ import { toast } from 'sonner'
 export interface AuthUser {
   id: string
   username: string
-  isAdmin: boolean
   displayName?: string
   role?: string
-  org?: string
+  classGroupId?: string | null
   avatar?: string
 }
 
@@ -94,10 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       verifyTokenFromBackend(token).then(result => {
         if (result) {
-          const userData: AuthUser = {
-            ...result.user,
-            isAdmin: result.user.role === 'admin',
-          }
+          const userData: AuthUser = result.user
           saveAuth(userData, token)
           setState({ user: userData, isAuthenticated: true, token })
           import('@/lib/store').then(m => m.loadAllDataFromAPI()).catch(console.error)
@@ -132,14 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const { token, user } = result.data
-      const userData: AuthUser = {
-        id: user.id,
-        username: user.username,
-        isAdmin: user.role === 'admin',
-        displayName: user.displayName,
-        role: user.role,
-        avatar: user.avatar,
-      }
+      const userData: AuthUser = user
 
       saveAuth(userData, token)
       setState({ user: userData, isAuthenticated: true, token })
@@ -170,13 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const { token, user } = result.data
-      const userData: AuthUser = {
-        id: user.id,
-        username: user.username,
-        isAdmin: user.role === 'admin',
-        displayName: user.displayName,
-        role: user.role,
-      }
+      const userData: AuthUser = user
 
       saveAuth(userData, token)
       setState({ user: userData, isAuthenticated: true, token })

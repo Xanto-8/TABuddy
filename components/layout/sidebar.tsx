@@ -6,11 +6,12 @@ import Link from 'next/link'
 import {
   LayoutDashboard, BookOpen, ClipboardList, GraduationCap, FileText,
   MessageSquare, Settings,
-  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users,
+  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users, Activity,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSidebar } from '@/components/providers/sidebar-provider'
 import { useAuth } from '@/lib/auth-store'
+import { useRoleAccess } from '@/lib/use-role-access'
 import { cn } from '@/lib/utils'
 
 const MAIN_MENU_ITEMS = [
@@ -21,11 +22,6 @@ const MAIN_MENU_ITEMS = [
   { icon: ClipboardList, label: '随堂测验', href: '/quizzes' },
   { icon: MessageSquare, label: '反馈管理', href: '/feedback' },
   { icon: BookOpen, label: '知识库管理', href: '/knowledge-base' },
-] as const
-
-const ADMIN_MENU_ITEMS = [
-  { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
-  { icon: Users, label: '成员管理', href: '/admin/users' },
 ] as const
 
 const SECONDARY_MENU_ITEMS = [
@@ -92,6 +88,7 @@ function SidebarDivider({ expanded }: { expanded: boolean }) {
 function NavArea({ expanded }: { expanded: boolean }) {
   const pathname = usePathname()
   const { user } = useAuth()
+  const { isSuperAdmin, isClassAdmin } = useRoleAccess()
 
   const mainItems = useMemo(() =>
     MAIN_MENU_ITEMS.map(item => ({
@@ -101,8 +98,13 @@ function NavArea({ expanded }: { expanded: boolean }) {
     [pathname]
   )
 
-  const adminItems = useMemo(() =>
-    ADMIN_MENU_ITEMS.map(item => ({
+  const superAdminItems = useMemo(() =>
+    [
+      { icon: Activity, label: '超级管理员面板', href: '/admin/dashboard' },
+      { icon: Users, label: '班级管理', href: '/admin/classes' },
+      { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
+      { icon: Users, label: '用户管理', href: '/admin/users' },
+    ].map(item => ({
       ...item,
       isActive: pathname === item.href
     })),
@@ -122,10 +124,10 @@ function NavArea({ expanded }: { expanded: boolean }) {
       {mainItems.map((item) => (
         <NavItem key={item.href} {...item} expanded={expanded} />
       ))}
-      {user?.isAdmin && (
+      {isSuperAdmin && (
         <>
           <SidebarDivider expanded={expanded} />
-          {adminItems.map((item) => (
+          {superAdminItems.map((item) => (
             <NavItem key={item.href} {...item} expanded={expanded} isSecondary />
           ))}
         </>

@@ -3,7 +3,7 @@ import { getCache, isCacheLoaded } from './store'
 export interface SavedAccount {
   username: string
   displayName?: string
-  isAdmin?: boolean
+  role?: string
   subtitle?: string
 }
 

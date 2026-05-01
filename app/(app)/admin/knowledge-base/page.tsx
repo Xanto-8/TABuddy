@@ -101,7 +101,7 @@ export default function AdminKnowledgeBasePage() {
   }, [])
 
   useEffect(() => {
-    if (isAuthenticated && user && !user.isAdmin) {
+    if (isAuthenticated && user && user.role !== 'superadmin') {
       router.replace('/knowledge-base')
     }
   }, [isAuthenticated, user, router])
@@ -195,7 +195,7 @@ export default function AdminKnowledgeBasePage() {
     loadEntries()
   }
 
-  if (!user?.isAdmin) {
+  if (user?.role !== 'superadmin') {
     return null
   }
 
@@ -208,7 +208,7 @@ export default function AdminKnowledgeBasePage() {
               <h1 className="text-2xl font-bold text-foreground">公共知识库管理</h1>
               <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                 <Shield className="w-3 h-3 inline mr-0.5" />
-                管理员
+                超级管理员
               </span>
             </div>
             <p className="text-muted-foreground mt-1">管理全局公共知识库内容，对所有用户可见，修改后实时生效</p>

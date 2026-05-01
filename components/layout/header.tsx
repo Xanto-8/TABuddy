@@ -143,20 +143,12 @@ export function Header() {
                       }}
                     />
                     <div className="hidden h-full w-full rounded-full bg-gradient-to-r from-primary to-secondary items-center justify-center" style={{ display: 'none' }}>
-                      {user?.isAdmin ? (
-                        <Shield className="h-5 w-5 text-white" />
-                      ) : (
-                        <User className="h-5 w-5 text-white" />
-                      )}
+                      <Shield className="h-5 w-5 text-white" />
                     </div>
                   </div>
                 ) : (
                   <div className="h-9 w-9 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                    {user?.isAdmin ? (
-                      <Shield className="h-5 w-5 text-white" />
-                    ) : (
-                      <User className="h-5 w-5 text-white" />
-                    )}
+                    <Shield className="h-5 w-5 text-white" />
                   </div>
                 )}
                 <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-background bg-success" />
@@ -334,11 +326,13 @@ function SwitchAccountModal({
               >
                 <div className={cn(
                   'h-10 w-10 rounded-full flex items-center justify-center shrink-0',
-                  account.isAdmin
+                  account.role === 'superadmin'
                     ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                    : account.role === 'classadmin'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                     : 'bg-gradient-to-r from-primary to-secondary text-white'
                 )}>
-                  {account.isAdmin ? <Shield className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                  {account.role === 'superadmin' ? <Shield className="w-5 h-5" /> : <User className="w-5 h-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -349,9 +343,14 @@ function SwitchAccountModal({
                         当前
                       </span>
                     )}
-                    {account.isAdmin && (
+                    {account.role === 'superadmin' && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
-                        管理员
+                        超级管理员
+                      </span>
+                    )}
+                    {account.role === 'classadmin' && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
+                        班级管理员
                       </span>
                     )}
                   </div>
