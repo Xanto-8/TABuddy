@@ -52,3 +52,6 @@ public/uploads/*
 server/dist/
 server/node_modules/
 .vercel
+.env*.local
+
+/lib/generated/prisma

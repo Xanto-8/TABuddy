@@ -132,7 +132,7 @@ export default function KnowledgeBasePage() {
     if (editingEntry) {
       saveKnowledgeEntry({ ...data, id: editingEntry.id })
     } else {
-      createKnowledgeEntry(data)
+      createKnowledgeEntry({ ...data, id: `kb-${Date.now()}` })
     }
     setShowEditor(false)
     loadEntries()

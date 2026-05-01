@@ -157,7 +157,7 @@ function broadcastChange() {
 function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null
   try {
-    return localStorage.getItem('tabuddy_token')
+    return localStorage.getItem('tabuddy_auth_token')
   } catch {
     return null
   }

@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  displayName String   @default("")
+  role        String   @default("ta")
+  avatar      String   @default("")
+  settings    String   @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classes          Class[]
+  students         Student[]
+  classSchedules   ClassSchedule[]
+  courseTasks      CourseTask[]
+  taskTemplates    TaskTemplate[]
+  homeworkAssessments HomeworkAssessment[]
+  quizRecords      QuizRecord[]
+  feedbackRecords  FeedbackRecord[]
+  feedbackHistory  FeedbackHistoryEntry[]
+  absenceRecords   AbsenceRecord[]
+  workflowTemplates WorkflowTemplate[]
+  workflowTodos    WorkflowTodo[]
+  notifications    Notification[]
+  pushLogs         PushLog[]
+  reminderConfigs  ReminderConfig[]
+  knowledgeEntries KnowledgeBaseEntry[]
+  userStores       UserStore[]
+}
+
+model PublicKnowledgeItem {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  category    String   @default("")
+  tags        String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Class {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   @default("")
+  studentCount  Int      @default(0)
+  color         String   @default("")
+  courseTasks   String   @default("[]")
+  taskTemplates String   @default("[]")
+  scores        String   @default("[]")
+  latestScore   String   @default("")
+  accuracyTrend String   @default("[]")
+  scheduleIds   String   @default("[]")
+  studentIds    String   @default("[]")
+  isArchived    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  schedules ClassSchedule[]
+  students  Student[]
+}
+
+model ClassSchedule {
+  id          String   @id @default(cuid())
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  room        String   @default("")
+  location    String   @default("")
+
+  classId String
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Student {
+  id             String   @id @default(cuid())
+  name           String
+  isKeyStudent   Boolean  @default(false)
+  retestList     String   @default("[]")
+  testAccuracy   String   @default("")
+  quizCompletion String   @default("[]")
+  notes          String   @default("")
+  assessments    String   @default("[]")
+  quizzes        String   @default("[]")
+  isArchived     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  classId String
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CourseTask {
+  id        String   @id @default(cuid())
+  title     String
+  completed Boolean  @default(false)
+  dueDate   String   @default("")
+  priority  String   @default("medium")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classId String?
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TaskTemplate {
+  id     String @id @default(cuid())
+  title  String
+  type   String @default("")
+
+  classId String?
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model HomeworkAssessment {
+  id         String   @id @default(cuid())
+  studentName String
+  courseName  String   @default("")
+  score      String   @default("")
+  date       String   @default("")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuizRecord {
+  id         String   @id @default(cuid())
+  studentName String
+  courseName  String   @default("")
+  score      String   @default("")
+  date       String   @default("")
+  type       String   @default("")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FeedbackRecord {
+  id          String   @id @default(cuid())
+  studentName String
+  courseName  String   @default("")
+  content     String
+  date        String   @default("")
+  type        String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FeedbackHistoryEntry {
+  id        String   @id @default(cuid())
+  content   String
+  date      String   @default("")
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AbsenceRecord {
+  id         String   @id @default(cuid())
+  studentName String
+  className  String   @default("")
+  date       String
+  type       String   @default("absent")
+  reason     String   @default("")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WorkflowTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  nodes     String   @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WorkflowTodo {
+  id         String   @id @default(cuid())
+  title      String
+  completed  Boolean  @default(false)
+  dueDate    String   @default("")
+  priority   String   @default("medium")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushLog {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("")
+  sentAt    DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ReminderConfig {
+  id        String   @id @default(cuid())
+  config    String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeBaseEntry {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  category  String   @default("")
+  tags      String   @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserStore {
+  id      String @id @default(cuid())
+  key     String
+  value   String @default("")
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+}

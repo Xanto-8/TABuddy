@@ -164,7 +164,7 @@ function LeaveModal({
   }
 
   const handleConfirm = () => {
-    setAbsentStudents(classId, selectedIds, today)
+    setAbsentStudents(classId, today, selectedIds)
     toast.success('请假状态已同步，相关待办已更新')
     onConfirm()
     onClose()
@@ -273,7 +273,7 @@ function ClassTodoCard({
   const pendingWorkflow = item.workflowTodos.filter((t) => !t.completed)
 
   const handleToggleTodo = (todoId: string) => {
-    toggleWorkflowTodo(todoId, cls.id)
+    toggleWorkflowTodo(todoId)
     onRefresh()
   }
 

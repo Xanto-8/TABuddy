@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, Rea
 import { toast } from 'sonner'
 
 export interface AuthUser {
+  id: string
   username: string
   isAdmin: boolean
   displayName?: string
@@ -23,92 +24,24 @@ interface AuthContextType extends AuthState {
   register: (username: string, password: string) => Promise<void>
   logout: () => void
   getToken: () => string | null
-  updateAvatar: (avatarDataUrl: string) => void
+  updateAvatar: (avatarDataUrl: string) => Promise<void>
 }
 
-const FIXED_USERNAME = 'tabuddy'
-const FIXED_PASSWORD = '123456'
-const ADMIN_USERNAME = 'admin'
-const ADMIN_PASSWORD = '123456'
-
-const AUTH_KEY = 'tabuddy_auth'
-const TOKEN_KEY = 'tabuddy_token'
-const USERS_KEY = 'tabuddy_users'
-const ACCOUNTS_KEY = 'tabuddy_accounts'
-
-const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
-
-interface StoredUser {
-  username: string
-  password: string
-  isAdmin: boolean
-  displayName?: string
-  role?: string
-  org?: string
-  avatar?: string
-}
-
-function generateToken(username: string): string {
-  const payload = { username, iat: Date.now(), exp: Date.now() + TOKEN_EXPIRY_MS }
-  return btoa(JSON.stringify(payload))
-}
-
-function decodeToken(token: string): { username: string; iat: number; exp: number } | null {
+async function verifyTokenFromBackend(token: string): Promise<{ user: AuthUser } | null> {
   try {
-    return JSON.parse(atob(token))
+    const res = await fetch('/api/auth/verify', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    const result = await res.json()
+    return result.data
   } catch {
     return null
   }
 }
 
-function isTokenValid(token: string | null): boolean {
-  if (!token) return false
-  const decoded = decodeToken(token)
-  if (!decoded) return false
-  return decoded.exp > Date.now()
-}
-
-function getRegisteredUsers(): StoredUser[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const stored = localStorage.getItem(USERS_KEY)
-    if (!stored) return []
-    return JSON.parse(stored)
-  } catch {
-    return []
-  }
-}
-
-function saveRegisteredUser(user: StoredUser): void {
-  if (typeof window === 'undefined') return
-  const users = getRegisteredUsers()
-  users.push(user)
-  localStorage.setItem(USERS_KEY, JSON.stringify(users))
-}
-
-function syncAccountProfile(user: StoredUser): void {
-  if (typeof window === 'undefined') return
-  try {
-    const stored = localStorage.getItem(ACCOUNTS_KEY)
-    if (!stored) return
-    const accounts = JSON.parse(stored)
-    const idx = accounts.findIndex((a: any) => a.username === user.username)
-    const profile = {
-      username: user.username,
-      password: user.password,
-      isAdmin: user.isAdmin,
-      displayName: user.displayName || user.username,
-      subtitle: user.org || '',
-    }
-    if (idx >= 0) {
-      accounts[idx] = { ...accounts[idx], ...profile }
-    } else {
-      accounts.push(profile)
-    }
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
-  } catch {
-  }
-}
+const AUTH_KEY = 'tabuddy_auth'
+const TOKEN_KEY = 'tabuddy_auth_token'
 
 function getAuthFromStorage(): AuthState {
   if (typeof window === 'undefined') {
@@ -116,45 +49,30 @@ function getAuthFromStorage(): AuthState {
   }
   try {
     const token = localStorage.getItem(TOKEN_KEY)
-    if (!token || !isTokenValid(token)) {
-      clearAuth()
+    if (!token) {
       return { user: null, isAuthenticated: false, token: null }
     }
 
     const stored = localStorage.getItem(AUTH_KEY)
     if (!stored) {
-      clearAuth()
       return { user: null, isAuthenticated: false, token: null }
     }
 
     const parsed = JSON.parse(stored)
     if (parsed && parsed.username) {
-      const decoded = decodeToken(token)
-      if (!decoded || decoded.username !== parsed.username) {
-        clearAuth()
-        return { user: null, isAuthenticated: false, token: null }
-      }
       return {
-        user: {
-          username: parsed.username,
-          isAdmin: parsed.isAdmin === true,
-          displayName: parsed.displayName,
-          role: parsed.role,
-          org: parsed.org,
-          avatar: parsed.avatar,
-        },
+        user: parsed,
         isAuthenticated: true,
         token,
       }
     }
     return { user: null, isAuthenticated: false, token: null }
   } catch {
-    clearAuth()
     return { user: null, isAuthenticated: false, token: null }
   }
 }
 
-function saveAuth(user: { username: string; isAdmin: boolean; displayName?: string; role?: string; org?: string; avatar?: string }, token: string): void {
+function saveAuth(user: AuthUser, token: string): void {
   if (typeof window === 'undefined') return
   localStorage.setItem(AUTH_KEY, JSON.stringify(user))
   localStorage.setItem(TOKEN_KEY, token)
@@ -172,105 +90,106 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(getAuthFromStorage)
 
   useEffect(() => {
-    const restored = getAuthFromStorage()
-    setState(restored)
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (token) {
+      verifyTokenFromBackend(token).then(result => {
+        if (result) {
+          const userData: AuthUser = {
+            ...result.user,
+            isAdmin: result.user.role === 'admin',
+          }
+          saveAuth(userData, token)
+          setState({ user: userData, isAuthenticated: true, token })
+          import('@/lib/store').then(m => m.loadAllDataFromAPI()).catch(console.error)
+        } else {
+          clearAuth()
+          setState({ user: null, isAuthenticated: false, token: null })
+        }
+      })
+    } else {
+      setState({ user: null, isAuthenticated: false, token: null })
+    }
   }, [])
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
-    await new Promise(resolve => setTimeout(resolve, 800))
-
     if (!username || !password) {
       toast.error('请输入用户名和密码')
       return false
     }
 
-    let matchedUser: StoredUser | null = null
-
-    if (username === FIXED_USERNAME) {
-      if (password !== FIXED_PASSWORD) {
-        toast.error('密码错误')
-        return false
-      }
-      matchedUser = { username: FIXED_USERNAME, password: FIXED_PASSWORD, isAdmin: false, displayName: '助教老师', role: '助教', org: '新东方国际教育' }
-    } else if (username === ADMIN_USERNAME) {
-      if (password !== ADMIN_PASSWORD) {
-        toast.error('密码错误')
-        return false
-      }
-      matchedUser = { username: ADMIN_USERNAME, password: ADMIN_PASSWORD, isAdmin: true, displayName: '管理员', role: '管理员', org: '系统管理' }
-    } else {
-      const registeredUsers = getRegisteredUsers()
-      const found = registeredUsers.find(u => u.username === username)
-      if (!found) {
-        toast.error('账号不存在')
-        return false
-      }
-      if (found.password !== password) {
-        toast.error('密码错误')
-        return false
-      }
-      matchedUser = found
-    }
-
-    const token = generateToken(username)
-    const userProfile = {
-      username: matchedUser.username,
-      isAdmin: matchedUser.isAdmin,
-      displayName: matchedUser.displayName || matchedUser.username,
-      role: matchedUser.role || (matchedUser.isAdmin ? '管理员' : '助教'),
-      org: matchedUser.org || '',
-      avatar: matchedUser.avatar || '',
-    }
-
-    saveAuth(userProfile, token)
-
     try {
-      const { restoreUserData } = await import('@/lib/account-store')
-      restoreUserData(username)
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok) {
+        toast.error(result.error || '登录失败')
+        return false
+      }
+
+      const { token, user } = result.data
+      const userData: AuthUser = {
+        id: user.id,
+        username: user.username,
+        isAdmin: user.role === 'admin',
+        displayName: user.displayName,
+        role: user.role,
+        avatar: user.avatar,
+      }
+
+      saveAuth(userData, token)
+      setState({ user: userData, isAuthenticated: true, token })
+
+      const { loadAllDataFromAPI } = await import('@/lib/store')
+      await loadAllDataFromAPI()
+
+      toast.success('登录成功，欢迎回来！')
+      return true
     } catch {
+      toast.error('网络错误，请重试')
+      return false
     }
-
-    setState({
-      user: { ...userProfile },
-      isAuthenticated: true,
-      token,
-    })
-
-    toast.success('登录成功，欢迎回来！')
-    return true
   }, [])
 
   const register = useCallback(async (username: string, password: string): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 800))
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, displayName: username }),
+      })
 
-    if (!username || !password) {
-      throw new Error('请填写所有注册信息')
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || '注册失败')
+      }
+
+      const { token, user } = result.data
+      const userData: AuthUser = {
+        id: user.id,
+        username: user.username,
+        isAdmin: user.role === 'admin',
+        displayName: user.displayName,
+        role: user.role,
+      }
+
+      saveAuth(userData, token)
+      setState({ user: userData, isAuthenticated: true, token })
+
+      const { loadAllDataFromAPI } = await import('@/lib/store')
+      await loadAllDataFromAPI()
+
+      toast.success('注册成功！')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '注册失败'
+      toast.error(message)
+      throw error
     }
-
-    if (password.length < 6) {
-      throw new Error('密码长度至少为6位')
-    }
-
-    if (username === FIXED_USERNAME || username === ADMIN_USERNAME) {
-      throw new Error('该用户名已被注册')
-    }
-
-    const registeredUsers = getRegisteredUsers()
-    if (registeredUsers.some(u => u.username === username)) {
-      throw new Error('该用户名已被注册')
-    }
-
-    const newUser: StoredUser = {
-      username,
-      password,
-      isAdmin: false,
-      displayName: username,
-      role: '助教',
-      org: '',
-    }
-
-    saveRegisteredUser(newUser)
-    syncAccountProfile(newUser)
   }, [])
 
   const logout = useCallback(() => {
@@ -283,15 +202,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return state.token
   }, [state.token])
 
-  const updateAvatar = useCallback((avatarDataUrl: string) => {
+  const updateAvatar = useCallback(async (avatarDataUrl: string) => {
     if (!state.user) return
-    const updatedUser = { ...state.user, avatar: avatarDataUrl }
-    saveAuth(updatedUser, state.token || '')
-    setState(prev => ({
-      ...prev,
-      user: updatedUser,
-    }))
-    toast.success('头像已更新')
+    try {
+      const res = await fetch('/api/data/avatar', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.token}`,
+        },
+        body: JSON.stringify({ avatar: avatarDataUrl }),
+      })
+      if (!res.ok) throw new Error('Failed to update avatar')
+      const updatedUser = { ...state.user, avatar: avatarDataUrl }
+      saveAuth(updatedUser, state.token || '')
+      setState(prev => ({
+        ...prev,
+        user: updatedUser,
+      }))
+      toast.success('头像已更新')
+    } catch {
+      toast.error('头像更新失败')
+    }
   }, [state.user, state.token])
 
   return (

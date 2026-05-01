@@ -1,82 +1,102 @@
-'use client'
+import { AbsenceRecord } from '@/types'
+import { getCache, isCacheLoaded, triggerSync } from './store'
 
-import type { AbsenceRecord } from '@/types'
+let localFallback: AbsenceRecord[] = []
 
-const ABSENCE_KEY = 'tabuddy_absences'
-
-function getFromStorage<T>(key: string, defaultValue: T): T {
-  if (typeof window === 'undefined') return defaultValue
+function getLocalAbsences(): AbsenceRecord[] {
+  if (typeof window === 'undefined') return []
   try {
-    const stored = localStorage.getItem(key)
-    if (!stored) return defaultValue
-    return JSON.parse(stored, (_, value) => {
-      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) {
-        return new Date(value)
-      }
-      return value
-    })
-  } catch {
-    return defaultValue
-  }
+    const stored = localStorage.getItem('tabuddy_absences')
+    return stored ? JSON.parse(stored) : []
+  } catch { return [] }
 }
 
-function saveToStorage<T>(key: string, data: T): void {
+function saveLocalAbsences(records: AbsenceRecord[]): void {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error('Failed to save to localStorage:', e)
-  }
+    localStorage.setItem('tabuddy_absences', JSON.stringify(records))
+  } catch { }
 }
 
 export function getAbsenceRecords(): AbsenceRecord[] {
-  return getFromStorage<AbsenceRecord[]>(ABSENCE_KEY, [])
+  if (isCacheLoaded()) {
+    return getCache().absenceRecords
+  }
+  const local = getLocalAbsences()
+  localFallback = local
+  return local
 }
 
-export function getAbsentStudentIds(classId: string, date?: string): string[] {
+export function addAbsenceRecord(record: AbsenceRecord): void {
+  if (isCacheLoaded()) {
+    getCache().absenceRecords.push(record)
+    triggerSync()
+  } else {
+    localFallback.push(record)
+    saveLocalAbsences(localFallback)
+  }
+}
+
+export function updateAbsenceRecord(updated: AbsenceRecord): void {
+  if (isCacheLoaded()) {
+    const records = getCache().absenceRecords
+    const index = records.findIndex(r => r.classId === updated.classId && r.date === updated.date)
+    if (index !== -1) {
+      records[index] = updated
+      triggerSync()
+    }
+  } else {
+    const index = localFallback.findIndex(r => r.classId === updated.classId && r.date === updated.date)
+    if (index !== -1) {
+      localFallback[index] = updated
+      saveLocalAbsences(localFallback)
+    }
+  }
+}
+
+export function deleteAbsenceRecord(classId: string, date: string): void {
+  if (isCacheLoaded()) {
+    const records = getCache().absenceRecords
+    const index = records.findIndex(r => r.classId === classId && r.date === date)
+    if (index !== -1) {
+      records.splice(index, 1)
+      triggerSync()
+    }
+  } else {
+    const index = localFallback.findIndex(r => r.classId === classId && r.date === date)
+    if (index !== -1) {
+      localFallback.splice(index, 1)
+      saveLocalAbsences(localFallback)
+    }
+  }
+}
+
+export function isStudentAbsent(classId: string, date: string, studentId: string): boolean
+export function isStudentAbsent(studentId: string): boolean
+export function isStudentAbsent(classIdOrStudent: string, date?: string, studentId?: string): boolean {
   const records = getAbsenceRecords()
-  const dateStr = date || new Date().toISOString().split('T')[0]
-  const record = records.find((r) => r.classId === classId && r.date === dateStr)
+  if (date && studentId) {
+    const record = records.find(r => r.classId === classIdOrStudent && r.date === date)
+    return record ? record.studentIds.includes(studentId) : false
+  }
+  const sid = classIdOrStudent
+  return records.some(r => r.studentIds.includes(sid))
+}
+
+export function getAbsentStudentIds(classId: string, date: string): string[] {
+  const records = getAbsenceRecords()
+  const record = records.find(r => r.classId === classId && r.date === date)
   return record ? record.studentIds : []
 }
 
-export function isStudentAbsent(studentId: string, date?: string): boolean {
-  const dateStr = date || new Date().toISOString().split('T')[0]
+export function setAbsentStudents(classId: string, date: string, studentIds: string[]): void {
   const records = getAbsenceRecords()
-  return records.some((r) => r.date === dateStr && r.studentIds.includes(studentId))
-}
-
-export function setAbsentStudents(
-  classId: string,
-  studentIds: string[],
-  date?: string
-): void {
-  const dateStr = date || new Date().toISOString().split('T')[0]
-  const records = getAbsenceRecords()
-  const existingIndex = records.findIndex(
-    (r) => r.classId === classId && r.date === dateStr
-  )
-
-  if (existingIndex !== -1) {
-    if (studentIds.length === 0) {
-      records.splice(existingIndex, 1)
-    } else {
-      records[existingIndex] = {
-        ...records[existingIndex],
-        studentIds,
-        updatedAt: new Date(),
-      }
-    }
-  } else if (studentIds.length > 0) {
-    records.push({
-      classId,
-      date: dateStr,
-      studentIds,
-      updatedAt: new Date(),
-    })
+  const existing = records.find(r => r.classId === classId && r.date === date)
+  if (existing) {
+    existing.studentIds = studentIds
+    existing.updatedAt = new Date()
+    updateAbsenceRecord(existing)
+  } else {
+    addAbsenceRecord({ classId, date, studentIds, updatedAt: new Date() })
   }
-
-  saveToStorage(ABSENCE_KEY, records)
-  window.dispatchEvent(new Event('classDataChanged'))
-  window.dispatchEvent(new Event('absenceChanged'))
 }

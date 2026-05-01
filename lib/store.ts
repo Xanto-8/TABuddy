@@ -1,6 +1,6 @@
 'use client'
 
-import { Class, Student, ClassType, ClassSchedule, CourseTask, CourseTaskTemplate, HomeworkAssessment, QuizRecord, ClassOverallAccuracy, FeedbackRecord, NotificationItem, PushLogEntry, ReminderSentRecord, ReminderType, PushStatus } from '@/types'
+import { Class, Student, ClassType, ClassSchedule, CourseTask, CourseTaskTemplate, HomeworkAssessment, QuizRecord, ClassOverallAccuracy, FeedbackRecord, NotificationItem, PushLogEntry, ReminderSentRecord, ReminderType, PushStatus, UserFeedback, AbsenceRecord, WorkflowTemplate, WorkflowTodo } from '@/types'
 
 export type RecordType = 'homework' | 'quiz' | 'feedback' | 'attendance' | 'other'
 
@@ -32,46 +32,249 @@ export interface ClassResource {
   createdBy: string
 }
 
-const CLASSES_KEY = 'tabuddy_classes'
-const STUDENTS_KEY = 'tabuddy_students'
-const RECORDS_KEY = 'tabuddy_class_records'
-const RESOURCES_KEY = 'tabuddy_class_resources'
+// ========== 内存数据缓存 ==========
+interface KnowledgeEntry {
+  id: string
+  keywords: string[]
+  title: string
+  content: string
+  type: 'link' | 'template' | 'document' | 'info'
+  url?: string
+  priority: number
+}
+
+interface DataCache {
+  classes: Class[]
+  students: Student[]
+  records: ClassRecord[]
+  resources: ClassResource[]
+  schedules: ClassSchedule[]
+  courseTasks: CourseTask[]
+  templates: CourseTaskTemplate[]
+  lessonProgress: Record<string, Record<string, number>>
+  homeworkAssessments: HomeworkAssessment[]
+  quizRecords: QuizRecord[]
+  accuracyRecords: ClassOverallAccuracy[]
+  feedbackHistory: FeedbackRecord[]
+  notifications: NotificationItem[]
+  pushLogs: PushLogEntry[]
+  remindersSent: ReminderSentRecord[]
+  markedDays: Record<string, Record<string, true>>
+  deletedScheduleDates: Record<string, string[]>
+  customClassTypes: ClassType[]
+  knowledgeEntries: KnowledgeEntry[]
+  workflowTemplates: WorkflowTemplate[]
+  workflowTodos: WorkflowTodo[]
+  absenceRecords: AbsenceRecord[]
+  userFeedbacks: UserFeedback[]
+}
+
+const cache: DataCache = {
+  classes: [],
+  students: [],
+  records: [],
+  resources: [],
+  schedules: [],
+  courseTasks: [],
+  templates: [],
+  lessonProgress: {},
+  homeworkAssessments: [],
+  quizRecords: [],
+  accuracyRecords: [],
+  feedbackHistory: [],
+  notifications: [],
+  pushLogs: [],
+  remindersSent: [],
+  markedDays: {},
+  deletedScheduleDates: {},
+  customClassTypes: [],
+  knowledgeEntries: [],
+  workflowTemplates: [],
+  workflowTodos: [],
+  absenceRecords: [],
+  userFeedbacks: [],
+}
+
+let cacheLoaded = false
+
+// 导出缓存访问函数供其他 store 使用
+export function getCache(): DataCache {
+  return cache
+}
+
+export function isCacheLoaded(): boolean {
+  return cacheLoaded
+}
+
+export function triggerSync(): void {
+  debouncedSyncStore()
+}
+
+// ========== 认证工具 ==========
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return localStorage.getItem('tabuddy_auth_token')
+  } catch {
+    return null
+  }
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getAuthToken()
+  if (!token) return {}
+  return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+}
+
+// ========== 从 API 加载所有数据 ==========
+export async function loadAllDataFromAPI(): Promise<void> {
+  try {
+    const token = getAuthToken()
+    if (!token) {
+      cacheLoaded = false
+      return
+    }
+
+    const response = await fetch('/api/data/bulk', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+    if (!response.ok) throw new Error(`API error: ${response.status}`)
+    const result = await response.json()
+    const data = result.data
+
+    cache.classes = data.classes || []
+    cache.students = data.students || []
+    cache.schedules = data.classSchedules || []
+
+    const store: Record<string, unknown> = data.storeData || {}
+    cache.records = (store.records as ClassRecord[]) || []
+    cache.resources = (store.resources as ClassResource[]) || []
+    cache.courseTasks = (store.courseTasks as CourseTask[]) || []
+    cache.templates = (store.templates as CourseTaskTemplate[]) || []
+    cache.lessonProgress = (store.lessonProgress as Record<string, Record<string, number>>) || {}
+    cache.homeworkAssessments = (store.homeworkAssessments as HomeworkAssessment[]) || []
+    cache.quizRecords = (store.quizRecords as QuizRecord[]) || []
+    cache.accuracyRecords = (store.accuracyRecords as ClassOverallAccuracy[]) || []
+    cache.feedbackHistory = (store.feedbackHistory as FeedbackRecord[]) || []
+    cache.notifications = (store.notifications as NotificationItem[]) || []
+    cache.pushLogs = (store.pushLogs as PushLogEntry[]) || []
+    cache.remindersSent = (store.remindersSent as ReminderSentRecord[]) || []
+    cache.markedDays = (store.markedDays as Record<string, Record<string, true>>) || {}
+    cache.deletedScheduleDates = (store.deletedScheduleDates as Record<string, string[]>) || {}
+    cache.customClassTypes = (store.customClassTypes as ClassType[]) || []
+    cache.knowledgeEntries = (store.knowledgeEntries as KnowledgeEntry[]) || []
+    cache.workflowTemplates = (store.workflowTemplates as WorkflowTemplate[]) || []
+    cache.workflowTodos = (store.workflowTodos as WorkflowTodo[]) || []
+    cache.absenceRecords = (store.absenceRecords as AbsenceRecord[]) || []
+    cache.userFeedbacks = (store.userFeedbacks as UserFeedback[]) || []
+
+    cacheLoaded = true
+  } catch (error) {
+    console.error('loadAllDataFromAPI failed:', error)
+    cacheLoaded = false
+  }
+}
+
+async function syncStoreToAPI(): Promise<void> {
+  try {
+    const token = getAuthToken()
+    if (!token) return
+
+    const storeData = {
+      records: cache.records,
+      resources: cache.resources,
+      courseTasks: cache.courseTasks,
+      templates: cache.templates,
+      lessonProgress: cache.lessonProgress,
+      homeworkAssessments: cache.homeworkAssessments,
+      quizRecords: cache.quizRecords,
+      accuracyRecords: cache.accuracyRecords,
+      feedbackHistory: cache.feedbackHistory,
+      notifications: cache.notifications,
+      pushLogs: cache.pushLogs,
+      remindersSent: cache.remindersSent,
+      markedDays: cache.markedDays,
+      deletedScheduleDates: cache.deletedScheduleDates,
+      customClassTypes: cache.customClassTypes,
+      knowledgeEntries: cache.knowledgeEntries,
+      workflowTemplates: cache.workflowTemplates,
+      workflowTodos: cache.workflowTodos,
+      absenceRecords: cache.absenceRecords,
+      userFeedbacks: cache.userFeedbacks,
+    }
+
+    await fetch('/api/data/store', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ key: 'appStore', value: storeData }),
+    })
+  } catch (error) {
+    console.error('syncStoreToAPI failed:', error)
+  }
+}
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null
+function debouncedSyncStore(): void {
+  if (syncTimer) clearTimeout(syncTimer)
+  syncTimer = setTimeout(() => { syncStoreToAPI() }, 500)
+}
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
 }
 
-function getFromStorage<T>(key: string, defaultValue: T): T {
-  if (typeof window === 'undefined') return defaultValue
-  try {
-    const stored = localStorage.getItem(key)
-    if (!stored) return defaultValue
-    return JSON.parse(stored, (_, value) => {
-      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) {
-        return new Date(value)
-      }
-      return value
-    })
-  } catch {
-    return defaultValue
-  }
-}
-
-function saveToStorage<T>(key: string, data: T): void {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.setItem(key, JSON.stringify(data))
-  } catch (e) {
-    console.error('Failed to save to localStorage:', e)
-  }
-}
+// ========== 班级 (Classes) ==========
 
 export function getClasses(): Class[] {
-  return getFromStorage<Class[]>(CLASSES_KEY, [])
+  return cache.classes
+}
+
+export async function saveClassAsync(data: Omit<Class, 'id' | 'studentCount' | 'createdAt' | 'updatedAt'>): Promise<Class> {
+  const response = await fetch('/api/data/classes', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to save class')
+  const result = await response.json()
+  const newClass = result.data as Class
+  if (newClass && newClass.id) {
+    const existing = cache.classes.find(c => c.id === newClass.id)
+    if (!existing) cache.classes.push(newClass)
+  }
+  return newClass
+}
+
+export async function updateClassAsync(id: string, data: Partial<Omit<Class, 'id' | 'createdAt'>>): Promise<Class | null> {
+  const response = await fetch(`/api/data/classes/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) return null
+  const result = await response.json()
+  const updated = result.data as Class
+  if (updated) {
+    const index = cache.classes.findIndex(c => c.id === id)
+    if (index !== -1) cache.classes[index] = updated
+  }
+  return updated
+}
+
+export async function deleteClassAsync(id: string): Promise<boolean> {
+  const response = await fetch(`/api/data/classes/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!response.ok) return false
+  cache.classes = cache.classes.filter(c => c.id !== id)
+  cache.students = cache.students.map(s =>
+    s.classId === id ? { ...s, classId: undefined } : s
+  )
+  return true
 }
 
 export function saveClass(data: Omit<Class, 'id' | 'studentCount' | 'createdAt' | 'updatedAt'>): Class {
-  const classes = getClasses()
   const newClass: Class = {
     ...data,
     id: generateId(),
@@ -80,88 +283,106 @@ export function saveClass(data: Omit<Class, 'id' | 'studentCount' | 'createdAt' 
     createdAt: new Date(),
     updatedAt: new Date(),
   }
-  classes.push(newClass)
-  saveToStorage(CLASSES_KEY, classes)
+  cache.classes.push(newClass)
+  saveClassAsync(data).then(serverClass => {
+    if (serverClass && serverClass.id) {
+      const idx = cache.classes.findIndex(c => c.id === newClass.id)
+      if (idx !== -1) cache.classes[idx] = serverClass
+    }
+  }).catch(console.error)
   return newClass
 }
 
 export function updateClass(id: string, data: Partial<Omit<Class, 'id' | 'createdAt'>>): Class | null {
-  const classes = getClasses()
-  const index = classes.findIndex((c) => c.id === id)
+  const index = cache.classes.findIndex((c) => c.id === id)
   if (index === -1) return null
-  classes[index] = { ...classes[index], ...data, updatedAt: new Date() }
-  saveToStorage(CLASSES_KEY, classes)
-  return classes[index]
+  cache.classes[index] = { ...cache.classes[index], ...data, updatedAt: new Date() }
+  updateClassAsync(id, data).catch(console.error)
+  return cache.classes[index]
 }
 
 export function deleteClass(id: string): boolean {
-  const classes = getClasses()
-  const filtered = classes.filter((c) => c.id !== id)
-  if (filtered.length === classes.length) return false
-  saveToStorage(CLASSES_KEY, filtered)
-
-  const students = getStudents()
-  const updatedStudents = students.map((s) =>
+  const filtered = cache.classes.filter((c) => c.id !== id)
+  if (filtered.length === cache.classes.length) return false
+  cache.classes = filtered
+  cache.students = cache.students.map((s) =>
     s.classId === id ? { ...s, classId: undefined } : s
   )
-  saveToStorage(STUDENTS_KEY, updatedStudents)
+  deleteClassAsync(id).catch(console.error)
   return true
 }
 
+// ========== 学生 (Students) ==========
+
 export function getStudents(): Student[] {
-  return getFromStorage<Student[]>(STUDENTS_KEY, [])
+  return cache.students
 }
 
 export function getStudentsByClass(classId: string): Student[] {
-  return getStudents().filter((s) => s.classId === classId)
+  return cache.students.filter((s) => s.classId === classId)
+}
+
+export async function saveStudentAsync(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>): Promise<Student> {
+  const response = await fetch('/api/data/students', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to save student')
+  const result = await response.json()
+  const newStudent = result.data as Student
+  if (newStudent && newStudent.id) {
+    const existing = cache.students.find(s => s.id === newStudent.id)
+    if (!existing) cache.students.push(newStudent)
+    if (newStudent.classId) {
+      const classIndex = cache.classes.findIndex(c => c.id === newStudent.classId)
+      if (classIndex !== -1) {
+        cache.classes[classIndex].studentCount = cache.students.filter(s => s.classId === newStudent.classId).length
+      }
+    }
+  }
+  return newStudent
 }
 
 export function saveStudent(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>): Student {
-  const students = getStudents()
   const newStudent: Student = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
     updatedAt: new Date(),
   }
-  students.push(newStudent)
-  saveToStorage(STUDENTS_KEY, students)
-
+  cache.students.push(newStudent)
   if (data.classId) {
-    const classes = getClasses()
-    const classIndex = classes.findIndex((c) => c.id === data.classId)
+    const classIndex = cache.classes.findIndex((c) => c.id === data.classId)
     if (classIndex !== -1) {
-      classes[classIndex].studentCount = getStudentsByClass(data.classId).length
-      classes[classIndex].updatedAt = new Date()
-      saveToStorage(CLASSES_KEY, classes)
+      cache.classes[classIndex].studentCount = cache.students.filter((s) => s.classId === data.classId).length
+      cache.classes[classIndex].updatedAt = new Date()
     }
   }
-
+  saveStudentAsync(data).catch(console.error)
   return newStudent
 }
 
 export function updateStudent(id: string, data: Partial<Omit<Student, 'id' | 'createdAt'>>): Student | null {
-  const students = getStudents()
-  const index = students.findIndex((s) => s.id === id)
+  const index = cache.students.findIndex((s) => s.id === id)
   if (index === -1) return null
-
-  const oldClassId = students[index].classId
-  students[index] = { ...students[index], ...data, updatedAt: new Date() }
-  saveToStorage(STUDENTS_KEY, students)
-
+  const oldClassId = cache.students[index].classId
+  cache.students[index] = { ...cache.students[index], ...data, updatedAt: new Date() }
   const affectedClassIds = new Set([oldClassId, data.classId].filter(Boolean))
-  const classes = getClasses()
   affectedClassIds.forEach((classId) => {
     if (!classId) return
-    const classIndex = classes.findIndex((c) => c.id === classId)
+    const classIndex = cache.classes.findIndex((c) => c.id === classId)
     if (classIndex !== -1) {
-      classes[classIndex].studentCount = getStudentsByClass(classId).length
-      classes[classIndex].updatedAt = new Date()
+      cache.classes[classIndex].studentCount = cache.students.filter((s) => s.classId === classId).length
+      cache.classes[classIndex].updatedAt = new Date()
     }
   })
-  saveToStorage(CLASSES_KEY, classes)
-
-  return students[index]
+  fetch(`/api/data/students/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  }).catch(console.error)
+  return cache.students[index]
 }
 
 export function addStudentToClass(studentId: string, classId: string, className: string): Student | null {
@@ -169,24 +390,25 @@ export function addStudentToClass(studentId: string, classId: string, className:
 }
 
 export function deleteStudent(id: string): boolean {
-  const students = getStudents()
-  const student = students.find((s) => s.id === id)
-  const filtered = students.filter((s) => s.id !== id)
-  if (filtered.length === students.length) return false
-  saveToStorage(STUDENTS_KEY, filtered)
-
+  const student = cache.students.find((s) => s.id === id)
+  const filtered = cache.students.filter((s) => s.id !== id)
+  if (filtered.length === cache.students.length) return false
+  cache.students = filtered
   if (student?.classId) {
-    const classes = getClasses()
-    const classIndex = classes.findIndex((c) => c.id === student.classId)
+    const classIndex = cache.classes.findIndex((c) => c.id === student.classId)
     if (classIndex !== -1) {
-      classes[classIndex].studentCount = getStudentsByClass(student.classId).length
-      classes[classIndex].updatedAt = new Date()
-      saveToStorage(CLASSES_KEY, classes)
+      cache.classes[classIndex].studentCount = cache.students.filter((s) => s.classId === student.classId).length
+      cache.classes[classIndex].updatedAt = new Date()
     }
   }
-
+  fetch(`/api/data/students/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  }).catch(console.error)
   return true
 }
+
+// ========== 班级类型标签/颜色 ==========
 
 export function getClassTypeLabel(type: ClassType): string {
   const labels: Record<string, string> = {
@@ -216,29 +438,19 @@ export function getClassTypeColor(type: ClassType): string {
 
 export const STANDARD_CLASS_TYPES: ClassType[] = ['GY', 'KET', 'PET', 'FCE', 'CAE', 'CPE', 'OTHER']
 
-const CUSTOM_CLASS_TYPES_KEY = 'tabuddy_custom_class_types'
+// ========== 自定义班级类型 ==========
 
 export function getCustomClassTypes(): ClassType[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(CUSTOM_CLASS_TYPES_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
+  return cache.customClassTypes
 }
 
 export function addCustomClassType(type: string): void {
-  if (typeof window === 'undefined') return
   const normalized = type.trim().toUpperCase()
   if (!normalized) return
   if (STANDARD_CLASS_TYPES.includes(normalized as ClassType)) return
-  const list = getCustomClassTypes()
-  if (list.includes(normalized)) return
-  list.push(normalized)
-  try {
-    localStorage.setItem(CUSTOM_CLASS_TYPES_KEY, JSON.stringify(list))
-  } catch {}
+  if (cache.customClassTypes.includes(normalized)) return
+  cache.customClassTypes.push(normalized)
+  debouncedSyncStore()
 }
 
 export function getAllClassTypeOptions(): { value: ClassType; label: string }[] {
@@ -247,28 +459,28 @@ export function getAllClassTypeOptions(): { value: ClassType; label: string }[] 
   return [...standard, ...custom]
 }
 
+// ========== 班级记录 (Records) ==========
+
 export function getRecordsByClass(classId: string): ClassRecord[] {
-  const records = getFromStorage<ClassRecord[]>(RECORDS_KEY, [])
-  return records.filter((r) => r.classId === classId)
+  return cache.records.filter((r) => r.classId === classId)
 }
 
 export function saveRecord(data: Omit<ClassRecord, 'id' | 'createdAt'>): ClassRecord {
-  const records = getFromStorage<ClassRecord[]>(RECORDS_KEY, [])
   const newRecord: ClassRecord = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
   }
-  records.push(newRecord)
-  saveToStorage(RECORDS_KEY, records)
+  cache.records.push(newRecord)
+  debouncedSyncStore()
   return newRecord
 }
 
 export function deleteRecord(id: string): boolean {
-  const records = getFromStorage<ClassRecord[]>(RECORDS_KEY, [])
-  const filtered = records.filter((r) => r.id !== id)
-  if (filtered.length === records.length) return false
-  saveToStorage(RECORDS_KEY, filtered)
+  const filtered = cache.records.filter((r) => r.id !== id)
+  if (filtered.length === cache.records.length) return false
+  cache.records = filtered
+  debouncedSyncStore()
   return true
 }
 
@@ -294,44 +506,37 @@ export function getRecordTypeIcon(type: RecordType): string {
   return icons[type]
 }
 
+// ========== 班级资源 (Resources) ==========
+
 export function getResourcesByClass(classId: string): ClassResource[] {
-  const resources = getFromStorage<ClassResource[]>(RESOURCES_KEY, [])
-  return resources.filter((r) => r.classId === classId)
+  return cache.resources.filter((r) => r.classId === classId)
 }
 
 export function saveResource(data: Omit<ClassResource, 'id' | 'createdAt'>): ClassResource {
-  const resources = getFromStorage<ClassResource[]>(RESOURCES_KEY, [])
   const newResource: ClassResource = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
   }
-  resources.push(newResource)
-  saveToStorage(RESOURCES_KEY, resources)
+  cache.resources.push(newResource)
+  debouncedSyncStore()
   return newResource
 }
 
 export function deleteResource(id: string): boolean {
-  const resources = getFromStorage<ClassResource[]>(RESOURCES_KEY, [])
-  const filtered = resources.filter((r) => r.id !== id)
-  if (filtered.length === resources.length) return false
-  saveToStorage(RESOURCES_KEY, filtered)
+  const filtered = cache.resources.filter((r) => r.id !== id)
+  if (filtered.length === cache.resources.length) return false
+  cache.resources = filtered
+  debouncedSyncStore()
   return true
 }
 
 export function updateResource(id: string, data: Partial<Omit<ClassResource, 'id' | 'createdAt' | 'createdBy'>>): ClassResource | null {
-  const resources = getFromStorage<ClassResource[]>(RESOURCES_KEY, [])
-  const index = resources.findIndex((r) => r.id === id)
+  const index = cache.resources.findIndex((r) => r.id === id)
   if (index === -1) return null
-  
-  const updatedResource = {
-    ...resources[index],
-    ...data,
-  }
-  
-  resources[index] = updatedResource
-  saveToStorage(RESOURCES_KEY, resources)
-  return updatedResource
+  cache.resources[index] = { ...cache.resources[index], ...data }
+  debouncedSyncStore()
+  return cache.resources[index]
 }
 
 export function getResourceTypeLabel(type: ResourceType): string {
@@ -356,147 +561,121 @@ export function getResourceTypeIcon(type: ResourceType): string {
   return icons[type]
 }
 
-// 班级上课时间相关函数
-const CLASS_SCHEDULES_KEY = 'tabuddy_class_schedules'
+// ========== 班级上课时间 (Schedules) ==========
 
 export function getClassSchedules(classId: string): ClassSchedule[] {
-  const schedules = getFromStorage<ClassSchedule[]>(CLASS_SCHEDULES_KEY, [])
-  return schedules.filter((s) => s.classId === classId)
+  return cache.schedules.filter((s) => s.classId === classId)
+}
+
+export async function saveClassScheduleAsync(data: Omit<ClassSchedule, 'id' | 'createdAt' | 'updatedAt'>): Promise<ClassSchedule> {
+  const response = await fetch('/api/data/class-schedules', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  })
+  if (!response.ok) throw new Error('Failed to save schedule')
+  const result = await response.json()
+  const newSchedule = result.data as ClassSchedule
+  if (newSchedule && newSchedule.id) {
+    const existing = cache.schedules.find(s => s.id === newSchedule.id)
+    if (!existing) cache.schedules.push(newSchedule)
+  }
+  return newSchedule
 }
 
 export function saveClassSchedule(data: Omit<ClassSchedule, 'id' | 'createdAt' | 'updatedAt'>): ClassSchedule {
-  const schedules = getFromStorage<ClassSchedule[]>(CLASS_SCHEDULES_KEY, [])
   const newSchedule: ClassSchedule = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
     updatedAt: new Date(),
   }
-  schedules.push(newSchedule)
-  saveToStorage(CLASS_SCHEDULES_KEY, schedules)
-  
-  // 更新班级的schedules字段
-  const classes = getClasses()
-  const classIndex = classes.findIndex((c) => c.id === data.classId)
+  cache.schedules.push(newSchedule)
+  const classIndex = cache.classes.findIndex((c) => c.id === data.classId)
   if (classIndex !== -1) {
     const classSchedules = getClassSchedules(data.classId)
-    classes[classIndex] = { 
-      ...classes[classIndex], 
-      schedules: classSchedules,
-      updatedAt: new Date()
-    }
-    saveToStorage(CLASSES_KEY, classes)
+    cache.classes[classIndex] = { ...cache.classes[classIndex], schedules: classSchedules, updatedAt: new Date() }
   }
-  
+  saveClassScheduleAsync(data).catch(console.error)
   return newSchedule
 }
 
 export function updateClassSchedule(id: string, data: Partial<Omit<ClassSchedule, 'id' | 'createdAt'>>): ClassSchedule | null {
-  const schedules = getFromStorage<ClassSchedule[]>(CLASS_SCHEDULES_KEY, [])
-  const index = schedules.findIndex((s) => s.id === id)
+  const index = cache.schedules.findIndex((s) => s.id === id)
   if (index === -1) return null
-  
-  const updatedSchedule = { ...schedules[index], ...data, updatedAt: new Date() }
-  schedules[index] = updatedSchedule
-  saveToStorage(CLASS_SCHEDULES_KEY, schedules)
-  
-  // 更新班级的schedules字段
-  const classId = schedules[index].classId
-  const classes = getClasses()
-  const classIndex = classes.findIndex((c) => c.id === classId)
+  const updatedSchedule = { ...cache.schedules[index], ...data, updatedAt: new Date() }
+  cache.schedules[index] = updatedSchedule
+  const classId = cache.schedules[index].classId
+  const classIndex = cache.classes.findIndex((c) => c.id === classId)
   if (classIndex !== -1) {
     const classSchedules = getClassSchedules(classId)
-    classes[classIndex] = { 
-      ...classes[classIndex], 
-      schedules: classSchedules,
-      updatedAt: new Date()
-    }
-    saveToStorage(CLASSES_KEY, classes)
+    cache.classes[classIndex] = { ...cache.classes[classIndex], schedules: classSchedules, updatedAt: new Date() }
   }
-  
+  fetch(`/api/data/class-schedules/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  }).catch(console.error)
   return updatedSchedule
 }
 
 export function deleteClassSchedule(id: string): boolean {
-  const schedules = getFromStorage<ClassSchedule[]>(CLASS_SCHEDULES_KEY, [])
-  const scheduleIndex = schedules.findIndex((s) => s.id === id)
+  const scheduleIndex = cache.schedules.findIndex((s) => s.id === id)
   if (scheduleIndex === -1) return false
-  
-  const classId = schedules[scheduleIndex].classId
-  const filtered = schedules.filter((s) => s.id !== id)
-  saveToStorage(CLASS_SCHEDULES_KEY, filtered)
-  
-  // 更新班级的schedules字段
-  const classes = getClasses()
-  const classIndex = classes.findIndex((c) => c.id === classId)
+  const classId = cache.schedules[scheduleIndex].classId
+  cache.schedules = cache.schedules.filter((s) => s.id !== id)
+  const classIndex = cache.classes.findIndex((c) => c.id === classId)
   if (classIndex !== -1) {
     const classSchedules = getClassSchedules(classId)
-    classes[classIndex] = { 
-      ...classes[classIndex], 
-      schedules: classSchedules,
-      updatedAt: new Date()
-    }
-    saveToStorage(CLASSES_KEY, classes)
+    cache.classes[classIndex] = { ...cache.classes[classIndex], schedules: classSchedules, updatedAt: new Date() }
   }
-  
+  fetch(`/api/data/class-schedules/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  }).catch(console.error)
   return true
 }
 
-// 根据当前时间获取当前上课的班级
-// 第一轮：精确匹配当前正在上课的班级
-// 第二轮：按课前10分钟规则匹配即将上课的班级
 export function getCurrentClassByTime(): Class | null {
   const now = new Date()
-  const currentDay = now.getDay() // 0-6, 0=Sunday
-  const currentTime = now.getHours() * 60 + now.getMinutes() // 转换为分钟数
-  
-  const classes = getClasses()
-  
-  // 第一轮：检查是否有班级正在上课
+  const currentDay = now.getDay()
+  const currentTime = now.getHours() * 60 + now.getMinutes()
+  const classes = cache.classes
+
   for (const classItem of classes) {
     const schedules = getClassSchedules(classItem.id)
-    
     for (const schedule of schedules) {
       if (schedule.dayOfWeek === currentDay) {
         const [startHour, startMinute] = schedule.startTime.split(':').map(Number)
         const [endHour, endMinute] = schedule.endTime.split(':').map(Number)
-        
         const startTimeInMinutes = startHour * 60 + startMinute
         const endTimeInMinutes = endHour * 60 + endMinute
-        
         if (currentTime >= startTimeInMinutes && currentTime <= endTimeInMinutes) {
           return classItem
         }
       }
     }
   }
-  
-  // 第二轮：没有正在上课的班级，检查即将在10分钟内上课的班级（课前准备切换）
+
   for (const classItem of classes) {
     const schedules = getClassSchedules(classItem.id)
-    
     for (const schedule of schedules) {
       if (schedule.dayOfWeek === currentDay) {
         const [startHour, startMinute] = schedule.startTime.split(':').map(Number)
-        
         const startTimeInMinutes = startHour * 60 + startMinute
-        
         if (currentTime >= startTimeInMinutes - 10 && currentTime < startTimeInMinutes) {
           return classItem
         }
       }
     }
   }
-  
+
   return null
 }
 
-// 获取今天有课的班级
 export function getTodayClasses(): Class[] {
   const today = new Date().getDay()
-  const classes = getClasses()
-  
-  return classes.filter((classItem) => {
+  return cache.classes.filter((classItem) => {
     const schedules = getClassSchedules(classItem.id)
     return schedules.some((schedule) => schedule.dayOfWeek === today)
   })
@@ -504,41 +683,33 @@ export function getTodayClasses(): Class[] {
 
 // ========== 调课/补课标记 ==========
 
-const MARKED_DAYS_KEY = 'tabuddy_marked_days'
-
 export function getMarkedDays(): Record<string, Record<string, true>> {
-  return getFromStorage<Record<string, Record<string, true>>>(MARKED_DAYS_KEY, {})
+  return cache.markedDays
 }
 
 export function setMarkedDay(classId: string, date: string, isMarked: boolean): void {
-  const marked = getMarkedDays()
-  if (!marked[classId]) marked[classId] = {}
+  if (!cache.markedDays[classId]) cache.markedDays[classId] = {}
   if (isMarked) {
-    marked[classId][date] = true
+    cache.markedDays[classId][date] = true
   } else {
-    delete marked[classId][date]
-    if (Object.keys(marked[classId]).length === 0) {
-      delete marked[classId]
+    delete cache.markedDays[classId][date]
+    if (Object.keys(cache.markedDays[classId]).length === 0) {
+      delete cache.markedDays[classId]
     }
   }
-  saveToStorage(MARKED_DAYS_KEY, marked)
+  debouncedSyncStore()
 }
 
 export function isMarkedDay(classId: string, date: string): boolean {
-  const marked = getMarkedDays()
-  return !!marked[classId]?.[date]
+  return !!cache.markedDays[classId]?.[date]
 }
 
-// 判断某日期是否为班级的上课日（根据上课周几设置）
 export function isScheduleDayForClass(classId: string, date: string): boolean {
   const dateObj = new Date(date + 'T00:00:00')
   const dayOfWeek = dateObj.getDay()
-  // 先检查独立存储的 schedules
   const schedules = getClassSchedules(classId)
   if (schedules.some((s) => s.dayOfWeek === dayOfWeek)) return true
-  // 备选：检查 Class 对象内联的 schedules 字段
-  const classes = getClasses()
-  const cls = classes.find((c) => c.id === classId)
+  const cls = cache.classes.find((c) => c.id === classId)
   if (cls?.schedules && cls.schedules.length > 0) {
     return cls.schedules.some((s) => s.dayOfWeek === dayOfWeek)
   }
@@ -547,53 +718,46 @@ export function isScheduleDayForClass(classId: string, date: string): boolean {
 
 // ========== 班级课时任务 (CourseTask) ==========
 
-const COURSE_TASKS_KEY = 'tabuddy_course_tasks'
-
 export function getCourseTasks(): CourseTask[] {
-  return getFromStorage<CourseTask[]>(COURSE_TASKS_KEY, [])
+  return cache.courseTasks
 }
 
 export function getCourseTasksByClass(classId: string): CourseTask[] {
-  const tasks = getCourseTasks()
-  return tasks.filter((t) => t.classId === classId)
+  return cache.courseTasks.filter((t) => t.classId === classId)
 }
 
 export function getCourseTasksByDate(date: string): CourseTask[] {
-  const tasks = getCourseTasks()
-  return tasks.filter((t) => t.date === date)
+  return cache.courseTasks.filter((t) => t.date === date)
 }
 
 export function saveCourseTask(data: Omit<CourseTask, 'id' | 'createdAt' | 'updatedAt'>): CourseTask {
-  const tasks = getCourseTasks()
   const newTask: CourseTask = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
     updatedAt: new Date(),
   }
-  tasks.push(newTask)
-  saveToStorage(COURSE_TASKS_KEY, tasks)
+  cache.courseTasks.push(newTask)
+  debouncedSyncStore()
   return newTask
 }
 
 export function updateCourseTask(id: string, data: Partial<Omit<CourseTask, 'id' | 'createdAt'>>): CourseTask | null {
-  const tasks = getCourseTasks()
-  const index = tasks.findIndex((t) => t.id === id)
+  const index = cache.courseTasks.findIndex((t) => t.id === id)
   if (index === -1) return null
-  tasks[index] = { ...tasks[index], ...data, updatedAt: new Date() }
-  saveToStorage(COURSE_TASKS_KEY, tasks)
-  return tasks[index]
+  cache.courseTasks[index] = { ...cache.courseTasks[index], ...data, updatedAt: new Date() }
+  debouncedSyncStore()
+  return cache.courseTasks[index]
 }
 
 export function deleteCourseTask(id: string): boolean {
-  const tasks = getCourseTasks()
-  const filtered = tasks.filter((t) => t.id !== id)
-  if (filtered.length === tasks.length) return false
-  saveToStorage(COURSE_TASKS_KEY, filtered)
+  const filtered = cache.courseTasks.filter((t) => t.id !== id)
+  if (filtered.length === cache.courseTasks.length) return false
+  cache.courseTasks = filtered
+  debouncedSyncStore()
   return true
 }
 
-// 获取指定日期的任务统计（按班级+日期过滤，汇总当天所有课程的全部任务）
 export function getTodayTaskStats(
   classId?: string,
   date?: string
@@ -613,120 +777,78 @@ export function getTodayTaskStats(
 
 // ========== 班级课时任务模板 (CourseTaskTemplate) ==========
 
-const COURSE_TASK_TEMPLATES_KEY = 'tabuddy_course_task_templates'
-
 export function getCourseTaskTemplates(): CourseTaskTemplate[] {
-  return getFromStorage<CourseTaskTemplate[]>(COURSE_TASK_TEMPLATES_KEY, [])
+  return cache.templates
 }
 
 export function getCourseTaskTemplatesByClass(classId: string): CourseTaskTemplate[] {
-  const templates = getCourseTaskTemplates()
-  return templates
+  return cache.templates
     .filter((t) => t.classId === classId)
     .sort((a, b) => a.order - b.order)
 }
 
-export function saveCourseTaskTemplate(
-  data: Omit<CourseTaskTemplate, 'id' | 'createdAt' | 'updatedAt'>
-): CourseTaskTemplate {
-  const templates = getCourseTaskTemplates()
+export function saveCourseTaskTemplate(data: Omit<CourseTaskTemplate, 'id' | 'createdAt' | 'updatedAt'>): CourseTaskTemplate {
   const newTemplate: CourseTaskTemplate = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
     updatedAt: new Date(),
   }
-  templates.push(newTemplate)
-  saveToStorage(COURSE_TASK_TEMPLATES_KEY, templates)
+  cache.templates.push(newTemplate)
+  debouncedSyncStore()
   return newTemplate
 }
 
-export function updateCourseTaskTemplate(
-  id: string,
-  data: Partial<Omit<CourseTaskTemplate, 'id' | 'createdAt'>>
-): CourseTaskTemplate | null {
-  const templates = getCourseTaskTemplates()
-  const index = templates.findIndex((t) => t.id === id)
+export function updateCourseTaskTemplate(id: string, data: Partial<Omit<CourseTaskTemplate, 'id' | 'createdAt'>>): CourseTaskTemplate | null {
+  const index = cache.templates.findIndex((t) => t.id === id)
   if (index === -1) return null
-  templates[index] = { ...templates[index], ...data, updatedAt: new Date() }
-  saveToStorage(COURSE_TASK_TEMPLATES_KEY, templates)
-  return templates[index]
+  cache.templates[index] = { ...cache.templates[index], ...data, updatedAt: new Date() }
+  debouncedSyncStore()
+  return cache.templates[index]
 }
 
 export function deleteCourseTaskTemplate(id: string): boolean {
-  const templates = getCourseTaskTemplates()
-  const filtered = templates.filter((t) => t.id !== id)
-  if (filtered.length === templates.length) return false
-  saveToStorage(COURSE_TASK_TEMPLATES_KEY, filtered)
+  const filtered = cache.templates.filter((t) => t.id !== id)
+  if (filtered.length === cache.templates.length) return false
+  cache.templates = filtered
+  debouncedSyncStore()
   return true
 }
 
 // ========== 课时自动递增逻辑 ==========
 
-const CLASS_LESSON_PROGRESS_KEY = 'tabuddy_class_lesson_progress'
-
-// 从已有任务数据初始化课时进度（数据迁移）
 export function initializeLessonProgress(): void {
-  const progress: Record<string, Record<string, number>> =
-    getFromStorage(CLASS_LESSON_PROGRESS_KEY, {})
-  const tasks = getCourseTasks()
-
-  tasks.forEach((t) => {
+  cache.courseTasks.forEach((t) => {
     if (!t.lesson) return
-    if (!progress[t.classId]) progress[t.classId] = {}
-    if (!(t.date in progress[t.classId])) {
+    if (!cache.lessonProgress[t.classId]) cache.lessonProgress[t.classId] = {}
+    if (!(t.date in cache.lessonProgress[t.classId])) {
       const match = t.lesson.match(/(\d+)/)
       if (match) {
-        progress[t.classId][t.date] = parseInt(match[1], 10)
+        cache.lessonProgress[t.classId][t.date] = parseInt(match[1], 10)
       }
     }
   })
-
-  saveToStorage(CLASS_LESSON_PROGRESS_KEY, progress)
 }
 
-// 获取某班级在某日期对应的课时
-// - 如果该日期已有课时记录，直接返回
-// - 否则自动计算下一个课时（基于该班级已有上课日期数 +1）
-export function getLessonForClassDate(
-  classId: string,
-  date: string
-): { number: number; label: string } {
-  const progress: Record<string, Record<string, number>> =
-    getFromStorage(CLASS_LESSON_PROGRESS_KEY, {})
-
-  if (!progress[classId]) progress[classId] = {}
-
-  if (!(date in progress[classId])) {
-    const existingNumbers = Object.values(progress[classId])
+export function getLessonForClassDate(classId: string, date: string): { number: number; label: string } {
+  if (!cache.lessonProgress[classId]) cache.lessonProgress[classId] = {}
+  if (!(date in cache.lessonProgress[classId])) {
+    const existingNumbers = Object.values(cache.lessonProgress[classId])
     const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0
-    progress[classId][date] = maxNumber + 1
-    saveToStorage(CLASS_LESSON_PROGRESS_KEY, progress)
+    cache.lessonProgress[classId][date] = maxNumber + 1
+    debouncedSyncStore()
   }
-
-  const lessonNumber = progress[classId][date]
+  const lessonNumber = cache.lessonProgress[classId][date]
   return {
     number: lessonNumber,
     label: `第${lessonNumber}课`,
   }
 }
 
-// 手动修改某班级在某日期的课时数字
-// 修改后该日期的课时固定为用户输入的值
-// 下一个新日期依然按 max(已有数字) +1 继续递增
-export function updateLessonProgress(
-  classId: string,
-  date: string,
-  lessonNumber: number
-): { number: number; label: string } {
-  const progress: Record<string, Record<string, number>> =
-    getFromStorage(CLASS_LESSON_PROGRESS_KEY, {})
-
-  if (!progress[classId]) progress[classId] = {}
-
-  progress[classId][date] = lessonNumber
-  saveToStorage(CLASS_LESSON_PROGRESS_KEY, progress)
-
+export function updateLessonProgress(classId: string, date: string, lessonNumber: number): { number: number; label: string } {
+  if (!cache.lessonProgress[classId]) cache.lessonProgress[classId] = {}
+  cache.lessonProgress[classId][date] = lessonNumber
+  debouncedSyncStore()
   return {
     number: lessonNumber,
     label: `第${lessonNumber}课`,
@@ -736,8 +858,7 @@ export function updateLessonProgress(
 // ========== 任务实例生成与同步 ==========
 
 export function getCourseTasksByClassAndDate(classId: string, date: string): CourseTask[] {
-  const tasks = getCourseTasks()
-  return tasks.filter((t) => t.classId === classId && t.date === date)
+  return cache.courseTasks.filter((t) => t.classId === classId && t.date === date)
 }
 
 export function generateDailyInstances(classId: string, date: string): CourseTask[] {
@@ -756,15 +877,12 @@ export function generateDailyInstances(classId: string, date: string): CourseTas
     return getCourseTasksByClassAndDate(classId, date)
   }
 
-  // 自动计算该日期对应的课时
   const lessonInfo = getLessonForClassDate(classId, date)
-
-  const allTasks = getCourseTasks()
   let hasNew = false
 
   templates.forEach((template) => {
     if (!existingTemplateIds.has(template.id)) {
-      allTasks.push({
+      cache.courseTasks.push({
         id: generateId(),
         classId,
         templateId: template.id,
@@ -782,7 +900,7 @@ export function generateDailyInstances(classId: string, date: string): CourseTas
   })
 
   if (hasNew) {
-    saveToStorage(COURSE_TASKS_KEY, allTasks)
+    debouncedSyncStore()
   }
 
   return getCourseTasksByClassAndDate(classId, date)
@@ -790,13 +908,11 @@ export function generateDailyInstances(classId: string, date: string): CourseTas
 
 export function ensureTodayInstancesForAllClasses(): void {
   initializeLessonProgress()
-
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
   const dayOfWeek = today.getDay()
 
-  const classes = getClasses()
-  classes.forEach((cls) => {
+  cache.classes.forEach((cls) => {
     const schedules = getClassSchedules(cls.id)
     if (schedules.some((s) => s.dayOfWeek === dayOfWeek)) {
       generateDailyInstances(cls.id, todayStr)
@@ -805,87 +921,70 @@ export function ensureTodayInstancesForAllClasses(): void {
 }
 
 export function syncTemplateToFutureInstances(templateId: string): void {
-  const tasks = getCourseTasks()
-  const templates = getCourseTaskTemplates()
-  const template = templates.find((t) => t.id === templateId)
+  const template = cache.templates.find((t) => t.id === templateId)
   if (!template) return
 
   const todayStr = new Date().toISOString().split('T')[0]
   let hasUpdates = false
 
-  const updatedTasks = tasks.map((t) => {
+  cache.courseTasks = cache.courseTasks.map((t) => {
     if (t.templateId === templateId && t.date >= todayStr) {
       hasUpdates = true
-      return {
-        ...t,
-        title: template.title,
-        content: template.content,
-        updatedAt: new Date(),
-      }
+      return { ...t, title: template.title, content: template.content, updatedAt: new Date() }
     }
     return t
   })
 
   if (hasUpdates) {
-    saveToStorage(COURSE_TASKS_KEY, updatedTasks)
+    debouncedSyncStore()
   }
 }
 
 // ========== 作业评估 (HomeworkAssessment) ==========
 
-const HOMEWORK_ASSESSMENTS_KEY = 'tabuddy_homework_assessments'
-
 export function getHomeworkAssessments(): HomeworkAssessment[] {
-  return getFromStorage<HomeworkAssessment[]>(HOMEWORK_ASSESSMENTS_KEY, [])
+  return cache.homeworkAssessments
 }
 
 export function getHomeworkAssessmentsByStudent(studentId: string): HomeworkAssessment[] {
-  return getHomeworkAssessments().filter((a) => a.studentId === studentId)
+  return cache.homeworkAssessments.filter((a) => a.studentId === studentId)
 }
 
 export function getHomeworkAssessmentsByClass(classId: string): HomeworkAssessment[] {
-  const students = getStudentsByClass(classId)
-  const studentIds = new Set(students.map((s) => s.id))
-  return getHomeworkAssessments().filter((a) => studentIds.has(a.studentId))
+  const studentIds = new Set(cache.students.filter((s) => s.classId === classId).map((s) => s.id))
+  return cache.homeworkAssessments.filter((a) => studentIds.has(a.studentId))
 }
 
-export function saveHomeworkAssessment(
-  data: Omit<HomeworkAssessment, 'id' | 'assessedAt'>
-): HomeworkAssessment {
-  const assessments = getHomeworkAssessments()
+export function saveHomeworkAssessment(data: Omit<HomeworkAssessment, 'id' | 'assessedAt'>): HomeworkAssessment {
   const newAssessment: HomeworkAssessment = {
     ...data,
     id: generateId(),
     assessedAt: new Date(),
   }
-  assessments.push(newAssessment)
-  saveToStorage(HOMEWORK_ASSESSMENTS_KEY, assessments)
+  cache.homeworkAssessments.push(newAssessment)
+  debouncedSyncStore()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('classDataChanged'))
   }
   return newAssessment
 }
 
-export function updateHomeworkAssessment(
-  id: string,
-  data: Partial<Omit<HomeworkAssessment, 'id'>>
-): HomeworkAssessment | null {
-  const assessments = getHomeworkAssessments()
-  const index = assessments.findIndex((a) => a.id === id)
+export function updateHomeworkAssessment(id: string, data: Partial<Omit<HomeworkAssessment, 'id'>>): HomeworkAssessment | null {
+  const index = cache.homeworkAssessments.findIndex((a) => a.id === id)
   if (index === -1) return null
-  assessments[index] = { ...assessments[index], ...data, assessedAt: new Date() }
-  saveToStorage(HOMEWORK_ASSESSMENTS_KEY, assessments)
+  cache.homeworkAssessments[index] = { ...cache.homeworkAssessments[index], ...data, assessedAt: new Date() }
+  debouncedSyncStore()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('classDataChanged'))
   }
-  return assessments[index]
+  return cache.homeworkAssessments[index]
 }
 
 export function deleteHomeworkAssessment(id: string): boolean {
-  const assessments = getHomeworkAssessments()
-  const filtered = assessments.filter((a) => a.id !== id)
-  if (filtered.length === assessments.length) return false
-  saveToStorage(HOMEWORK_ASSESSMENTS_KEY, filtered)
+  const filtered = cache.homeworkAssessments.filter((a) => a.id !== id)
+  if (filtered.length === cache.homeworkAssessments.length) return false
+  cache.homeworkAssessments = filtered
+  debouncedSyncStore()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('classDataChanged'))
   }
@@ -894,24 +993,19 @@ export function deleteHomeworkAssessment(id: string): boolean {
 
 // ========== 小测记录 (QuizRecord) ==========
 
-const QUIZ_RECORDS_KEY = 'tabuddy_quiz_records'
-
 export function getQuizRecords(): QuizRecord[] {
-  return getFromStorage<QuizRecord[]>(QUIZ_RECORDS_KEY, [])
+  return cache.quizRecords
 }
 
 export function getQuizRecordsByStudent(studentId: string): QuizRecord[] {
-  return getQuizRecords().filter((r) => r.studentId === studentId)
+  return cache.quizRecords.filter((r) => r.studentId === studentId)
 }
 
 export function getQuizRecordsByClass(classId: string): QuizRecord[] {
-  return getQuizRecords().filter((r) => r.classId === classId)
+  return cache.quizRecords.filter((r) => r.classId === classId)
 }
 
-export function saveQuizRecord(
-  data: Omit<QuizRecord, 'id' | 'uploadedAt' | 'assessedAt'>
-): QuizRecord {
-  const records = getQuizRecords()
+export function saveQuizRecord(data: Omit<QuizRecord, 'id' | 'uploadedAt' | 'assessedAt'>): QuizRecord {
   const now = new Date()
   const newRecord: QuizRecord = {
     ...data,
@@ -919,41 +1013,35 @@ export function saveQuizRecord(
     uploadedAt: now,
     assessedAt: now,
   }
-  records.push(newRecord)
-  saveToStorage(QUIZ_RECORDS_KEY, records)
+  cache.quizRecords.push(newRecord)
+  debouncedSyncStore()
   return newRecord
 }
 
-export function updateQuizRecord(
-  id: string,
-  data: Partial<Omit<QuizRecord, 'id'>>
-): QuizRecord | null {
-  const records = getQuizRecords()
-  const index = records.findIndex((r) => r.id === id)
+export function updateQuizRecord(id: string, data: Partial<Omit<QuizRecord, 'id'>>): QuizRecord | null {
+  const index = cache.quizRecords.findIndex((r) => r.id === id)
   if (index === -1) return null
-  records[index] = { ...records[index], ...data, assessedAt: new Date() }
-  saveToStorage(QUIZ_RECORDS_KEY, records)
-  return records[index]
+  cache.quizRecords[index] = { ...cache.quizRecords[index], ...data, assessedAt: new Date() }
+  debouncedSyncStore()
+  return cache.quizRecords[index]
 }
 
 export function deleteQuizRecord(id: string): boolean {
-  const records = getQuizRecords()
-  const filtered = records.filter((r) => r.id !== id)
-  if (filtered.length === records.length) return false
-  saveToStorage(QUIZ_RECORDS_KEY, filtered)
+  const filtered = cache.quizRecords.filter((r) => r.id !== id)
+  if (filtered.length === cache.quizRecords.length) return false
+  cache.quizRecords = filtered
+  debouncedSyncStore()
   return true
 }
 
 // ========== 班级总正确率 (ClassOverallAccuracy) ==========
 
-const CLASS_ACCURACY_KEY = 'tabuddy_class_overall_accuracy'
-
 export function getAllOverallAccuracyRecords(): ClassOverallAccuracy[] {
-  return getFromStorage<ClassOverallAccuracy[]>(CLASS_ACCURACY_KEY, [])
+  return cache.accuracyRecords
 }
 
 export function getClassOverallAccuracyRecords(classId: string): ClassOverallAccuracy[] {
-  return getAllOverallAccuracyRecords()
+  return cache.accuracyRecords
     .filter((r) => r.classId === classId)
     .sort((a, b) => a.date.localeCompare(b.date))
 }
@@ -976,48 +1064,41 @@ export function computeAndSaveClassAccuracy(classId: string): void {
   const overallAccuracy = Math.round((totalScoreSum / totalSum) * 1000) / 10
 
   const date = new Date().toISOString().split('T')[0]
-  const allRecords = getAllOverallAccuracyRecords()
-  const existingIndex = allRecords.findIndex(
+  const existingIndex = cache.accuracyRecords.findIndex(
     (r) => r.classId === classId && r.date === date
   )
   const newRecord: ClassOverallAccuracy = {
-    id: existingIndex >= 0 ? allRecords[existingIndex].id : (Date.now().toString(36) + Math.random().toString(36).substring(2, 8)),
+    id: existingIndex >= 0 ? cache.accuracyRecords[existingIndex].id : (Date.now().toString(36) + Math.random().toString(36).substring(2, 8)),
     classId,
     date,
     overallAccuracy,
   }
   if (existingIndex >= 0) {
-    allRecords[existingIndex] = newRecord
+    cache.accuracyRecords[existingIndex] = newRecord
   } else {
-    allRecords.push(newRecord)
+    cache.accuracyRecords.push(newRecord)
   }
-  saveToStorage(CLASS_ACCURACY_KEY, allRecords)
+  debouncedSyncStore()
 }
 
 // ========== 课程反馈历史 (FeedbackRecord) ==========
 
-const FEEDBACK_HISTORY_KEY = 'tabuddy_feedback_history'
-
 export function getFeedbackHistory(): FeedbackRecord[] {
-  const records = getFromStorage<FeedbackRecord[]>(FEEDBACK_HISTORY_KEY, [])
-  return records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  return [...cache.feedbackHistory].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 }
 
 export function getFeedbackHistoryByStudent(studentId: string): FeedbackRecord[] {
   return getFeedbackHistory().filter((r) => r.studentId === studentId)
 }
 
-export function saveFeedbackHistory(
-  data: Omit<FeedbackRecord, 'id' | 'createdAt'>
-): FeedbackRecord {
-  const records = getFeedbackHistory()
+export function saveFeedbackHistory(data: Omit<FeedbackRecord, 'id' | 'createdAt'>): FeedbackRecord {
   const newRecord: FeedbackRecord = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
   }
-  records.unshift(newRecord)
-  saveToStorage(FEEDBACK_HISTORY_KEY, records)
+  cache.feedbackHistory.unshift(newRecord)
+  debouncedSyncStore()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('classDataChanged'))
   }
@@ -1025,10 +1106,10 @@ export function saveFeedbackHistory(
 }
 
 export function deleteFeedbackHistory(id: string): boolean {
-  const records = getFeedbackHistory()
-  const filtered = records.filter((r) => r.id !== id)
-  if (filtered.length === records.length) return false
-  saveToStorage(FEEDBACK_HISTORY_KEY, filtered)
+  const filtered = cache.feedbackHistory.filter((r) => r.id !== id)
+  if (filtered.length === cache.feedbackHistory.length) return false
+  cache.feedbackHistory = filtered
+  debouncedSyncStore()
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('classDataChanged'))
   }
@@ -1036,30 +1117,26 @@ export function deleteFeedbackHistory(id: string): boolean {
 }
 
 export function clearFeedbackHistory(): boolean {
-  saveToStorage(FEEDBACK_HISTORY_KEY, [])
+  cache.feedbackHistory = []
+  debouncedSyncStore()
   return true
 }
 
 // ========== 打卡提醒通知系统 ==========
 
-const NOTIFICATIONS_KEY = 'tabuddy_notifications'
-const PUSH_LOGS_KEY = 'tabuddy_push_logs'
-const REMINDERS_SENT_KEY = 'tabuddy_reminders_sent'
-
 export function getNotifications(): NotificationItem[] {
-  return getFromStorage<NotificationItem[]>(NOTIFICATIONS_KEY, [])
+  return cache.notifications
 }
 
 export function getUnreadNotifications(): NotificationItem[] {
-  return getNotifications().filter(n => !n.read && !n.dismissed)
+  return cache.notifications.filter(n => !n.read && !n.dismissed)
 }
 
 export function getActiveNotifications(): NotificationItem[] {
-  return getNotifications().filter(n => !n.dismissed && !n.completed)
+  return cache.notifications.filter(n => !n.dismissed && !n.completed)
 }
 
 export function addNotification(data: Omit<NotificationItem, 'id' | 'createdAt' | 'read' | 'dismissed' | 'completed'>): NotificationItem {
-  const notifications = getNotifications()
   const newNotification: NotificationItem = {
     ...data,
     id: generateId(),
@@ -1068,44 +1145,40 @@ export function addNotification(data: Omit<NotificationItem, 'id' | 'createdAt' 
     dismissed: false,
     completed: false,
   }
-  notifications.unshift(newNotification)
-  saveToStorage(NOTIFICATIONS_KEY, notifications)
+  cache.notifications.unshift(newNotification)
+  debouncedSyncStore()
   return newNotification
 }
 
 export function markNotificationRead(id: string): void {
-  const notifications = getNotifications()
-  const index = notifications.findIndex(n => n.id === id)
+  const index = cache.notifications.findIndex(n => n.id === id)
   if (index !== -1) {
-    notifications[index].read = true
-    saveToStorage(NOTIFICATIONS_KEY, notifications)
+    cache.notifications[index].read = true
+    debouncedSyncStore()
   }
 }
 
 export function markNotificationCompleted(id: string): void {
-  const notifications = getNotifications()
-  const index = notifications.findIndex(n => n.id === id)
+  const index = cache.notifications.findIndex(n => n.id === id)
   if (index !== -1) {
-    notifications[index].completed = true
-    notifications[index].read = true
-    saveToStorage(NOTIFICATIONS_KEY, notifications)
+    cache.notifications[index].completed = true
+    cache.notifications[index].read = true
+    debouncedSyncStore()
   }
 }
 
 export function dismissNotification(id: string): void {
-  const notifications = getNotifications()
-  const index = notifications.findIndex(n => n.id === id)
+  const index = cache.notifications.findIndex(n => n.id === id)
   if (index !== -1) {
-    notifications[index].dismissed = true
-    notifications[index].read = true
-    saveToStorage(NOTIFICATIONS_KEY, notifications)
+    cache.notifications[index].dismissed = true
+    cache.notifications[index].read = true
+    debouncedSyncStore()
   }
 }
 
 export function dismissAllActiveNotifications(): void {
-  const notifications = getNotifications()
   let updated = false
-  notifications.forEach(n => {
+  cache.notifications.forEach(n => {
     if (!n.dismissed) {
       n.dismissed = true
       n.read = true
@@ -1113,14 +1186,13 @@ export function dismissAllActiveNotifications(): void {
     }
   })
   if (updated) {
-    saveToStorage(NOTIFICATIONS_KEY, notifications)
+    debouncedSyncStore()
   }
 }
 
 export function markNotificationsCompletedByClass(classId: string): void {
-  const notifications = getNotifications()
   let updated = false
-  notifications.forEach(n => {
+  cache.notifications.forEach(n => {
     if (n.classId === classId && !n.completed) {
       n.completed = true
       n.read = true
@@ -1128,31 +1200,30 @@ export function markNotificationsCompletedByClass(classId: string): void {
     }
   })
   if (updated) {
-    saveToStorage(NOTIFICATIONS_KEY, notifications)
+    debouncedSyncStore()
   }
 }
 
 // ========== 推送日志 ==========
 
 export function getPushLogs(): PushLogEntry[] {
-  return getFromStorage<PushLogEntry[]>(PUSH_LOGS_KEY, [])
+  return cache.pushLogs
 }
 
 export function addPushLog(data: Omit<PushLogEntry, 'id' | 'createdAt'>): PushLogEntry {
-  const logs = getPushLogs()
   const newLog: PushLogEntry = {
     ...data,
     id: generateId(),
     createdAt: new Date(),
   }
-  logs.unshift(newLog)
-  saveToStorage(PUSH_LOGS_KEY, logs)
+  cache.pushLogs.unshift(newLog)
+  debouncedSyncStore()
   return newLog
 }
 
 export function getTodayPushLogs(): PushLogEntry[] {
   const today = new Date().toISOString().split('T')[0]
-  return getPushLogs().filter(log => {
+  return cache.pushLogs.filter(log => {
     const logDate = new Date(log.createdAt).toISOString().split('T')[0]
     return logDate === today
   })
@@ -1161,52 +1232,46 @@ export function getTodayPushLogs(): PushLogEntry[] {
 // ========== 提醒去重记录 ==========
 
 export function getRemindersSent(): ReminderSentRecord[] {
-  return getFromStorage<ReminderSentRecord[]>(REMINDERS_SENT_KEY, [])
+  return cache.remindersSent
 }
 
 export function hasReminderBeenSent(scheduleId: string, reminderType: ReminderType): boolean {
   const today = new Date().toISOString().split('T')[0]
-  return getRemindersSent().some(
+  return cache.remindersSent.some(
     r => r.scheduleId === scheduleId && r.reminderType === reminderType && r.sentAt === today
   )
 }
 
 export function markReminderSent(scheduleId: string, classId: string, reminderType: ReminderType): void {
-  const records = getRemindersSent()
   const today = new Date().toISOString().split('T')[0]
-  records.push({ scheduleId, classId, reminderType, sentAt: today })
-  saveToStorage(REMINDERS_SENT_KEY, records)
+  cache.remindersSent.push({ scheduleId, classId, reminderType, sentAt: today })
+  debouncedSyncStore()
 }
 
 export function clearExpiredReminderRecords(): void {
   const today = new Date().toISOString().split('T')[0]
-  const records = getRemindersSent().filter(r => r.sentAt === today)
-  saveToStorage(REMINDERS_SENT_KEY, records)
+  cache.remindersSent = cache.remindersSent.filter(r => r.sentAt === today)
+  debouncedSyncStore()
 }
 
 // ========== 已删除的课程安排日期追踪 ==========
 
-const DELETED_SCHEDULE_DATES_KEY = 'tabuddy_deleted_schedule_dates'
-
 export function getDeletedScheduleDates(classId: string): string[] {
-  const all: Record<string, string[]> = getFromStorage<Record<string, string[]>>(DELETED_SCHEDULE_DATES_KEY, {})
-  return all[classId] || []
+  return cache.deletedScheduleDates[classId] || []
 }
 
 export function addDeletedScheduleDate(classId: string, date: string): void {
-  const all: Record<string, string[]> = getFromStorage<Record<string, string[]>>(DELETED_SCHEDULE_DATES_KEY, {})
-  if (!all[classId]) all[classId] = []
-  if (!all[classId].includes(date)) {
-    all[classId].push(date)
-    saveToStorage(DELETED_SCHEDULE_DATES_KEY, all)
+  if (!cache.deletedScheduleDates[classId]) cache.deletedScheduleDates[classId] = []
+  if (!cache.deletedScheduleDates[classId].includes(date)) {
+    cache.deletedScheduleDates[classId].push(date)
+    debouncedSyncStore()
   }
 }
 
 export function removeDeletedScheduleDate(classId: string, date: string): void {
-  const all: Record<string, string[]> = getFromStorage<Record<string, string[]>>(DELETED_SCHEDULE_DATES_KEY, {})
-  if (all[classId]) {
-    all[classId] = all[classId].filter(d => d !== date)
-    if (all[classId].length === 0) delete all[classId]
-    saveToStorage(DELETED_SCHEDULE_DATES_KEY, all)
+  if (cache.deletedScheduleDates[classId]) {
+    cache.deletedScheduleDates[classId] = cache.deletedScheduleDates[classId].filter(d => d !== date)
+    if (cache.deletedScheduleDates[classId].length === 0) delete cache.deletedScheduleDates[classId]
+    debouncedSyncStore()
   }
 }

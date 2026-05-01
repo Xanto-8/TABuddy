@@ -1,6 +1,4 @@
-'use client'
-
-import { matchPublicKnowledgeBase } from './public-knowledge-store'
+import { getCache, isCacheLoaded, triggerSync } from './store'
 
 export interface KnowledgeEntry {
   id: string
@@ -12,135 +10,135 @@ export interface KnowledgeEntry {
   priority: number
 }
 
-const STORAGE_KEY = 'tabuddy_knowledge_base'
+let localFallback: KnowledgeEntry[] = []
 
-const DEFAULT_KNOWLEDGE_BASE: KnowledgeEntry[] = [
-  {
-    id: 'feedback',
-    keywords: ['反馈模板','反馈格式','课程反馈','反馈','家长反馈'],
-    title: '课程反馈与沟通模板',
-    content: '【课程反馈模板】\n📚 课程内容：今日进度 + 核心知识点\n✅ 课堂表现：学生互动 + 纪律情况\n📝 作业情况：完成率 + 准确率 + 书写评价\n📊 小测结果：完成情况 + 各维度得分\n💡 改进建议：针对性建议',
-    type: 'template',
-    url: 'https://learn.xdf.cn',
-    priority: 5,
-  },
-  {
-    id: 'learning_center',
-    keywords: ['学习中心网址','官网','学习中心','网址','xdf','learn.xdf.cn'],
-    title: '新东方学习中心',
-    content: '新东方学习中心是学生在线学习平台，可查看课程、完成作业、参与小测等。请通过以下方式访问：\n1. 直接访问：https://learn.xdf.cn\n2. 建议使用 Chrome 或 Edge 浏览器\n3. 首次使用需用教务系统账号登录',
-    type: 'link',
-    url: 'https://learn.xdf.cn',
-    priority: 4,
-  },
-  {
-    id: 'attendance',
-    keywords: ['考勤','签到','出勤','点名','未到','请假'],
-    title: '考勤签到指南',
-    content: '考勤记录可通过以下方式操作：\n1. 在排课表右击时间段可标记考勤\n2. 考勤状态包括：出勤、请假、缺勤\n3. 请假需提前在系统提交申请\n4. 出勤率将影响学生综合评定',
-    type: 'info',
-    priority: 3,
-  },
-  {
-    id: 'class_management',
-    keywords: ['创建班级','班级管理','开设班级','新班级'],
-    title: '班级创建指南',
-    content: '创建班级需填写以下信息：\n1. 班级名称（如：日T4）\n2. 班级类型（GY/KET/PET/FCE/OTHER/自定义）\n3. 添加学生名单\n创建完成后可配置工作流和排课信息。',
-    type: 'document',
-    priority: 3,
-  },
-  {
-    id: 'retest',
-    keywords: ['重测','补考','重测名单','补考名单'],
-    title: '重测管理说明',
-    content: '重测名单管理：\n1. 在小测管理中可标记需重测的学生\n2. 重测名单会同步显示在小测概览\n3. 完成重测后需更新小测记录状态\n4. 重测成绩同样计入学习档案',
-    type: 'info',
-    priority: 2,
-  },
-  {
-    id: 'homework',
-    keywords: ['作业','作业评估','批改作业','作业批改','作业评价'],
-    title: '作业评估标准',
-    content: '作业评估包含三个维度：\n1. 完成度：是否按时提交并完成全部内容\n2. 准确率：知识掌握程度的量化指标\n3. 书写质量：规范性和整洁度的综合评定',
-    type: 'document',
-    priority: 2,
-  },
+const defaultEntries: KnowledgeEntry[] = [
+  { id: 'kb-1', keywords: ['备课', '教案', '教学设计'], title: '备课指南', content: '备课是教学工作的首要环节...', type: 'template', url: '', priority: 5 },
+  { id: 'kb-2', keywords: ['课堂', '互动', '管理'], title: '课堂互动技巧', content: '通过提问、小组讨论等方式提高学生参与度...', type: 'document', url: '', priority: 4 },
+  { id: 'kb-3', keywords: ['作业', '批改', '反馈'], title: '作业批改标准', content: '作业批改应及时、准确、有针对性...', type: 'info', url: '', priority: 3 },
+  { id: 'kb-4', keywords: ['家长', '沟通', '联系'], title: '家长沟通话术模板', content: '尊敬的家长您好，我是xx老师...', type: 'template', url: '', priority: 4 },
+  { id: 'kb-5', keywords: ['考试', '评估', '分析'], title: '学情分析报告模板', content: '本次考试整体情况：...', type: 'template', url: '', priority: 3 },
+  { id: 'kb-6', keywords: ['教学', '资源', '网站'], title: '教学资源网站汇总', content: '1. 学科网\n2. 国家中小学智慧教育平台\n3. 一师一优课', type: 'link', url: 'https://www.zxxk.com', priority: 2 },
+  { id: 'kb-7', keywords: ['班会', '主题', '活动'], title: '班会主题设计方案', content: '月度班会主题设计方案汇总...', type: 'document', url: '', priority: 3 },
+  { id: 'kb-8', keywords: ['学生', '心理', '辅导'], title: '学生心理辅导指南', content: '常见学生心理问题及应对策略...', type: 'document', url: '', priority: 4 },
+  { id: 'kb-9', keywords: ['AI', '教学', '工具'], title: 'AI辅助教学工具推荐', content: '1. 文心一言\n2. Kimi\n3. 通义千问', type: 'info', url: '', priority: 2 },
+  { id: 'kb-10', keywords: ['课程', '标准', '大纲'], title: '课程大纲编写规范', content: '课程大纲应包括：课程目标、内容安排、教学方法、考核方式...', type: 'document', url: '', priority: 3 },
+  { id: 'kb-11', keywords: ['板书', '设计', '技巧'], title: '板书设计技巧', content: '优秀的板书设计应做到：重点突出、结构清晰、布局合理...', type: 'info', url: '', priority: 2 },
+  { id: 'kb-12', keywords: ['安全教育', '预案', '应急'], title: '班级安全应急预案', content: '一、火灾逃生\n二、地震避险\n三、突发疾病...', type: 'document', url: '', priority: 5 },
 ]
 
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
-}
-
-function getFromStorage(): KnowledgeEntry[] {
-  if (typeof window === 'undefined') return DEFAULT_KNOWLEDGE_BASE
+function getLocalKnowledgeBase(): KnowledgeEntry[] {
+  if (typeof window === 'undefined') return []
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) {
-      saveToStorage(DEFAULT_KNOWLEDGE_BASE)
-      return DEFAULT_KNOWLEDGE_BASE
+    const stored = localStorage.getItem('tabuddy_knowledge_base')
+    if (stored) {
+      return JSON.parse(stored)
     }
-    return JSON.parse(stored)
-  } catch {
-    return DEFAULT_KNOWLEDGE_BASE
-  }
+  } catch { }
+  return []
 }
 
-function saveToStorage(data: KnowledgeEntry[]): void {
+function saveLocalKnowledgeBase(entries: KnowledgeEntry[]): void {
+  if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-    window.dispatchEvent(new CustomEvent('knowledgeBaseChanged'))
-  } catch {
-  }
+    localStorage.setItem('tabuddy_knowledge_base', JSON.stringify(entries))
+  } catch { }
 }
 
 export function getKnowledgeBase(): KnowledgeEntry[] {
-  return getFromStorage()
-}
-
-export function getKnowledgeEntry(id: string): KnowledgeEntry | undefined {
-  return getFromStorage().find(e => e.id === id)
-}
-
-export function saveKnowledgeEntry(entry: KnowledgeEntry): void {
-  const entries = getFromStorage()
-  const index = entries.findIndex(e => e.id === entry.id)
-  if (index >= 0) {
-    entries[index] = entry
-  } else {
-    entries.push(entry)
+  if (isCacheLoaded()) {
+    const cache = getCache()
+    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+    return entries.length > 0 ? entries : defaultEntries
   }
-  saveToStorage(entries)
+  const local = getLocalKnowledgeBase()
+  if (local.length > 0) {
+    localFallback = local
+    return local
+  }
+  return defaultEntries
 }
 
-export function createKnowledgeEntry(data: Omit<KnowledgeEntry, 'id'>): KnowledgeEntry {
-  const entry: KnowledgeEntry = { ...data, id: generateId() }
-  const entries = getFromStorage()
-  entries.push(entry)
-  saveToStorage(entries)
-  return entry
+export function addKnowledgeEntry(entry: KnowledgeEntry): void {
+  if (isCacheLoaded()) {
+    const cache = getCache()
+    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+    entries.push(entry)
+    triggerSync()
+  } else {
+    localFallback.push(entry)
+    saveLocalKnowledgeBase(localFallback)
+  }
+}
+
+export function updateKnowledgeEntry(updated: KnowledgeEntry): void {
+  if (isCacheLoaded()) {
+    const cache = getCache()
+    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+    const index = entries.findIndex(e => e.id === updated.id)
+    if (index !== -1) {
+      entries[index] = updated
+      triggerSync()
+    }
+  } else {
+    const index = localFallback.findIndex(e => e.id === updated.id)
+    if (index !== -1) {
+      localFallback[index] = updated
+      saveLocalKnowledgeBase(localFallback)
+    }
+  }
 }
 
 export function deleteKnowledgeEntry(id: string): void {
-  const entries = getFromStorage().filter(e => e.id !== id)
-  saveToStorage(entries)
+  if (isCacheLoaded()) {
+    const cache = getCache()
+    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+    const index = entries.findIndex(e => e.id === id)
+    if (index !== -1) {
+      entries.splice(index, 1)
+      triggerSync()
+    }
+  } else {
+    const index = localFallback.findIndex(e => e.id === id)
+    if (index !== -1) {
+      localFallback.splice(index, 1)
+      saveLocalKnowledgeBase(localFallback)
+    }
+  }
+}
+
+export function getEntryById(id: string): KnowledgeEntry | undefined {
+  if (isCacheLoaded()) {
+    const entries = getCache().knowledgeEntries as unknown as KnowledgeEntry[]
+    return entries.find(e => e.id === id)
+  }
+  return localFallback.find(e => e.id === id)
+}
+
+export function saveKnowledgeEntry(entry: KnowledgeEntry): void {
+  addKnowledgeEntry(entry)
+}
+
+export function createKnowledgeEntry(entry: KnowledgeEntry): void {
+  addKnowledgeEntry(entry)
 }
 
 export function resetKnowledgeBase(): void {
-  saveToStorage(DEFAULT_KNOWLEDGE_BASE)
+  if (isCacheLoaded()) {
+    const cache = getCache()
+    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+    entries.length = 0
+    defaultEntries.forEach(e => entries.push({ ...e }))
+    triggerSync()
+  }
 }
 
-export function matchKnowledgeBase(query: string): KnowledgeEntry | null {
-  const lower = query.toLowerCase()
-  const entries = getFromStorage()
-  const scored = entries
-    .map(entry => {
-      const matchCount = entry.keywords.filter(kw => lower.includes(kw.toLowerCase())).length
-      return { entry, score: matchCount * entry.priority }
-    })
-    .filter(item => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-  if (scored.length > 0) return scored[0].entry
-
-  const publicMatch = matchPublicKnowledgeBase(query)
-  return publicMatch
+export function matchKnowledgeBase(query: string): KnowledgeEntry[] {
+  if (!query) return []
+  const q = query.toLowerCase()
+  return getKnowledgeBase().filter(entry =>
+    entry.keywords.some(k => k.toLowerCase().includes(q)) ||
+    entry.title.toLowerCase().includes(q) ||
+    entry.content.toLowerCase().includes(q)
+  )
 }

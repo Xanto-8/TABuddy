@@ -175,7 +175,14 @@ export default function HelpPage() {
     }
     setSubmitting(true)
     setTimeout(() => {
-      submitFeedback(feedbackType, feedbackDesc.trim(), screenshot || undefined)
+      submitFeedback({
+        id: `fb-${Date.now()}`,
+        type: feedbackType,
+        description: feedbackDesc.trim(),
+        screenshot: screenshot || undefined,
+        createdAt: new Date(),
+        status: 'pending',
+      })
       setSubmitting(false)
       setSubmitted(true)
       toast.success('反馈提交成功！预计1-3个工作日内回复')

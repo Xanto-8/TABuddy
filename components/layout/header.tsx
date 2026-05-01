@@ -10,7 +10,7 @@ import { ConfettiEffect } from '@/components/ui/confetti-effect'
 import { useSidebar } from '@/components/providers/sidebar-provider'
 import { NotificationCenter } from '@/components/notification/notification-center'
 import { useAuth } from '@/lib/auth-store'
-import { getSavedAccounts, saveAccount, removeAccount, backupCurrentUserData, type SavedAccount, ACCOUNT_PROFILES } from '@/lib/account-store'
+import { getSavedAccounts, saveAccount, removeAccount, savePassword, removePassword, type SavedAccount, ACCOUNT_PROFILES } from '@/lib/account-store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -216,9 +216,6 @@ export function Header() {
           onSwitch={async (targetUsername) => {
             setSwitching(true)
             try {
-              if (user?.username) {
-                backupCurrentUserData(user.username)
-              }
               logout()
               setShowSwitchModal(false)
               toast.info('已退出，请登录新账号')
@@ -277,11 +274,9 @@ function SwitchAccountModal({
     }
 
     const profile = ACCOUNT_PROFILES[newUsername.trim()]
+    savePassword(newUsername.trim(), newPassword.trim())
     const newAccount: SavedAccount = {
       username: newUsername.trim(),
-      password: newPassword.trim(),
-      isAdmin: newUsername.trim() === 'admin',
-      displayName: profile?.displayName || newUsername.trim(),
       subtitle: profile?.subtitle || '',
     }
     saveAccount(newAccount)

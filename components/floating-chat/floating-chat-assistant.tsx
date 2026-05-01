@@ -492,17 +492,18 @@ export function FloatingChatAssistant() {
   const handleLocalChat = useCallback(async (text: string) => {
     const trimmed = text.trim()
 
-    const knowledgeMatch = matchKnowledgeBase(trimmed)
-    if (knowledgeMatch) {
-      const contentText = knowledgeMatch.url
-        ? `${knowledgeMatch.content}\n\n${knowledgeMatch.url}`
-        : knowledgeMatch.content
+    const knowledgeResults = matchKnowledgeBase(trimmed)
+    if (knowledgeResults.length > 0) {
+      const match = knowledgeResults[0]
+      const contentText = match.url
+        ? `${match.content}\n\n${match.url}`
+        : match.content
       addMessage({
         id: generateId(),
         role: 'assistant',
         content: contentText,
         timestamp: Date.now(),
-        url: knowledgeMatch.url,
+        url: match.url,
         type: 'knowledge',
       })
       return

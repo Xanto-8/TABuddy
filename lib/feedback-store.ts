@@ -1,54 +1,59 @@
-'use client'
+import { UserFeedback } from '@/types'
+import { getCache, isCacheLoaded, triggerSync } from './store'
 
-import { UserFeedback, FeedbackType } from '@/types'
+let localFallback: UserFeedback[] = []
 
-const FEEDBACK_KEY = 'tabuddy_user_feedback'
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
-}
-
-export function getFeedbacks(): UserFeedback[] {
+function getLocalFeedbacks(): UserFeedback[] {
   if (typeof window === 'undefined') return []
   try {
-    const raw = localStorage.getItem(FEEDBACK_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
+    const stored = localStorage.getItem('tabuddy_user_feedback')
+    return stored ? JSON.parse(stored) : []
+  } catch { return [] }
+}
+
+function saveLocalFeedbacks(feedbacks: UserFeedback[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem('tabuddy_user_feedback', JSON.stringify(feedbacks))
+  } catch { }
+}
+
+export function getUserFeedbacks(): UserFeedback[] {
+  if (isCacheLoaded()) {
+    return getCache().userFeedbacks
+  }
+  const local = getLocalFeedbacks()
+  localFallback = local
+  return local
+}
+
+export function submitFeedback(feedback: UserFeedback): void {
+  addUserFeedback(feedback)
+}
+
+export function addUserFeedback(feedback: UserFeedback): void {
+  if (isCacheLoaded()) {
+    getCache().userFeedbacks.push(feedback)
+    triggerSync()
+  } else {
+    localFallback.push(feedback)
+    saveLocalFeedbacks(localFallback)
   }
 }
 
-export function submitFeedback(type: FeedbackType, description: string, screenshot?: string): UserFeedback {
-  const feedbacks = getFeedbacks()
-  const newFeedback: UserFeedback = {
-    id: generateId(),
-    type,
-    description,
-    screenshot,
-    createdAt: new Date(),
-    status: 'pending',
+export function deleteUserFeedback(id: string): void {
+  if (isCacheLoaded()) {
+    const feedbacks = getCache().userFeedbacks
+    const index = feedbacks.findIndex(f => f.id === id)
+    if (index !== -1) {
+      feedbacks.splice(index, 1)
+      triggerSync()
+    }
+  } else {
+    const index = localFallback.findIndex(f => f.id === id)
+    if (index !== -1) {
+      localFallback.splice(index, 1)
+      saveLocalFeedbacks(localFallback)
+    }
   }
-  feedbacks.unshift(newFeedback)
-  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(feedbacks))
-  return newFeedback
-}
-
-export function replyFeedback(id: string, reply: string): boolean {
-  const feedbacks = getFeedbacks()
-  const index = feedbacks.findIndex((f) => f.id === id)
-  if (index === -1) return false
-  feedbacks[index].reply = reply
-  feedbacks[index].repliedAt = new Date()
-  feedbacks[index].status = 'resolved'
-  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(feedbacks))
-  return true
-}
-
-export function updateFeedbackStatus(id: string, status: 'pending' | 'resolved' | 'closed'): boolean {
-  const feedbacks = getFeedbacks()
-  const index = feedbacks.findIndex((f) => f.id === id)
-  if (index === -1) return false
-  feedbacks[index].status = status
-  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(feedbacks))
-  return true
 }
