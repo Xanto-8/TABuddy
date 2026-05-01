@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Camera, Save, Lock, AlertCircle, CheckCircle2, Eye, EyeOff, X } from 'lucide-react'
+import { User, Camera, Save, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { toast } from 'sonner'
 
 function getColor(name?: string) {
   if (!name) return 'bg-primary/10 text-primary'
@@ -135,24 +136,23 @@ export default function SettingsPage() {
     }
 
     if (!oldPassword) {
-      setMessage({ type: 'error', text: '请输入当前密码' })
+      toast.error('请输入当前密码')
       return
     }
     if (!newPassword) {
-      setMessage({ type: 'error', text: '请输入新密码' })
+      toast.error('请输入新密码')
       return
     }
     if (newPassword.length < 6) {
-      setMessage({ type: 'error', text: '新密码至少6位' })
+      toast.error('新密码至少6位')
       return
     }
     if (newPassword !== confirmPassword) {
-      setMessage({ type: 'error', text: '两次输入的新密码不一致' })
+      toast.error('两次输入的新密码不一致')
       return
     }
 
     setChangingPassword(true)
-    setMessage(null)
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_token') : null
       const res = await fetch('/api/auth/change-password', {
@@ -165,17 +165,16 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || '修改密码失败' })
+        toast.error(data.error || '修改密码失败')
         return
       }
-      setMessage({ type: 'success', text: '密码修改成功' })
+      toast.success('密码修改成功')
       setOldPassword('')
       setNewPassword('')
       setConfirmPassword('')
       setShowChangePassword(false)
-      setTimeout(() => setMessage(null), 3000)
     } catch {
-      setMessage({ type: 'error', text: '修改密码失败，请重试' })
+      toast.error('修改密码失败，请重试')
     } finally {
       setChangingPassword(false)
     }
@@ -186,7 +185,6 @@ export default function SettingsPage() {
     setOldPassword('')
     setNewPassword('')
     setConfirmPassword('')
-    setMessage(null)
   }
 
   const currentAvatar = avatarPreview || user.avatar || ''
