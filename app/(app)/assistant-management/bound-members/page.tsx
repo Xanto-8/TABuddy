@@ -90,6 +90,7 @@ export default function BoundMembersPage() {
   const [activeTab, setActiveTab] = useState<'members' | 'banned-ips'>('members')
   const [bannedIPs, setBannedIPs] = useState<BannedIPItem[]>([])
   const [bannedIPsLoading, setBannedIPsLoading] = useState(false)
+  const [bannedCount, setBannedCount] = useState(0)
   const [unbanning, setUnbanning] = useState<string | null>(null)
   const [showUnbanConfirm, setShowUnbanConfirm] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
@@ -117,10 +118,6 @@ export default function BoundMembersPage() {
   }, [token])
 
   useEffect(() => {
-    fetchMembers()
-  }, [fetchMembers])
-
-  useEffect(() => {
     if (!user || user.role !== 'classadmin') return
     const id = setInterval(fetchMembers, 8000)
     return () => clearInterval(id)
@@ -133,13 +130,31 @@ export default function BoundMembersPage() {
         headers: { authorization: `Bearer ${token}` },
       })
       const result = await res.json()
-      if (result.data) setBannedIPs(result.data)
+      if (result.data) {
+        setBannedIPs(result.data)
+        setBannedCount(result.data.length)
+      }
     } catch {
       setMessage({ type: 'error', text: '获取封禁列表失败' })
     } finally {
       setBannedIPsLoading(false)
     }
   }, [token])
+
+  const fetchBannedCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/invite-code/banned-ips', {
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const result = await res.json()
+      if (result.data) setBannedCount(result.data.length)
+    } catch {}
+  }, [token])
+
+  useEffect(() => {
+    fetchMembers()
+    fetchBannedCount()
+  }, [fetchMembers, fetchBannedCount])
 
   useEffect(() => {
     if (activeTab === 'banned-ips') fetchBannedIPs()
@@ -159,6 +174,7 @@ export default function BoundMembersPage() {
       const result = await res.json()
       if (result.data) {
         setBannedIPs(prev => prev.filter(b => b.id !== item.id))
+        setBannedCount(prev => prev - 1)
         setMessage({ type: 'success', text: result.data.message || '解封成功' })
       } else {
         setMessage({ type: 'error', text: result.error || '撤销封禁失败' })
@@ -322,6 +338,11 @@ export default function BoundMembersPage() {
           <span className="flex items-center gap-1.5">
             <Ban className="w-4 h-4" />
             IP 封禁管理
+            {bannedCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                {bannedCount}
+              </span>
+            )}
           </span>
         </button>
       </div>
@@ -368,39 +389,62 @@ export default function BoundMembersPage() {
                   className="rounded-xl border border-border bg-card overflow-hidden transition-all duration-200 hover:shadow-md animate-slide-in"
                   style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
                 >
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : a.id)}
-                    className="w-full flex items-center gap-4 p-4 hover:bg-accent/50 transition-colors text-left"
-                  >
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${getRoleStyle(a.role)}`}>
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">{a.displayName || a.username}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${getRoleStyle(a.role)}`}>
-                          {getRoleLabel(a.role)}
-                        </span>
+                  <div className="flex items-center gap-3 p-4">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : a.id)}
+                      className="flex items-center gap-4 flex-1 min-w-0 text-left hover:bg-accent/50 transition-colors rounded-lg"
+                    >
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${getRoleStyle(a.role)}`}>
+                        <User className="w-5 h-5" />
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-xs text-muted-foreground">@{a.username}</span>
-                        {a.className && (
-                          <span className="text-xs text-muted-foreground">{a.className}</span>
-                        )}
-                        {m.bindedAt && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            绑定 {timeAgo(m.bindedAt)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">{a.displayName || a.username}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${getRoleStyle(a.role)}`}>
+                            {getRoleLabel(a.role)}
                           </span>
-                        )}
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${onlineText(a.lastActiveAt).color}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${onlineText(a.lastActiveAt).dot}`} />
-                          {onlineText(a.lastActiveAt).label}
-                        </span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          <span className="text-xs text-muted-foreground">@{a.username}</span>
+                          {a.className && (
+                            <span className="text-xs text-muted-foreground">{a.className}</span>
+                          )}
+                          {m.bindedAt && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              绑定 {timeAgo(m.bindedAt)}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${onlineText(a.lastActiveAt).color}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${onlineText(a.lastActiveAt).dot}`} />
+                            {onlineText(a.lastActiveAt).label}
+                          </span>
+                        </div>
                       </div>
+                    </button>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          setEditingMember(m)
+                          setNewDisplayName(a.displayName || '')
+                          setNewPassword('')
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        <Key className="w-3 h-3" />
+                        修改密码
+                      </button>
+                      <button
+                        onClick={() => setDeletingMember(m)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        注销账号
+                      </button>
+                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                  </button>
+                  </div>
 
                   <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
                     isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
@@ -443,27 +487,6 @@ export default function BoundMembersPage() {
                           <span className="text-muted-foreground shrink-0">登录地点:</span>
                           <span className="text-xs">{a.lastLoginCountry || a.lastLoginRegion ? `${a.lastLoginCountry} ${a.lastLoginRegion} ${a.lastLoginCity}`.trim() : '未知'}</span>
                         </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => {
-                            setEditingMember(m)
-                            setNewDisplayName(a.displayName || '')
-                            setNewPassword('')
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                        >
-                          <Key className="w-3 h-3" />
-                          修改密码
-                        </button>
-                        <button
-                          onClick={() => setDeletingMember(m)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          注销账号
-                        </button>
                       </div>
                     </div>
                   </div>
