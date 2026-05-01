@@ -112,10 +112,23 @@ export default function AdminUsersPage() {
     setMessage(null)
 
     const body: Record<string, unknown> = {}
-    if (newPassword) body.password = newPassword
-    if (newDisplayName) body.displayName = newDisplayName
-    if (newRole) body.role = newRole
-    body.classGroupId = newClassGroupId || null
+
+    if (newPassword) {
+      body.password = newPassword
+    }
+
+    if (newDisplayName !== editingUser.displayName) {
+      body.displayName = newDisplayName
+    }
+
+    if (newRole && newRole !== editingUser.role) {
+      body.role = newRole
+    }
+
+    const newClassId = newClassGroupId || null
+    if (newClassId !== editingUser.classGroupId) {
+      body.classGroupId = newClassId
+    }
 
     if (Object.keys(body).length === 0) {
       setMessage({ type: 'error', text: '没有需要更新的字段' })

@@ -75,12 +75,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (role !== undefined) {
+      const normalizedRole = String(role).trim().toLowerCase()
       const VALID_ROLES = ['superadmin', 'classadmin', 'assistant', 'student']
-      if (!VALID_ROLES.includes(role)) {
-        return NextResponse.json({ error: '无效的角色类型' }, { status: 400 })
+      if (!VALID_ROLES.includes(normalizedRole)) {
+        return NextResponse.json({
+          error: `无效的角色类型: "${role}" (${typeof role})`,
+          receivedRole: role,
+          validRoles: VALID_ROLES,
+        }, { status: 400 })
       }
-      updateData.role = role
-      if (role === 'superadmin') {
+      updateData.role = normalizedRole
+      if (normalizedRole === 'superadmin') {
         updateData.classGroupId = null
       }
     }
