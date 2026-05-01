@@ -109,21 +109,33 @@ function isPrivateIP(ip: string): boolean {
 }
 
 export async function getLocationFromRequest(request: NextRequest): Promise<IPLocation> {
-  const vercelIP = (request as any).ip
-  const vercelGeo = (request as any).geo
+  const ip = getClientIP(request)
+  const cfCountry = request.headers.get('cf-ipcountry')
 
-  if (vercelIP && vercelGeo && vercelGeo.country) {
-    return {
-      ip: vercelIP,
-      country: getCountryName(vercelGeo.country),
-      region: getRegionName(vercelGeo.country, vercelGeo.region),
-      city: vercelGeo.city || '',
+  const behindCloudflare = !!request.headers.get('cf-connecting-ip') || !!cfCountry
+
+  if (!behindCloudflare && !isPrivateIP(ip)) {
+    const vercelGeo = (request as any).geo
+    if (vercelGeo?.country) {
+      return {
+        ip: (request as any).ip || ip,
+        country: getCountryName(vercelGeo.country),
+        region: getRegionName(vercelGeo.country, vercelGeo.region),
+        city: vercelGeo.city || '',
+      }
     }
   }
 
-  const ip = getClientIP(request)
-
   if (isPrivateIP(ip) || !ip) {
+    const vercelGeo = (request as any).geo
+    if (vercelGeo?.country) {
+      return {
+        ip: (request as any).ip || ip,
+        country: getCountryName(vercelGeo.country),
+        region: getRegionName(vercelGeo.country, vercelGeo.region),
+        city: vercelGeo.city || '',
+      }
+    }
     return { ip, country: '', region: '', city: '' }
   }
 
@@ -143,6 +155,10 @@ export async function getLocationFromRequest(request: NextRequest): Promise<IPLo
       }
     }
   } catch {
+  }
+
+  if (cfCountry) {
+    return { ip, country: getCountryName(cfCountry), region: '', city: '' }
   }
 
   return { ip, country: '', region: '', city: '' }

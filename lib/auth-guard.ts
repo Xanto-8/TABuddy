@@ -26,6 +26,8 @@ export function getTokenUser(request: NextRequest): TokenUser | null {
 }
 
 export function getClientIP(request: NextRequest): string {
+  const cfIP = request.headers.get('cf-connecting-ip')
+  if (cfIP) return cfIP.trim()
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) return forwarded.split(',')[0].trim()
   const realIp = request.headers.get('x-real-ip')
