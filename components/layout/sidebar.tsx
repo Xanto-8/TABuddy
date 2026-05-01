@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   LayoutDashboard, BookOpen, ClipboardList, GraduationCap, FileText,
   MessageSquare, Settings,
-  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users, Activity, UserPlus,
+  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users, Activity, UserPlus, KeyRound,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSidebar } from '@/components/providers/sidebar-provider'
@@ -87,6 +87,7 @@ function SidebarDivider({ expanded }: { expanded: boolean }) {
 
 const CLASSADMIN_SPECIFIC_ITEMS = [
   { icon: UserPlus, label: '助教与绑定管理', href: '/assistant-management' },
+  { icon: KeyRound, label: '已绑定成员管理', href: '/assistant-management/bound-members' },
   { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
 ] as const
 
