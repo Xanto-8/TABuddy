@@ -18,9 +18,9 @@ import {
   getCurrentClassByTime,
 } from '@/lib/store'
 import { getWorkflowTodoStats } from '@/lib/workflow-store'
-import { processAgentInput, isOperationIntent } from '@/lib/agent/engine'
+import { processAgentInput, isOperationIntent, processAgentInputAsync } from '@/lib/agent/engine'
+import type { AgentResult, AgentCardData } from '@/lib/agent/types'
 import { MessageCircle, X, Send, Sparkles, ChevronDown, Trash2, Sun, Moon, Navigation } from 'lucide-react'
-import type { AgentCardData } from '@/lib/agent/types'
 import { AgentStepCard } from '@/components/agent/agent-step-card'
 
 
@@ -405,9 +405,7 @@ export function FloatingChatAssistant() {
     }
   }, [])
 
-  const handleAgentResponse = useCallback((text: string) => {
-    const agentResult = processAgentInput(text)
-
+  const displayAgentResult = useCallback((agentResult: AgentResult) => {
     if (agentResult.sessionId) {
       setAgentSessionId(agentResult.sessionId)
     }
@@ -449,6 +447,11 @@ export function FloatingChatAssistant() {
       })
     }
   }, [addMessage])
+
+  const handleAgentResponse = useCallback((text: string) => {
+    const agentResult = processAgentInput(text)
+    displayAgentResult(agentResult)
+  }, [displayAgentResult])
 
   const handleApiChat = useCallback(async (text: string) => {
     const classContext = buildClassContext()
@@ -580,13 +583,21 @@ export function FloatingChatAssistant() {
     }
 
     try {
-      if (agentSessionId || isOperationIntent(trimmed)) {
+      if (agentSessionId) {
+        handleAgentResponse(trimmed)
+      } else if (isOperationIntent(trimmed)) {
         handleAgentResponse(trimmed)
       } else {
-        try {
-          await handleApiChat(trimmed)
-        } catch {
-          await handleLocalChat(trimmed)
+        const agentResult = await processAgentInputAsync(trimmed)
+        const isAgentAction = agentResult.cardData || agentResult.isAgentMode || agentResult.sessionId
+        if (isAgentAction) {
+          displayAgentResult(agentResult)
+        } else {
+          try {
+            await handleApiChat(trimmed)
+          } catch {
+            await handleLocalChat(trimmed)
+          }
         }
       }
     } catch {
@@ -599,7 +610,7 @@ export function FloatingChatAssistant() {
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, agentSessionId, buildClassContext, addMessage, handleAgentResponse, handleApiChat, handleLocalChat, handleToggleTheme])
+  }, [isLoading, agentSessionId, buildClassContext, addMessage, handleAgentResponse, displayAgentResult, handleApiChat, handleLocalChat, handleToggleTheme])
 
   const handleAgentCancel = useCallback(() => {
     sendMessage('取消')

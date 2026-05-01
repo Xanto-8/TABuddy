@@ -901,3 +901,134 @@ export function isOperationIntent(input: string): boolean {
   ]
   return knownQuestions.some(q => trimmed.startsWith(q))
 }
+
+// ===== LLM-based Intent Classification (Fallback) =====
+
+interface LLMClassificationResponse {
+  intent: string | null
+  params: Record<string, string>
+  explanation: string
+  confidence: number
+}
+
+async function classifyWithLLM(input: string): Promise<{ intent: AgentIntent | null; params: AgentParam }> {
+  try {
+    const response = await fetch('/api/agent/classify-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: input }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+
+    const result = await response.json()
+
+    if (!result.success || !result.data) {
+      throw new Error('Invalid API response')
+    }
+
+    const classification: LLMClassificationResponse = result.data
+
+    if (!classification.intent || classification.confidence < 0.6) {
+      return { intent: null, params: {} }
+    }
+
+    const intent = classification.intent as AgentIntent
+    const params = mapLLMParams(classification.params)
+
+    return { intent, params }
+  } catch (error) {
+    console.error('LLM intent classification failed:', (error as Error).message)
+    return { intent: null, params: {} }
+  }
+}
+
+function mapLLMParams(llmParams: Record<string, string>): AgentParam {
+  const params: AgentParam = {}
+  if (llmParams.className) params.className = llmParams.className
+  if (llmParams.classType) params.classType = llmParams.classType
+  if (llmParams.studentName) params.studentName = llmParams.studentName
+  if (llmParams.students) params.students = llmParams.students
+  if (llmParams.taskName) params.taskName = llmParams.taskName
+  if (llmParams.reason) params.reason = llmParams.reason
+  if (llmParams.quizNotes) params.quizNotes = llmParams.quizNotes
+  if (llmParams.quizCompletion) params.quizCompletion = llmParams.quizCompletion
+  if (llmParams.taskStage) params.taskStage = llmParams.taskStage
+  if (llmParams.retestStudents) {
+    params.retestStudents = llmParams.retestStudents.split(/[,，、\s]+/).filter(Boolean)
+  }
+  return params
+}
+
+export async function processAgentInputAsync(input: string): Promise<AgentResult> {
+  const trimmed = input.trim()
+  if (!trimmed) {
+    return { success: false, message: '请告诉我你需要什么帮助？', syncTo: '' }
+  }
+
+  if (activeSession && !activeSession.completed && !activeSession.cancelled) {
+    return processAgentStep(trimmed)
+  }
+
+  if (isCancel(trimmed)) {
+    if (activeSession) {
+      return cancelAgentSession()
+    }
+    return { success: true, message: '好的，已退出操作模式。有什么我可以帮你的吗？', syncTo: '' }
+  }
+
+  const generalResponse = buildGeneralResponse(trimmed)
+  if (generalResponse) {
+    return generalResponse
+  }
+
+  const { intent, params } = classifyIntent(trimmed)
+
+  if (!intent) {
+    const llmResult = await classifyWithLLM(trimmed)
+    if (llmResult.intent) {
+      const steps = STEP_DEFINITIONS[llmResult.intent]
+      if (!steps || steps.length === 0) {
+        const handler = handlerMap[llmResult.intent]
+        if (handler) {
+          const action: AgentAction = { intent: llmResult.intent, params: llmResult.params, rawInput: trimmed }
+          return handler(action)
+        }
+      }
+      const { result } = startSession(llmResult.intent, llmResult.params)
+      return result
+    }
+
+    return {
+      success: false,
+      message: '未识别到操作指令，请问你是否需要：\n1. 创建/管理班级\n2. 管理工作流任务\n3. 标记重点关注学生\n4. 录入重测名单\n5. 更新小测情况\n\n或者你也可以直接提问。',
+      syncTo: '',
+      needMoreInfo: true,
+    }
+  }
+
+  const steps = STEP_DEFINITIONS[intent]
+  if (!steps || steps.length === 0) {
+    const handler = handlerMap[intent]
+    if (!handler) {
+      return { success: false, message: '暂时不支持该操作，请稍后再试', syncTo: '' }
+    }
+    const action: AgentAction = { intent, params, rawInput: trimmed }
+    return handler(action)
+  }
+
+  const { result } = startSession(intent, params)
+  return result
+}
+
+export async function isOperationIntentAsync(input: string): Promise<boolean> {
+  if (isOperationIntent(input)) return true
+
+  const trimmed = input.trim()
+  if (!trimmed || isQuestion(trimmed)) return false
+
+  const llmResult = await classifyWithLLM(trimmed)
+  return llmResult.intent !== null
+}
