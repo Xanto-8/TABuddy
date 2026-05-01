@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-store'
-import { Search, Shield, User, ChevronDown, ChevronUp, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle, MapPin, Globe, Ban, Wifi } from 'lucide-react'
+import { Search, Shield, User, ChevronDown, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle, MapPin, Globe, Ban } from 'lucide-react'
 import Link from 'next/link'
 
 interface ClassGroup {
@@ -263,7 +263,7 @@ export default function AdminUsersPage() {
       </div>
 
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+        <div className={`animate-slide-in p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
           {message.type === 'success' ? <Check className="w-4 h-4 inline mr-1" /> : <X className="w-4 h-4 inline mr-1" />}
           {message.text}
         </div>
@@ -290,10 +290,11 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="grid gap-3">
-        {filteredUsers.map(u => (
+        {filteredUsers.map((u, index) => (
           <div
             key={u.id}
-            className="rounded-xl border border-border bg-card overflow-hidden transition-all"
+            className="rounded-xl border border-border bg-card overflow-hidden transition-all duration-200 hover:shadow-md animate-slide-in"
+            style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
           >
             <button
               onClick={() => setExpandedId(expandedId === u.id ? null : u.id)}
@@ -320,10 +321,12 @@ export default function AdminUsersPage() {
                   </span>
                 </div>
               </div>
-              {expandedId === u.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${expandedId === u.id ? 'rotate-180' : ''}`} />
             </button>
 
-            {expandedId === u.id && (
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              expandedId === u.id ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+            }`}>
               <div className="border-t border-border p-4 space-y-3 bg-muted/30">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
                   <div className="flex items-center gap-1 min-w-0">
@@ -388,7 +391,7 @@ export default function AdminUsersPage() {
                   </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         ))}
         {filteredUsers.length === 0 && !loading && (
@@ -397,8 +400,8 @@ export default function AdminUsersPage() {
       </div>
 
       {editingUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setEditingUser(null)}>
-          <div className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setEditingUser(null)}>
+          <div className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold">编辑用户 - {editingUser.displayName || editingUser.username}</h3>
 
             <div className="space-y-3">
@@ -474,8 +477,8 @@ export default function AdminUsersPage() {
       )}
 
       {deletingUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeletingUser(null)}>
-          <div className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setDeletingUser(null)}>
+          <div className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
