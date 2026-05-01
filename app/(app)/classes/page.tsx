@@ -187,7 +187,7 @@ export default function ClassesPage() {
                     e.preventDefault()
                     setMenuOpen(menuOpen === cls.id ? null : cls.id)
                   }}
-                  className="p-1.5 rounded-lg hover:bg-accent opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1.5 rounded-lg hover:bg-accent md:opacity-0 md:group-hover:opacity-100 transition-all"
                 >
                   <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                 </button>

@@ -130,21 +130,21 @@ export default function AdminClassesPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="w-6 h-6" />
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4 md:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <Users className="w-5 h-5 md:w-6 md:h-6 shrink-0" />
             班级管理
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">创建和管理系统中的班级组织</p>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">创建和管理系统中的班级组织</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
+          className="shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          新建班级
+          <span className="hidden sm:inline">新建班级</span>
         </button>
       </div>
 
@@ -210,18 +210,18 @@ export default function AdminClassesPage() {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{cg.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {cg.userCount} 人 · 创建于 {new Date(cg.createdAt).toLocaleDateString('zh-CN')}
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center shrink-0">
+                  <Users className="w-5 h-5 text-white" />
                 </div>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{cg.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {cg.userCount} 人 · 创建于 {new Date(cg.createdAt).toLocaleDateString('zh-CN')}
+                  </p>
+                </div>
+              </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => { setEditingId(cg.id); setEditingName(cg.name) }}

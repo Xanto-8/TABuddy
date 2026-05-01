@@ -148,11 +148,11 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <UsersIcon className="w-6 h-6" />
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
+            <UsersIcon className="w-5 h-5 md:w-6 md:h-6 shrink-0" />
             用户管理
           </h1>
           <p className="text-sm text-muted-foreground mt-1">管理所有注册用户的角色、班级和密码</p>
@@ -226,22 +226,22 @@ export default function AdminUsersPage() {
 
             {expandedId === u.id && (
               <div className="border-t border-border p-4 space-y-3 bg-muted/30">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">ID:</span>
-                    <span className="ml-2 font-mono text-xs">{u.id}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="text-muted-foreground shrink-0">ID:</span>
+                    <span className="font-mono text-xs truncate">{u.id}</span>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">密码:</span>
-                    <span className="ml-2 font-mono text-xs">{u.password}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground shrink-0">密码:</span>
+                    <span className="font-mono text-xs truncate">{u.password}</span>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">注册时间:</span>
-                    <span className="ml-2">{new Date(u.createdAt).toLocaleString('zh-CN')}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground shrink-0">注册时间:</span>
+                    <span className="text-xs">{new Date(u.createdAt).toLocaleString('zh-CN')}</span>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">最后活跃:</span>
-                    <span className="ml-2">{u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleString('zh-CN') : '从未'}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground shrink-0">最后活跃:</span>
+                    <span className="text-xs">{u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleString('zh-CN') : '从未'}</span>
                   </div>
                 </div>
 

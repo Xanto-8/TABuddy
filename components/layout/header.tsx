@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProgress } from '@/components/providers/progress-provider'
-import { Search, User, ChevronDown, Home, Menu, LogOut, Settings, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2 } from 'lucide-react'
+import { Search, User, ChevronDown, Home, Menu, LogOut, Settings, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2, SearchX } from 'lucide-react'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Button } from '@/components/ui/button'
 import { ConfettiEffect } from '@/components/ui/confetti-effect'
@@ -23,7 +23,9 @@ export function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [showSwitchModal, setShowSwitchModal] = useState(false)
   const [switching, setSwitching] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const profile = user ? ACCOUNT_PROFILES[user.username] : null
 
@@ -36,6 +38,12 @@ export function Header() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (mobileSearchOpen && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [mobileSearchOpen])
 
   const goHome = () => {
     setOpen(true)
@@ -56,8 +64,8 @@ export function Header() {
   return (
     <>
       <ConfettiEffect active={showCelebration} onComplete={dismissCelebration} />
-      <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6">
-      <div className="flex flex-1 items-center gap-4">
+      <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-3 md:px-6">
+      <div className="flex flex-1 items-center gap-2 md:gap-4">
         <button
           onClick={toggle}
           className="lg:hidden p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
@@ -75,129 +83,159 @@ export function Header() {
             <line x1="7" y1="3" x2="7" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
           </svg>
         </button>
-        <div className="flex-1">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="搜索任务、学生或资源..."
-              className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-          </div>
-        </div>
 
-        <div className="hidden lg:block ml-6 w-64">
-          {currentClass ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">当前课程进度</span>
-                <span className="text-muted-foreground">
-                  {courseCompletedTasks}/{courseTotalTasks} 任务
-                </span>
-              </div>
-              <ProgressBar value={courseProgress} />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>还有 {courseTotalTasks - courseCompletedTasks} 个任务待完成</span>
-                <span>{courseProgress}%</span>
-              </div>
+        {mobileSearchOpen ? (
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <div className="relative flex-1 max-w-full">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                type="search"
+                placeholder="搜索任务、学生或资源..."
+                className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
             </div>
-          ) : (
-            <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
-              暂无课程
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-4 ml-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={goHome}
-            className="hover:bg-accent text-muted-foreground hover:text-foreground"
-            title="回到主页"
-          >
-            <Home className="h-5 w-5" />
-          </Button>
-          <NotificationCenter />
-
-          <div className="hidden md:block relative" ref={dropdownRef}>
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-3 rounded-lg hover:bg-accent/50 transition-colors px-2 py-1.5"
+              onClick={() => setMobileSearchOpen(false)}
+              className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
             >
-              <div className="text-right">
-                <p className="text-sm font-medium">{profile?.displayName || user?.username || '用户'}</p>
-                <p className="text-xs text-muted-foreground">{profile?.subtitle || ''}</p>
-              </div>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={() => setMobileSearchOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="搜索"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+            <div className="hidden lg:block flex-1 max-w-md">
               <div className="relative">
-                {user?.avatar ? (
-                  <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-background">
-                    <img
-                      src={user.avatar}
-                      alt="头像"
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        const fallback = e.currentTarget.nextElementSibling
-                        if (fallback) (fallback as HTMLElement).style.display = 'flex'
-                      }}
-                    />
-                    <div className="hidden h-full w-full rounded-full bg-gradient-to-r from-primary to-secondary items-center justify-center" style={{ display: 'none' }}>
-                      <Shield className="h-5 w-5 text-white" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  placeholder="搜索任务、学生或资源..."
+                  className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+            </div>
+
+            <div className="hidden lg:block ml-6 w-64">
+              {currentClass ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">当前课程进度</span>
+                    <span className="text-muted-foreground">
+                      {courseCompletedTasks}/{courseTotalTasks} 任务
+                    </span>
+                  </div>
+                  <ProgressBar value={courseProgress} />
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>还有 {courseTotalTasks - courseCompletedTasks} 个任务待完成</span>
+                    <span>{courseProgress}%</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                  暂无课程
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1 md:gap-3 ml-auto">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={goHome}
+                className="hover:bg-accent text-muted-foreground hover:text-foreground"
+                title="回到主页"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
+              <NotificationCenter />
+
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 rounded-lg hover:bg-accent/50 transition-colors px-1 md:px-2 py-1.5"
+                >
+                  <div className="hidden md:block text-right">
+                    <p className="text-sm font-medium">{profile?.displayName || user?.username || '用户'}</p>
+                    <p className="text-xs text-muted-foreground">{profile?.subtitle || ''}</p>
+                  </div>
+                  <div className="relative">
+                    {user?.avatar ? (
+                      <div className="h-8 w-8 md:h-9 md:w-9 rounded-full overflow-hidden border-2 border-background">
+                        <img
+                          src={user.avatar}
+                          alt="头像"
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            const fallback = e.currentTarget.nextElementSibling
+                            if (fallback) (fallback as HTMLElement).style.display = 'flex'
+                          }}
+                        />
+                        <div className="hidden h-full w-full rounded-full bg-gradient-to-r from-primary to-secondary items-center justify-center" style={{ display: 'none' }}>
+                          <Shield className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                        <Shield className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                    <div className="absolute -bottom-1 -right-1 h-3 w-3 md:h-4 md:w-4 rounded-full border-2 border-background bg-success" />
+                  </div>
+                  <ChevronDown className={cn('hidden md:block h-4 w-4 text-muted-foreground transition-transform', dropdownOpen && 'rotate-180')} />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="text-sm font-medium text-foreground">{profile?.displayName || user?.username}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">@{user?.username}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => { setDropdownOpen(false); router.push('/profile') }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                      >
+                        <User className="w-4 h-4 text-muted-foreground" />
+                        个人信息
+                      </button>
+                      <button
+                        onClick={handleSwitchClick}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                      >
+                        <RefreshCw className="w-4 h-4 text-muted-foreground" />
+                        切换账号
+                      </button>
+                      <button
+                        onClick={() => { setDropdownOpen(false); router.push('/settings') }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                      >
+                        <Settings className="w-4 h-4 text-muted-foreground" />
+                        设置
+                      </button>
+                    </div>
+                    <div className="border-t border-border py-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        退出登录
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
-                    <Shield className="h-5 w-5 text-white" />
-                  </div>
                 )}
-                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-background bg-success" />
               </div>
-              <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', dropdownOpen && 'rotate-180')} />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm font-medium text-foreground">{profile?.displayName || user?.username}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">@{user?.username}</p>
-                </div>
-                <div className="py-1">
-                  <button
-                    onClick={() => { setDropdownOpen(false); router.push('/profile') }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-                  >
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    个人信息
-                  </button>
-                  <button
-                    onClick={handleSwitchClick}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-                  >
-                    <RefreshCw className="w-4 h-4 text-muted-foreground" />
-                    切换账号
-                  </button>
-                  <button
-                    onClick={() => { setDropdownOpen(false); router.push('/settings') }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-                  >
-                    <Settings className="w-4 h-4 text-muted-foreground" />
-                    设置
-                  </button>
-                </div>
-                <div className="border-t border-border py-1">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    退出登录
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </header>
 
@@ -359,7 +397,7 @@ function SwitchAccountModal({
                 {!isCurrent && !switching && (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRemoveAccount(account.username) }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100"
                     title="移除账号"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

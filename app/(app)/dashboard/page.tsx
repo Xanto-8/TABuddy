@@ -210,18 +210,18 @@ export default function DashboardPage() {
       <div className="space-y-6 pb-8">
         <WelcomeBanner data={data} />
 
-        <div className="grid grid-cols-1 desktop:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <ClassTodoCenter />
           <ScheduleAttendanceCard />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <ClassLearningOverview />
           <FeatureShortcuts />
           <WorkStatistics workStats={data.workStats} onRefresh={data.refreshData} />
         </div>
 
-        <div className="grid grid-cols-1 desktop:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <AtRiskStudentsPanel />
           <FocusTimer defaultMinutes={25} />
         </div>
