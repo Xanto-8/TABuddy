@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   LayoutDashboard, BookOpen, ClipboardList, GraduationCap, FileText,
   MessageSquare, Settings,
-  HelpCircle, X, GitBranch, Sun, Moon, Shield,
+  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSidebar } from '@/components/providers/sidebar-provider'
@@ -25,6 +25,7 @@ const MAIN_MENU_ITEMS = [
 
 const ADMIN_MENU_ITEMS = [
   { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
+  { icon: Users, label: '成员管理', href: '/admin/users' },
 ] as const
 
 const SECONDARY_MENU_ITEMS = [

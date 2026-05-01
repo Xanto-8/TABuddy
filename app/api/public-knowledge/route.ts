@@ -226,12 +226,12 @@ async function writeData(data: PublicKnowledgeEntryDTO[]): Promise<void> {
 // ---- Auth helper ----
 
 function verifyAdminToken(request: NextRequest): boolean {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return false
+  const token = authHeader.slice(7)
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return false
-    const token = authHeader.slice(7)
     const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'))
-    return decoded.username === 'admin'
+    return decoded.role === 'admin'
   } catch {
     return false
   }

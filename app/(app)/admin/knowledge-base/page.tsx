@@ -72,7 +72,7 @@ export default function AdminKnowledgeBasePage() {
   const [diagChecking, setDiagChecking] = useState(false)
 
   const runDiagnostics = useCallback(async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_token') : null
+    const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_auth_token') : null
     setDiagToken(token)
     if (token) {
       try {
