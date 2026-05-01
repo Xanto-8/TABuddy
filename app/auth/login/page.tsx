@@ -202,20 +202,22 @@ export default function LoginPage() {
         {/* 3D Card Flip Container */}
         <div className="w-full max-w-[430px]" style={{ perspective: '1200px' }}>
           <motion.div
-            className="relative"
+            className="relative min-h-[480px] sm:min-h-[520px]"
             style={{ transformStyle: 'preserve-3d' }}
             animate={{ rotateY: isRegistering ? 180 : 0 }}
             transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
           >
             {/* Login Form (Front) */}
             <div
-              className="rounded-2xl px-8 py-[30px] overflow-y-auto"
+              className="rounded-2xl px-5 sm:px-8 py-[22px] sm:py-[30px] overflow-y-auto"
               style={{
                 backfaceVisibility: 'hidden',
                 background: 'rgba(255, 255, 255, 0.86)',
                 border: '1px solid rgba(148, 163, 184, 0.24)',
                 boxShadow: '0 24px 50px rgba(30, 41, 59, 0.12)',
                 backdropFilter: 'blur(14px)',
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(148,163,184,0.4) transparent',
               }}
             >
               {/* WELCOME BACK Tag */}
@@ -224,7 +226,7 @@ export default function LoginPage() {
               </p>
 
               {/* Mobile Logo */}
-              <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
+              <div className="lg:hidden flex items-center justify-center gap-2 mb-3 sm:mb-6">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{
                     background: 'linear-gradient(135deg, #dbeafe 0%, #ccfbf1 100%)',
@@ -370,7 +372,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-[52px] text-[15px] font-semibold rounded-xl border-none tracking-wide cursor-pointer transition-all duration-200 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-[46px] sm:h-[52px] text-[15px] font-semibold rounded-xl border-none tracking-wide cursor-pointer transition-all duration-200 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 55%, #22d3ee 100%)',
                       boxShadow: '0 14px 26px rgba(15, 118, 110, 0.24)',
@@ -417,7 +419,7 @@ export default function LoginPage() {
 
             {/* Register Form (Back) */}
             <div
-              className="absolute inset-0 rounded-2xl px-8 py-[30px] overflow-y-auto"
+              className="absolute inset-0 rounded-2xl px-5 py-[22px] sm:px-8 sm:py-[30px] overflow-y-auto"
               style={{
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
@@ -425,10 +427,19 @@ export default function LoginPage() {
                 border: '1px solid rgba(148, 163, 184, 0.24)',
                 boxShadow: '0 24px 50px rgba(30, 41, 59, 0.12)',
                 backdropFilter: 'blur(14px)',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(148,163,184,0.4) transparent',
               }}
             >
+              {/* iOS scroll indicator hint */}
+              <div className="sm:hidden flex justify-center mb-2 animate-bounce">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+                  <path d="M7 13l5 5 5-5M7 6l5 5 5-5" />
+                </svg>
+              </div>
               {/* Register Tag */}
-              <p className="text-center mb-4 text-[11px] font-bold tracking-[0.14em] text-[#0f766e]">
+              <p className="text-center mb-3 sm:mb-4 text-[11px] font-bold tracking-[0.14em] text-[#0f766e]">
                 CREATE ACCOUNT
               </p>
 
@@ -450,18 +461,18 @@ export default function LoginPage() {
               </div>
 
               {/* Form Header */}
-              <div className="text-center mb-7">
-                <h1 className="text-[28px] font-bold tracking-[-0.03em] text-[#0b1220] mb-2 leading-tight">
+              <div className="text-center mb-4 sm:mb-7">
+                <h1 className="text-[22px] sm:text-[28px] font-bold tracking-[-0.03em] text-[#0b1220] mb-1.5 sm:mb-2 leading-tight">
                   注册 TABuddy 账号
                 </h1>
-                <p className="text-sm text-[#64748b] leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#64748b] leading-relaxed">
                   创建你的助教工作空间，提升效率
                 </p>
               </div>
 
               {/* Register Form */}
               <form onSubmit={handleRegister}>
-                <div className="mb-5">
+                <div className="mb-3 sm:mb-5">
                   <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
                     用户名
                   </label>
@@ -474,7 +485,7 @@ export default function LoginPage() {
                       value={regUsername}
                       onChange={(e) => setRegUsername(e.target.value)}
                       placeholder="请输入用户名"
-                      className="w-full h-[50px] pl-11 pr-4 text-sm outline-none transition-all duration-200"
+                      className="w-full h-[44px] sm:h-[50px] pl-11 pr-4 text-sm outline-none transition-all duration-200"
                       style={{
                         background: 'rgba(248, 250, 252, 0.95)',
                         border: '1px solid #d8dee8',
@@ -506,7 +517,7 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <div className="mb-5">
+                <div className="mb-3 sm:mb-5">
                   <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
                     密码
                   </label>
@@ -519,7 +530,7 @@ export default function LoginPage() {
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       placeholder="至少6位密码"
-                      className="w-full h-[50px] pl-11 pr-12 text-sm outline-none transition-all duration-200"
+                      className="w-full h-[44px] sm:h-[50px] pl-11 pr-12 text-sm outline-none transition-all duration-200"
                       style={{
                         background: 'rgba(248, 250, 252, 0.95)',
                         border: '1px solid #d8dee8',
@@ -559,7 +570,7 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <div className="mb-5">
+                <div className="mb-3 sm:mb-5">
                   <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
                     确认密码
                   </label>
@@ -572,7 +583,7 @@ export default function LoginPage() {
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
                       placeholder="再次输入密码"
-                      className="w-full h-[50px] pl-11 pr-4 text-sm outline-none transition-all duration-200"
+                      className="w-full h-[44px] sm:h-[50px] pl-11 pr-4 text-sm outline-none transition-all duration-200"
                       style={{
                         background: 'rgba(248, 250, 252, 0.95)',
                         border: '1px solid #d8dee8',
@@ -604,13 +615,13 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <div className="mb-5">
+                <div className="mb-3 sm:mb-5">
                   <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
                     上传头像
                   </label>
                   <div className="flex items-center gap-4">
                     <div
-                      className="w-[60px] h-[60px] rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden cursor-pointer transition-all duration-200"
+                      className="w-[48px] h-[48px] sm:w-[60px] sm:h-[60px] rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden cursor-pointer transition-all duration-200"
                       style={{
                         background: regAvatarPreview ? 'transparent' : 'rgba(248, 250, 252, 0.95)',
                         border: regAvatarPreview ? '2px solid #14b8a6' : '1px dashed #d8dee8',
@@ -666,7 +677,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={regLoading}
-                    className="w-full h-[52px] text-[15px] font-semibold rounded-xl border-none tracking-wide cursor-pointer transition-all duration-200 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-[46px] sm:h-[52px] text-[15px] font-semibold rounded-xl border-none tracking-wide cursor-pointer transition-all duration-200 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 55%, #22d3ee 100%)',
                       boxShadow: '0 14px 26px rgba(15, 118, 110, 0.24)',
@@ -695,12 +706,12 @@ export default function LoginPage() {
                 </div>
               </form>
 
-              <p className="text-center text-xs text-[#64748b] mt-5 leading-relaxed" style={{ margin: '20px 6px 0' }}>
+              <p className="text-center text-xs text-[#64748b] mt-3 sm:mt-5 leading-relaxed" style={{ margin: '12px 6px 0' }}>
                 By registering, you agree to open collaboration and transparent development.
               </p>
 
               {/* Login Toggle Link */}
-              <div className="text-center mt-5">
+              <div className="text-center mt-3 sm:mt-5">
                 <button
                   type="button"
                   onClick={() => { setIsRegistering(false); setRegError('') }}
