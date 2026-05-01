@@ -6,8 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Camera, Save, Lock, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { User, Camera, Save, Lock, AlertCircle, CheckCircle2, Eye, EyeOff, X } from 'lucide-react'
 
 function getColor(name?: string) {
   if (!name) return 'bg-primary/10 text-primary'
@@ -42,8 +41,7 @@ function getRoleLabel(role?: string) {
 }
 
 export default function SettingsPage() {
-  const { user, updateProfile, updateAvatar, getToken } = useAuth()
-  const router = useRouter()
+  const { user, updateProfile, updateAvatar } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [username, setUsername] = useState(user?.username || '')
@@ -52,14 +50,20 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showOldPwd, setShowOldPwd] = useState(false)
+  const [showNewPwd, setShowNewPwd] = useState(false)
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <h2 className="text-xl font-semibold">请先登录</h2>
-          <Button className="mt-4" onClick={() => router.push('/login')}>
-            前往登录
-          </Button>
         </div>
       </div>
     )
@@ -125,7 +129,64 @@ export default function SettingsPage() {
   }
 
   const handleChangePassword = async () => {
-    router.push('/login?tab=change-password')
+    if (!showChangePassword) {
+      setShowChangePassword(true)
+      return
+    }
+
+    if (!oldPassword) {
+      setMessage({ type: 'error', text: '请输入当前密码' })
+      return
+    }
+    if (!newPassword) {
+      setMessage({ type: 'error', text: '请输入新密码' })
+      return
+    }
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', text: '新密码至少6位' })
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: '两次输入的新密码不一致' })
+      return
+    }
+
+    setChangingPassword(true)
+    setMessage(null)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_token') : null
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setMessage({ type: 'error', text: data.error || '修改密码失败' })
+        return
+      }
+      setMessage({ type: 'success', text: '密码修改成功' })
+      setOldPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setShowChangePassword(false)
+      setTimeout(() => setMessage(null), 3000)
+    } catch {
+      setMessage({ type: 'error', text: '修改密码失败，请重试' })
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+
+  const cancelChangePassword = () => {
+    setShowChangePassword(false)
+    setOldPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setMessage(null)
   }
 
   const currentAvatar = avatarPreview || user.avatar || ''
@@ -266,10 +327,84 @@ export default function SettingsPage() {
               <p className="font-medium">修改密码</p>
               <p className="text-sm text-muted-foreground">建议定期更换密码以保护账号安全</p>
             </div>
-            <Button variant="outline" onClick={handleChangePassword}>
-              修改密码
+            <Button
+              variant={showChangePassword ? 'secondary' : 'outline'}
+              onClick={() => { if (!showChangePassword) handleChangePassword(); else cancelChangePassword() }}
+            >
+              {showChangePassword ? '取消' : '修改密码'}
             </Button>
           </div>
+
+          {showChangePassword && (
+            <div className="space-y-4 pt-2 border-t border-border">
+              <div className="space-y-2">
+                <Label htmlFor="oldPassword">当前密码</Label>
+                <div className="relative">
+                  <Input
+                    id="oldPassword"
+                    type={showOldPwd ? 'text' : 'password'}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    placeholder="输入当前密码"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPwd(!showOldPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showOldPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">新密码</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPwd ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="至少6位"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPwd(!showNewPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">确认新密码</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPwd ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="再次输入新密码"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button onClick={handleChangePassword} disabled={changingPassword} className="gap-2">
+                {changingPassword ? '修改中...' : '确认修改'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
