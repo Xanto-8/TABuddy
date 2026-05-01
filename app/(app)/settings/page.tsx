@@ -42,7 +42,7 @@ function getRoleLabel(role?: string) {
 }
 
 export default function SettingsPage() {
-  const { user, updateProfile, updateAvatar } = useAuth()
+  const { user, updateProfile, updateAvatar, getToken } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [username, setUsername] = useState(user?.username || '')
@@ -154,7 +154,7 @@ export default function SettingsPage() {
 
     setChangingPassword(true)
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_token') : null
+      const token = getToken()
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: {
