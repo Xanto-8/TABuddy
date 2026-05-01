@@ -190,7 +190,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel */}
-      <div className="flex items-center justify-center p-12"
+      <div className="flex items-start lg:items-center justify-center p-4 sm:p-6 md:p-12 overflow-y-auto min-h-0"
         style={{
           background: `
             radial-gradient(circle at 20% 0%, rgba(241, 245, 255, 0.9), transparent 35%),
@@ -209,7 +209,7 @@ export default function LoginPage() {
           >
             {/* Login Form (Front) */}
             <div
-              className="rounded-2xl px-8 py-[30px]"
+              className="rounded-2xl px-8 py-[30px] overflow-y-auto"
               style={{
                 backfaceVisibility: 'hidden',
                 background: 'rgba(255, 255, 255, 0.86)',
@@ -417,7 +417,7 @@ export default function LoginPage() {
 
             {/* Register Form (Back) */}
             <div
-              className="absolute inset-0 rounded-2xl px-8 py-[30px]"
+              className="absolute inset-0 rounded-2xl px-8 py-[30px] overflow-y-auto"
               style={{
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
