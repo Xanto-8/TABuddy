@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         role: user.role,
         avatar: user.avatar,
         classGroupId: user.classGroupId,
+        hasReadGuide: user.hasReadGuide,
       },
     })
   } catch (error) {

@@ -24,6 +24,7 @@ model User {
   role        String   @default("student")
   avatar      String   @default("")
   settings    String   @default("{}")
+  hasReadGuide Boolean @default(false)
   lastActiveAt DateTime?
   lastLoginIp      String   @default("")
   lastLoginCountry String   @default("")
@@ -55,6 +56,12 @@ model User {
   teacherBinds     TeacherAssistantBind[] @relation("TeacherBindRelation")
   assistantBinds   TeacherAssistantBind[] @relation("AssistantBindRelation")
   teacherRegCodes  TeacherRegCode[]
+}
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @default("")
 }
 
 model PublicKnowledgeItem {

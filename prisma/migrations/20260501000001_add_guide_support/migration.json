@@ -1,0 +1,50 @@
+{
+  "version": "5.22.0",
+  "checksum": "778e8596e0de0fd67060ae34bd2519981f78a320fb47653228459a46e7c906a3",
+  "steps": [
+    {
+      "tag": "AlterTable",
+      "table": "User",
+      "operations": [
+        {
+          "tag": "AddColumn",
+          "column": {
+            "name": "hasReadGuide",
+            "type": "Boolean",
+            "default": false
+          }
+        }
+      ]
+    },
+    {
+      "tag": "CreateTable",
+      "table": "SystemConfig",
+      "columns": [
+        {
+          "name": "id",
+          "type": "String",
+          "isRequired": true
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "isRequired": true
+        },
+        {
+          "name": "value",
+          "type": "String",
+          "isRequired": true
+        }
+      ],
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "uniqueConstraints": [
+        {
+          "name": "SystemConfig_key_key",
+          "columns": ["key"]
+        }
+      ]
+    }
+  ]
+}

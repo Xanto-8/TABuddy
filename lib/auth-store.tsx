@@ -10,6 +10,7 @@ export interface AuthUser {
   role?: string
   classGroupId?: string | null
   avatar?: string
+  hasReadGuide?: boolean
 }
 
 export interface AuthState {
