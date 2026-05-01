@@ -13,6 +13,7 @@ interface ClassGroup {
 interface UserInfo {
   id: string
   username: string
+  password: string
   displayName: string
   role: string
   classGroupId: string | null
@@ -36,7 +37,7 @@ function getRoleLabel(role: string) {
   switch (role) {
     case 'superadmin': return '超级管理员'
     case 'classadmin': return '班级管理员'
-    default: return '学生'
+    default: return '助教'
   }
 }
 
@@ -77,6 +78,12 @@ export default function AdminUsersPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    if (user?.role !== 'superadmin') return
+    const id = setInterval(fetchData, 30000)
+    return () => clearInterval(id)
+  }, [fetchData, user?.role])
 
   if (user?.role !== 'superadmin') {
     return (
@@ -225,6 +232,10 @@ export default function AdminUsersPage() {
                     <span className="ml-2 font-mono text-xs">{u.id}</span>
                   </div>
                   <div>
+                    <span className="text-muted-foreground">密码:</span>
+                    <span className="ml-2 font-mono text-xs">{u.password}</span>
+                  </div>
+                  <div>
                     <span className="text-muted-foreground">注册时间:</span>
                     <span className="ml-2">{new Date(u.createdAt).toLocaleString('zh-CN')}</span>
                   </div>
@@ -282,7 +293,7 @@ export default function AdminUsersPage() {
                   onChange={e => setNewRole(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="student">学生</option>
+                  <option value="student">助教</option>
                   <option value="classadmin">班级管理员</option>
                   <option value="superadmin">超级管理员</option>
                 </select>

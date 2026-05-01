@@ -107,6 +107,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (!state.token || !state.isAuthenticated) return
+    const id = setInterval(async () => {
+      try {
+        await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${state.token}` },
+        })
+      } catch {}
+    }, 120000)
+    return () => clearInterval(id)
+  }, [state.token, state.isAuthenticated])
+
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     if (!username || !password) {
       toast.error('请输入用户名和密码')

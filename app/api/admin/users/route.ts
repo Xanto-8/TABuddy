@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         username: true,
+        password: true,
         displayName: true,
         role: true,
         classGroupId: true,
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     const result = users.map(u => ({
       id: u.id,
       username: u.username,
+      password: u.password,
       displayName: u.displayName,
       role: u.role,
       classGroupId: u.classGroupId,

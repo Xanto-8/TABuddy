@@ -49,7 +49,7 @@ function SectionCard({ title, description, children }: { title: string; descript
 }
 
 function ProfileSection({ user }: { user: { username: string; role?: string; avatar?: string } | null }) {
-  const { updateAvatar } = useAuth()
+  const { updateAvatar, getToken } = useAuth()
   const [nickname, setNickname] = useState('')
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -63,8 +63,8 @@ function ProfileSection({ user }: { user: { username: string; role?: string; ava
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const isSuperAdmin = user?.role === 'superadmin'
-  const profileLabel = isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '学生'
-  const displayName = nickname || (isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '学生')
+  const profileLabel = isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '助教'
+  const displayName = nickname || (isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '助教')
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -95,14 +95,32 @@ function ProfileSection({ user }: { user: { username: string; role?: string; ava
     if (!newPassword) { toast.error('请输入新密码'); return }
     if (newPassword !== confirmPassword) { toast.error('两次输入的新密码不一致'); return }
     if (newPassword.length < 6) { toast.error('新密码至少6位'); return }
-    if (oldPassword !== '123456') { toast.error('当前密码错误'); return }
     setChangingPwd(true)
-    await new Promise(r => setTimeout(r, 800))
-    setChangingPwd(false)
-    setOldPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    toast.success('密码修改成功')
+    try {
+      const token = getToken()
+      if (!token) { toast.error('未登录'); return }
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ oldPassword, newPassword }),
+      })
+      const result = await res.json()
+      if (result.data) {
+        setOldPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+        toast.success('密码修改成功')
+      } else {
+        toast.error(result.error || '修改失败')
+      }
+    } catch {
+      toast.error('网络错误')
+    } finally {
+      setChangingPwd(false)
+    }
   }
 
   return (
