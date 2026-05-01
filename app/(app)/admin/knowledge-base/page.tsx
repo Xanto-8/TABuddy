@@ -107,7 +107,7 @@ export default function AdminKnowledgeBasePage() {
   }, [isAuthenticated, user, router])
 
   const loadEntries = useCallback(() => {
-    setEntries(getPublicKnowledgeBase())
+    setEntries([...getPublicKnowledgeBase()])
   }, [])
 
   useEffect(() => {

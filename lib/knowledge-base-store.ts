@@ -46,48 +46,44 @@ function saveLocalKnowledgeBase(entries: KnowledgeEntry[]): void {
 }
 
 export function getKnowledgeBase(): KnowledgeEntry[] {
-  if (isCacheLoaded()) {
-    const cache = getCache()
-    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    if (entries.length === 0) {
-      defaultEntries.forEach(e => entries.push({ ...e }))
-    }
-    return entries
-  }
   const local = getLocalKnowledgeBase()
   if (local.length > 0) {
     localFallback = [...local.map(e => ({ ...e }))]
+  }
+  if (isCacheLoaded()) {
+    const cache = getCache()
+    const cacheEntries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+    if (localFallback.length > 0) {
+      cacheEntries.length = 0
+      cacheEntries.push(...localFallback.map(e => ({ ...e })))
+    } else if (cacheEntries.length === 0) {
+      defaultEntries.forEach(e => cacheEntries.push({ ...e }))
+    }
+    return cacheEntries
+  }
+  if (localFallback.length > 0) {
     return localFallback
   }
   return defaultEntries.map(e => ({ ...e }))
 }
 
 export function addKnowledgeEntry(entry: KnowledgeEntry): void {
+  const entries = getKnowledgeBase()
+  entries.push(entry)
+  saveLocalKnowledgeBase([...entries])
   if (isCacheLoaded()) {
-    const cache = getCache()
-    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    entries.push(entry)
     triggerSync()
-  } else {
-    localFallback.push(entry)
-    saveLocalKnowledgeBase(localFallback)
   }
 }
 
 export function updateKnowledgeEntry(updated: KnowledgeEntry): void {
-  if (isCacheLoaded()) {
-    const cache = getCache()
-    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    const index = entries.findIndex(e => e.id === updated.id)
-    if (index !== -1) {
-      entries[index] = updated
+  const entries = getKnowledgeBase()
+  const index = entries.findIndex(e => e.id === updated.id)
+  if (index !== -1) {
+    entries[index] = updated
+    saveLocalKnowledgeBase([...entries])
+    if (isCacheLoaded()) {
       triggerSync()
-    }
-  } else {
-    const index = localFallback.findIndex(e => e.id === updated.id)
-    if (index !== -1) {
-      localFallback[index] = updated
-      saveLocalKnowledgeBase(localFallback)
     }
   }
 }
@@ -109,31 +105,20 @@ export function deleteKnowledgeEntry(id: string): void {
 }
 
 export function getEntryById(id: string): KnowledgeEntry | undefined {
-  if (isCacheLoaded()) {
-    const entries = getCache().knowledgeEntries as unknown as KnowledgeEntry[]
-    return entries.find(e => e.id === id)
-  }
-  return localFallback.find(e => e.id === id)
+  return getKnowledgeBase().find(e => e.id === id)
 }
 
 export function saveKnowledgeEntry(entry: KnowledgeEntry): void {
-  if (isCacheLoaded()) {
-    const entries = getCache().knowledgeEntries as unknown as KnowledgeEntry[]
-    const index = entries.findIndex(e => e.id === entry.id)
-    if (index !== -1) {
-      entries[index] = entry
+  const entries = getKnowledgeBase()
+  const index = entries.findIndex(e => e.id === entry.id)
+  if (index !== -1) {
+    entries[index] = entry
+    saveLocalKnowledgeBase([...entries])
+    if (isCacheLoaded()) {
       triggerSync()
-    } else {
-      addKnowledgeEntry(entry)
     }
   } else {
-    const index = localFallback.findIndex(e => e.id === entry.id)
-    if (index !== -1) {
-      localFallback[index] = entry
-      saveLocalKnowledgeBase(localFallback)
-    } else {
-      addKnowledgeEntry(entry)
-    }
+    addKnowledgeEntry(entry)
   }
 }
 
@@ -142,12 +127,13 @@ export function createKnowledgeEntry(entry: KnowledgeEntry): void {
 }
 
 export function resetKnowledgeBase(): void {
+  const entries = defaultEntries.map(e => ({ ...e }))
+  saveLocalKnowledgeBase(entries)
   if (isCacheLoaded()) {
     const cache = getCache()
-    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    entries.length = 0
-    defaultEntries.forEach(e => entries.push({ ...e }))
-    saveLocalKnowledgeBase([...entries])
+    const cacheEntries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+    cacheEntries.length = 0
+    cacheEntries.push(...entries)
     triggerSync()
   }
 }

@@ -66,8 +66,8 @@ export default function KnowledgeBasePage() {
   const [keywordsText, setKeywordsText] = useState('')
 
   const loadEntries = useCallback(() => {
-    setEntries(getKnowledgeBase())
-    setPublicEntries(getPublicKnowledgeBase())
+    setEntries([...getKnowledgeBase()])
+    setPublicEntries([...getPublicKnowledgeBase()])
   }, [])
 
   useEffect(() => {
