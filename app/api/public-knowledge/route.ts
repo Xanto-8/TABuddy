@@ -231,7 +231,7 @@ function verifyAdminToken(request: NextRequest): boolean {
   const token = authHeader.slice(7)
   try {
     const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'))
-    return decoded.role === 'admin'
+    return decoded.role === 'superadmin' || decoded.role === 'classadmin'
   } catch {
     return false
   }
@@ -271,8 +271,7 @@ export async function PUT(request: NextRequest) {
         try {
           const token = authHeader.slice(7)
           const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'))
-          if (decoded.username !== 'admin') reason = `username_is_${decoded.username}`
-          else reason = 'unknown_decode_ok_but_failed'
+          reason = `role_is_${decoded.role}_expected_superadmin_or_classadmin`
         } catch (e: any) {
           reason = `decode_error: ${e?.message || e}`
         }

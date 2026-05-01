@@ -87,6 +87,7 @@ function SidebarDivider({ expanded }: { expanded: boolean }) {
 
 const CLASSADMIN_SPECIFIC_ITEMS = [
   { icon: UserPlus, label: '助教与绑定管理', href: '/assistant-management' },
+  { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
 ] as const
 
 function NavArea({ expanded }: { expanded: boolean }) {

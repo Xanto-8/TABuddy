@@ -101,7 +101,7 @@ export default function AdminKnowledgeBasePage() {
   }, [])
 
   useEffect(() => {
-    if (isAuthenticated && user && user.role !== 'superadmin') {
+    if (isAuthenticated && user && user.role !== 'superadmin' && user.role !== 'classadmin') {
       router.replace('/knowledge-base')
     }
   }, [isAuthenticated, user, router])
@@ -195,7 +195,7 @@ export default function AdminKnowledgeBasePage() {
     loadEntries()
   }
 
-  if (user?.role !== 'superadmin') {
+  if (user?.role !== 'superadmin' && user?.role !== 'classadmin') {
     return null
   }
 
@@ -206,9 +206,14 @@ export default function AdminKnowledgeBasePage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-foreground">公共知识库管理</h1>
-              <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+              <span className={cn(
+                'px-2 py-0.5 text-[10px] font-medium rounded-full border',
+                user?.role === 'superadmin'
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+              )}>
                 <Shield className="w-3 h-3 inline mr-0.5" />
-                超级管理员
+                {user?.role === 'superadmin' ? '超级管理员' : '班级管理员'}
               </span>
             </div>
             <p className="text-muted-foreground mt-1">管理全局公共知识库内容，对所有用户可见，修改后实时生效</p>

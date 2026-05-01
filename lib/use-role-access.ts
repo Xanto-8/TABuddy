@@ -23,7 +23,7 @@ export function useRoleAccess() {
     : '未知'
 
   const canManage = {
-    globalKnowledge: isSuperAdmin,
+    globalKnowledge: isSuperAdmin || isClassAdmin,
     classKnowledge: canEditClasses,
     anyClass: isSuperAdmin,
     ownClass: isClassAdmin,
@@ -39,7 +39,7 @@ export function useRoleAccess() {
     if (path.startsWith('/admin')) {
       if (path.includes('/admin/classes')) return isSuperAdmin
       if (path.includes('/admin/users')) return isSuperAdmin
-      if (path.includes('/admin/knowledge-base')) return isSuperAdmin
+      if (path.includes('/admin/knowledge-base')) return isSuperAdmin || isClassAdmin
       return isAdminOrAbove
     }
     if (path === '/assistant-management') return isClassAdmin

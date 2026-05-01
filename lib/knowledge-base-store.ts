@@ -49,7 +49,10 @@ export function getKnowledgeBase(): KnowledgeEntry[] {
   if (isCacheLoaded()) {
     const cache = getCache()
     const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    return entries.length > 0 ? entries : defaultEntries
+    if (entries.length === 0) {
+      defaultEntries.forEach(e => entries.push({ ...e }))
+    }
+    return entries
   }
   const local = getLocalKnowledgeBase()
   if (local.length > 0) {
@@ -116,7 +119,24 @@ export function getEntryById(id: string): KnowledgeEntry | undefined {
 }
 
 export function saveKnowledgeEntry(entry: KnowledgeEntry): void {
-  addKnowledgeEntry(entry)
+  if (isCacheLoaded()) {
+    const entries = getCache().knowledgeEntries as unknown as KnowledgeEntry[]
+    const index = entries.findIndex(e => e.id === entry.id)
+    if (index !== -1) {
+      entries[index] = entry
+      triggerSync()
+    } else {
+      addKnowledgeEntry(entry)
+    }
+  } else {
+    const index = localFallback.findIndex(e => e.id === entry.id)
+    if (index !== -1) {
+      localFallback[index] = entry
+      saveLocalKnowledgeBase(localFallback)
+    } else {
+      addKnowledgeEntry(entry)
+    }
+  }
 }
 
 export function createKnowledgeEntry(entry: KnowledgeEntry): void {
