@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: { authorization: `Bearer ${state.token}` },
         })
       } catch {}
-    }, 5000)
+    }, 15000)
     return () => clearInterval(id)
   }, [state.token, state.isAuthenticated])
 
