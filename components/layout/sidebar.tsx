@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   LayoutDashboard, BookOpen, ClipboardList, GraduationCap, FileText,
   MessageSquare, Settings,
-  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users, Activity,
+  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users, Activity, UserPlus,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSidebar } from '@/components/providers/sidebar-provider'
@@ -85,6 +85,10 @@ function SidebarDivider({ expanded }: { expanded: boolean }) {
   )
 }
 
+const CLASSADMIN_SPECIFIC_ITEMS = [
+  { icon: UserPlus, label: '助教与绑定管理', href: '/assistant-management' },
+] as const
+
 function NavArea({ expanded }: { expanded: boolean }) {
   const pathname = usePathname()
   const { user } = useAuth()
@@ -92,6 +96,14 @@ function NavArea({ expanded }: { expanded: boolean }) {
 
   const mainItems = useMemo(() =>
     MAIN_MENU_ITEMS.map(item => ({
+      ...item,
+      isActive: pathname === item.href
+    })),
+    [pathname]
+  )
+
+  const classAdminItems = useMemo(() =>
+    CLASSADMIN_SPECIFIC_ITEMS.map(item => ({
       ...item,
       isActive: pathname === item.href
     })),
@@ -124,6 +136,14 @@ function NavArea({ expanded }: { expanded: boolean }) {
       {mainItems.map((item) => (
         <NavItem key={item.href} {...item} expanded={expanded} />
       ))}
+      {isClassAdmin && (
+        <>
+          <SidebarDivider expanded={expanded} />
+          {classAdminItems.map((item) => (
+            <NavItem key={item.href} {...item} expanded={expanded} isSecondary />
+          ))}
+        </>
+      )}
       {isSuperAdmin && (
         <>
           <SidebarDivider expanded={expanded} />

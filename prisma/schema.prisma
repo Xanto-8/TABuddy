@@ -52,6 +52,8 @@ model User {
   reminderConfigs  ReminderConfig[]
   knowledgeEntries KnowledgeBaseEntry[]
   userStores       UserStore[]
+  teacherBinds     TeacherAssistantBind[] @relation("TeacherBindRelation")
+  assistantBinds   TeacherAssistantBind[] @relation("AssistantBindRelation")
 }
 
 model PublicKnowledgeItem {
@@ -307,4 +309,25 @@ model UserStore {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, key])
+}
+
+model TeacherAssistantBind {
+  id             String   @id @default(cuid())
+  inviteCode     String
+  status         String   @default("active") // active / unbinded
+  validPeriod    String   @default("permanent") // permanent / 24h / 7d
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+  bindedAt       DateTime?
+
+  teacherId String
+  teacher   User   @relation("TeacherBindRelation", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  assistantId String?
+  assistant   User?  @relation("AssistantBindRelation", fields: [assistantId], references: [id], onDelete: SetNull)
+
+  @@unique([teacherId, assistantId])
+  @@index([inviteCode, status])
+  @@index([teacherId, status])
+  @@index([assistantId, status])
 }

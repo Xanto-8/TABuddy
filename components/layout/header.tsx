@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProgress } from '@/components/providers/progress-provider'
-import { Search, User, ChevronDown, Home, Menu, LogOut, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2 } from 'lucide-react'
+import { Search, User, ChevronDown, Home, Menu, LogOut, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2, KeyRound } from 'lucide-react'
 import GlobalSearch from '@/components/GlobalSearch'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Button } from '@/components/ui/button'
@@ -11,21 +11,25 @@ import { ConfettiEffect } from '@/components/ui/confetti-effect'
 import { useSidebar } from '@/components/providers/sidebar-provider'
 import { NotificationCenter } from '@/components/notification/notification-center'
 import { useAuth } from '@/lib/auth-store'
+import { useRoleAccess } from '@/lib/use-role-access'
 import { getSavedAccounts, saveAccount, removeAccount, savePassword, removePassword, type SavedAccount, ACCOUNT_PROFILES } from '@/lib/account-store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { BindInviteCodeModal } from '@/components/assistant/bind-invite-code-modal'
 
 export function Header() {
   const router = useRouter()
   const { isOpen: expanded, setOpen, toggle } = useSidebar()
   const { courseTotalTasks, courseCompletedTasks, courseProgress, currentClass, showCelebration, dismissCelebration } = useProgress()
   const { user, logout } = useAuth()
+  const { isAssistant } = useRoleAccess()
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [showSwitchModal, setShowSwitchModal] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [userOnline, setUserOnline] = useState(true)
+  const [showBindModal, setShowBindModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const profile = user ? ACCOUNT_PROFILES[user.username] : null
@@ -199,6 +203,15 @@ export function Header() {
                         <RefreshCw className="w-4 h-4 text-muted-foreground" />
                         切换账号
                       </button>
+                      {isAssistant && (
+                        <button
+                          onClick={() => { setDropdownOpen(false); setShowBindModal(true) }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
+                        >
+                          <KeyRound className="w-4 h-4 text-muted-foreground" />
+                          输入邀请码 绑定老师班级
+                        </button>
+                      )}
                     </div>
                     <div className="border-t border-border py-1">
                       <button
@@ -234,6 +247,16 @@ export function Header() {
             }
           }}
           switching={switching}
+        />
+      )}
+      {showBindModal && (
+        <BindInviteCodeModal
+          onClose={() => setShowBindModal(false)}
+          onSuccess={() => {
+            setShowBindModal(false)
+            toast.success('绑定成功，已加载老师班级数据')
+            router.refresh()
+          }}
         />
       )}
     </>

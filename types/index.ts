@@ -387,3 +387,39 @@ export interface UserFeedback {
   repliedAt?: Date
 }
 
+// ========== 邀请码与助教绑定系统 ==========
+
+export type ValidPeriod = 'permanent' | '24h' | '7d'
+
+export interface TeacherAssistantBind {
+  id: string
+  inviteCode: string
+  status: 'active' | 'unbinded'
+  validPeriod: ValidPeriod
+  expiresAt: string | null
+  createdAt: string
+  bindedAt: string | null
+  teacherId: string
+  teacher?: {
+    id: string
+    username: string
+    displayName: string
+    avatar: string
+  }
+  assistantId: string | null
+  assistant?: {
+    id: string
+    username: string
+    displayName: string
+    avatar: string
+  }
+}
+
+export interface InviteCodeInfo {
+  inviteCode: string
+  validPeriod: ValidPeriod
+  expiresAt: string | null
+  status: 'active' | 'unbinded'
+  createdAt: string
+}
+

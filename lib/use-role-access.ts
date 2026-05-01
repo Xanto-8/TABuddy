@@ -2,7 +2,7 @@
 
 import { useAuth } from './auth-store'
 
-export type Role = 'superadmin' | 'classadmin' | 'student'
+export type Role = 'superadmin' | 'classadmin' | 'assistant' | 'student'
 
 export function useRoleAccess() {
   const { user } = useAuth()
@@ -11,23 +11,28 @@ export function useRoleAccess() {
 
   const isSuperAdmin = role === 'superadmin'
   const isClassAdmin = role === 'classadmin'
+  const isAssistant = role === 'assistant'
   const isStudent = role === 'student'
   const isAdminOrAbove = isSuperAdmin || isClassAdmin
+  const canEditClasses = isClassAdmin || isSuperAdmin
 
   const roleLabel = isSuperAdmin ? '超级管理员'
     : isClassAdmin ? '班级管理员'
+    : isAssistant ? '普通助教'
     : isStudent ? '学生'
     : '未知'
 
   const canManage = {
     globalKnowledge: isSuperAdmin,
-    classKnowledge: isClassAdmin || isSuperAdmin,
+    classKnowledge: canEditClasses,
     anyClass: isSuperAdmin,
     ownClass: isClassAdmin,
     users: isSuperAdmin,
     classes: isSuperAdmin,
     platformStats: isSuperAdmin,
-    classStats: isClassAdmin || isSuperAdmin,
+    classStats: canEditClasses,
+    inviteCode: isClassAdmin,
+    assistantManagement: isClassAdmin,
   }
 
   const canAccessRoute = (path: string): boolean => {
@@ -37,6 +42,7 @@ export function useRoleAccess() {
       if (path.includes('/admin/knowledge-base')) return isSuperAdmin
       return isAdminOrAbove
     }
+    if (path === '/assistant-management') return isClassAdmin
     return true
   }
 
@@ -45,8 +51,10 @@ export function useRoleAccess() {
     classGroupId,
     isSuperAdmin,
     isClassAdmin,
+    isAssistant,
     isStudent,
     isAdminOrAbove,
+    canEditClasses,
     roleLabel,
     canManage,
     canAccessRoute,

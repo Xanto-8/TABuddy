@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, BarChart3, Target, UserCheck,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, KeyRound
 } from 'lucide-react'
 import Link from 'next/link'
 import type { Class } from '@/types'
@@ -12,6 +12,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer
 } from 'recharts'
+import { useRoleAccess } from '@/lib/use-role-access'
 import { WelcomeBanner } from '@/components/dashboard/welcome-banner'
 import { ScheduleAttendanceCard } from '@/components/dashboard/schedule-attendance-card'
 import { ClassTodoCenter } from '@/components/dashboard/class-todo-center'
@@ -20,6 +21,8 @@ import { WorkStatistics } from '@/components/dashboard/work-statistics'
 import { FeatureShortcuts } from '@/components/dashboard/feature-shortcuts'
 import { PageContainer } from '@/components/ui/page-container'
 import { FocusTimer } from '@/components/focus-timer/focus-timer'
+import { BindInviteCodeModal } from '@/components/assistant/bind-invite-code-modal'
+import { toast } from 'sonner'
 import { useDashboardData } from '@/components/dashboard/use-dashboard-data'
 import type { DashboardData } from '@/components/dashboard/use-dashboard-data'
 import {
@@ -204,11 +207,41 @@ function ClassLearningOverview() {
 
 export default function DashboardPage() {
   const data = useDashboardData()
+  const { isAssistant } = useRoleAccess()
+  const [showBindModal, setShowBindModal] = useState(false)
 
   return (
     <PageContainer>
       <div className="space-y-6 pb-8">
         <WelcomeBanner data={data} />
+
+        {isAssistant && (
+          <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">助教快捷操作</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">输入邀请码绑定老师班级，获取班级查看权限</p>
+              </div>
+              <button
+                onClick={() => setShowBindModal(true)}
+                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+              >
+                <KeyRound className="w-4 h-4" />
+                绑定老师班级
+              </button>
+            </div>
+            {showBindModal && (
+              <BindInviteCodeModal
+                onClose={() => setShowBindModal(false)}
+                onSuccess={() => {
+                  setShowBindModal(false)
+                  toast.success('绑定成功，已加载老师班级数据')
+                  window.location.reload()
+                }}
+              />
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <ClassTodoCenter />

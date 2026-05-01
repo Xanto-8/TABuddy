@@ -27,6 +27,51 @@ export async function getBody<T>(request: NextRequest): Promise<T | null> {
 }
 
 export async function getAllUserData(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, username: true, displayName: true, role: true, avatar: true, settings: true, createdAt: true },
+  })
+
+  if (!user) {
+    return {
+      user: null,
+      classes: [],
+      students: [],
+      classSchedules: [],
+      courseTasks: [],
+      taskTemplates: [],
+      homeworkAssessments: [],
+      quizRecords: [],
+      feedbackRecords: [],
+      feedbackHistory: [],
+      absenceRecords: [],
+      workflowTemplates: [],
+      workflowTodos: [],
+      notifications: [],
+      pushLogs: [],
+      reminderConfigs: [],
+      knowledgeEntries: [],
+    }
+  }
+
+  const isAssistant = user.role === 'assistant'
+  let teacherIds: string[] = []
+
+  if (isAssistant) {
+    const binds = await prisma.teacherAssistantBind.findMany({
+      where: { assistantId: userId, status: 'active' },
+      select: { teacherId: true },
+    })
+    teacherIds = binds.map(b => b.teacherId)
+  }
+
+  const dataUserId = isAssistant && teacherIds.length > 0 ? undefined : userId
+  const userIdFilter = dataUserId ? { userId: dataUserId } : undefined
+
+  const teacherDataFilter = isAssistant && teacherIds.length > 0
+    ? { userId: { in: teacherIds } }
+    : (userIdFilter || { userId })
+
   const [
     classes,
     students,
@@ -44,25 +89,23 @@ export async function getAllUserData(userId: string) {
     pushLogs,
     reminderConfigs,
     knowledgeEntries,
-    user,
   ] = await Promise.all([
-    prisma.class.findMany({ where: { userId } }),
-    prisma.student.findMany({ where: { userId } }),
-    prisma.classSchedule.findMany({ where: { userId } }),
-    prisma.courseTask.findMany({ where: { userId } }),
-    prisma.taskTemplate.findMany({ where: { userId } }),
-    prisma.homeworkAssessment.findMany({ where: { userId } }),
-    prisma.quizRecord.findMany({ where: { userId } }),
-    prisma.feedbackRecord.findMany({ where: { userId } }),
-    prisma.feedbackHistoryEntry.findMany({ where: { userId } }),
-    prisma.absenceRecord.findMany({ where: { userId } }),
-    prisma.workflowTemplate.findMany({ where: { userId } }),
-    prisma.workflowTodo.findMany({ where: { userId } }),
-    prisma.notification.findMany({ where: { userId } }),
-    prisma.pushLog.findMany({ where: { userId } }),
-    prisma.reminderConfig.findMany({ where: { userId } }),
-    prisma.knowledgeBaseEntry.findMany({ where: { userId } }),
-    prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, displayName: true, role: true, avatar: true, settings: true, createdAt: true } }),
+    prisma.class.findMany({ where: teacherDataFilter }),
+    prisma.student.findMany({ where: teacherDataFilter }),
+    prisma.classSchedule.findMany({ where: teacherDataFilter }),
+    prisma.courseTask.findMany({ where: teacherDataFilter }),
+    prisma.taskTemplate.findMany({ where: teacherDataFilter }),
+    prisma.homeworkAssessment.findMany({ where: teacherDataFilter }),
+    prisma.quizRecord.findMany({ where: teacherDataFilter }),
+    prisma.feedbackRecord.findMany({ where: teacherDataFilter }),
+    prisma.feedbackHistoryEntry.findMany({ where: teacherDataFilter }),
+    prisma.absenceRecord.findMany({ where: teacherDataFilter }),
+    prisma.workflowTemplate.findMany({ where: teacherDataFilter }),
+    prisma.workflowTodo.findMany({ where: teacherDataFilter }),
+    prisma.notification.findMany({ where: teacherDataFilter }),
+    prisma.pushLog.findMany({ where: teacherDataFilter }),
+    prisma.reminderConfig.findMany({ where: teacherDataFilter }),
+    prisma.knowledgeBaseEntry.findMany({ where: teacherDataFilter }),
   ])
 
   return {

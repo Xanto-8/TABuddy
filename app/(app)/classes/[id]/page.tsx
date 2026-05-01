@@ -10,10 +10,15 @@ import { Class, Student, ClassType, ClassSchedule } from '@/types'
 import { getClasses, getStudentsByClass, deleteStudent, getClassTypeLabel, getClassTypeColor, getStudents, getClassSchedules, saveClassSchedule, updateClassSchedule, deleteClassSchedule } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
+import { useAuth } from '@/lib/auth-store'
+import { useRoleAccess } from '@/lib/use-role-access'
 
 export default function ClassDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const { user } = useAuth()
+  const { isClassAdmin } = useRoleAccess()
+  const canEdit = isClassAdmin || user?.role === 'superadmin'
   const [cls, setCls] = useState<Class | null>(null)
   const [students, setStudents] = useState<Student[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -170,20 +175,24 @@ export default function ClassDetailPage() {
                   />
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
-                  <button
-                    onClick={() => setShowImportStudentsModal(true)}
-                    className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-colors text-sm font-medium whitespace-nowrap"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    导入学生
-                  </button>
-                  <button
-                    onClick={() => setShowAddStudentModal(true)}
-                    className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    添加学生
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => setShowImportStudentsModal(true)}
+                      className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-colors text-sm font-medium whitespace-nowrap"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      导入学生
+                    </button>
+                  )}
+                  {canEdit && (
+                    <button
+                      onClick={() => setShowAddStudentModal(true)}
+                      className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      添加学生
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -268,17 +277,19 @@ export default function ClassDetailPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => {
-                                if (confirm(`确定将 ${student.name} 从班级中移除？`)) {
-                                  deleteStudent(student.id)
-                                  refreshStudents()
-                                }
-                              }}
-                              className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {canEdit && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`确定将 ${student.name} 从班级中移除？`)) {
+                                    deleteStudent(student.id)
+                                    refreshStudents()
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </td>
                         </motion.tr>
                       ))}
@@ -331,7 +342,7 @@ export default function ClassDetailPage() {
           ) : activeTab === 'resources' ? (
             <ResourcesTab classId={cls.id} />
           ) : activeTab === 'schedule' ? (
-            <ScheduleTab classId={cls.id} />
+            <ScheduleTab classId={cls.id} canEdit={canEdit} />
           ) : (
             <RecordsTab classId={cls.id} students={students} />
           )}
@@ -342,7 +353,7 @@ export default function ClassDetailPage() {
   )
 }
 
-function ScheduleTab({ classId }: { classId: string }) {
+function ScheduleTab({ classId, canEdit }: { classId: string; canEdit: boolean }) {
   const [schedules, setSchedules] = useState<ClassSchedule[]>([])
   const [showAddScheduleModal, setShowAddScheduleModal] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<ClassSchedule | null>(null)
@@ -370,38 +381,42 @@ function ScheduleTab({ classId }: { classId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">班级上课时间</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            设置班级的上课时间，系统会根据时间自动显示当前上课班级
-          </p>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">班级上课时间</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              设置班级的上课时间，系统会根据时间自动显示当前上课班级
+            </p>
+          </div>
+          {canEdit && (
+            <button
+              onClick={() => setShowAddScheduleModal(true)}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              添加上课时间
+            </button>
+          )}
         </div>
-        <button
-          onClick={() => setShowAddScheduleModal(true)}
-          className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          添加上课时间
-        </button>
-      </div>
 
       {schedules.length === 0 ? (
         <div className="text-center py-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-            <Clock className="h-8 w-8 text-muted-foreground" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+              <Clock className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-medium text-foreground mb-2">暂无上课时间设置</h3>
+            <p className="text-muted-foreground mb-6">
+              点击上方按钮添加班级的上课时间，系统会根据时间自动显示当前上课班级
+            </p>
+            {canEdit && (
+              <button
+                onClick={() => setShowAddScheduleModal(true)}
+                className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                添加上课时间
+              </button>
+            )}
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">暂无上课时间设置</h3>
-          <p className="text-muted-foreground mb-6">
-            点击上方按钮添加班级的上课时间，系统会根据时间自动显示当前上课班级
-          </p>
-          <button
-            onClick={() => setShowAddScheduleModal(true)}
-            className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            添加上课时间
-          </button>
-        </div>
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
@@ -429,20 +444,22 @@ function ScheduleTab({ classId }: { classId: string }) {
                     <span className="text-sm text-muted-foreground">{schedule.endTime}</span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => setEditingSchedule(schedule)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSchedule(schedule.id)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => setEditingSchedule(schedule)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSchedule(schedule.id)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

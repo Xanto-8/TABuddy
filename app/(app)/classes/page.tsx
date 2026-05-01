@@ -9,6 +9,8 @@ import { Class, ClassType, ClassSchedule } from '@/types'
 import { getClasses, deleteClass, getClassTypeLabel, getClassTypeColor } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
+import { useAuth } from '@/lib/auth-store'
+import { useRoleAccess } from '@/lib/use-role-access'
 
 function getDayOfWeekLabel(day: number): string {
   const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -40,11 +42,15 @@ function formatScheduleDisplay(schedules?: ClassSchedule[]): string {
 
 export default function ClassesPage() {
   const router = useRouter()
+  const { user } = useAuth()
+  const { isAssistant, isClassAdmin } = useRoleAccess()
   const [classes, setClasses] = useState<Class[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingClass, setEditingClass] = useState<Class | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+
+  const canEdit = isClassAdmin || user?.role === 'superadmin'
 
   useEffect(() => {
     setClasses(getClasses())
@@ -82,16 +88,18 @@ export default function ClassesPage() {
               <p className="text-muted-foreground mt-1">管理所有班级和学员信息</p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setEditingClass(null)
-              setShowCreateModal(true)
-            }}
-            className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            创建班级
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => {
+                setEditingClass(null)
+                setShowCreateModal(true)
+              }}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              创建班级
+            </button>
+          )}
         </div>
 
         <div className="relative">
@@ -116,7 +124,7 @@ export default function ClassesPage() {
             <p className="text-muted-foreground mb-6">
               {searchQuery ? '试试其他搜索关键词' : '点击上方按钮创建第一个班级'}
             </p>
-            {!searchQuery && (
+            {!searchQuery && canEdit && (
               <button
                 onClick={() => {
                   setEditingClass(null)
@@ -207,27 +215,31 @@ export default function ClassesPage() {
                       exit={{ opacity: 0, y: -5, scale: 0.95 }}
                       className="absolute right-0 top-10 z-20 w-36 rounded-lg border border-border bg-card shadow-lg py-1"
                     >
-                      <button
-                        onClick={() => {
-                          setEditingClass(cls)
-                          setShowCreateModal(true)
-                          setMenuOpen(null)
-                        }}
-                        className="flex items-center w-full px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        编辑
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleDelete(cls.id)
-                          setMenuOpen(null)
-                        }}
-                        className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        删除
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => {
+                            setEditingClass(cls)
+                            setShowCreateModal(true)
+                            setMenuOpen(null)
+                          }}
+                          className="flex items-center w-full px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          编辑
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button
+                          onClick={() => {
+                            handleDelete(cls.id)
+                            setMenuOpen(null)
+                          }}
+                          className="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          删除
+                        </button>
+                      )}
                     </motion.div>
                   </>
                 )}
