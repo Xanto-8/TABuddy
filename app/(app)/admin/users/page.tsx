@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-store'
-import { Search, Shield, User, ChevronDown, ChevronUp, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle, MapPin, Globe, Ban } from 'lucide-react'
+import { Search, Shield, User, ChevronDown, ChevronUp, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle, MapPin, Globe, Ban, Wifi } from 'lucide-react'
 import Link from 'next/link'
 
 interface ClassGroup {
@@ -50,6 +50,25 @@ function getRoleLabel(role: string) {
   }
 }
 
+function getIpVersion(ip: string): { label: string; color: string } | null {
+  if (!ip || ip === '暂无' || ip === 'unknown') return null
+  if (ip.includes(':')) return { label: 'IPv6', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800' }
+  return { label: 'IPv4', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' }
+}
+
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return '从未'
+  const diff = Date.now() - new Date(dateStr).getTime()
+  if (diff < 0) return '刚刚'
+  const sec = Math.floor(diff / 1000)
+  if (sec < 60) return `${sec}秒前`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min}分钟前`
+  const hour = Math.floor(min / 60)
+  if (hour < 24) return `${hour}小时前`
+  return new Date(dateStr).toLocaleString('zh-CN')
+}
+
 export default function AdminUsersPage() {
   const { user, getToken } = useAuth()
   const [users, setUsers] = useState<UserInfo[]>([])
@@ -67,6 +86,12 @@ export default function AdminUsersPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const token = getToken()
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -91,7 +116,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (user?.role !== 'superadmin') return
-    const id = setInterval(fetchData, 30000)
+    const id = setInterval(fetchData, 8000)
     return () => clearInterval(id)
   }, [fetchData, user?.role])
 
@@ -201,6 +226,17 @@ export default function AdminUsersPage() {
     return diff < 5 * 60 * 1000
   }
 
+  function onlineText(lastActiveAt: string | null): { label: string; color: string; dot: string } {
+    const online = isOnline(lastActiveAt)
+    if (online) {
+      return { label: '在线', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800', dot: 'bg-green-500' }
+    }
+    if (!lastActiveAt) {
+      return { label: '从未上线', color: 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800', dot: 'bg-gray-300' }
+    }
+    return { label: `${Math.floor((Date.now() - new Date(lastActiveAt).getTime()) / 60000)}分钟前离线`, color: 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800', dot: 'bg-gray-300' }
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4 md:space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -278,9 +314,9 @@ export default function AdminUsersPage() {
                   {u.className && (
                     <span className="text-xs text-muted-foreground">{u.className}</span>
                   )}
-                  <span className={`w-2 h-2 rounded-full ${isOnline(u.lastActiveAt) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                  <span className="text-xs text-muted-foreground">
-                    {isOnline(u.lastActiveAt) ? '在线' : '离线'}
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${onlineText(u.lastActiveAt).color}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${onlineText(u.lastActiveAt).dot}`} />
+                    {onlineText(u.lastActiveAt).label}
                   </span>
                 </div>
               </div>
@@ -304,12 +340,22 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="text-muted-foreground shrink-0">最后活跃:</span>
-                    <span className="text-xs">{u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleString('zh-CN') : '从未'}</span>
+                    <span className="text-xs">{u.lastActiveAt ? timeAgo(u.lastActiveAt) : '从未'}</span>
+                    {u.lastActiveAt && (
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${isOnline(u.lastActiveAt) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400'}`}>
+                        {isOnline(u.lastActiveAt) ? '在线' : '离线'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground shrink-0">登录IP:</span>
                     <span className="font-mono text-xs">{u.lastLoginIp || '暂无'}</span>
+                    {getIpVersion(u.lastLoginIp) && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium leading-none border ${getIpVersion(u.lastLoginIp)!.color}`}>
+                        {getIpVersion(u.lastLoginIp)!.label}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
