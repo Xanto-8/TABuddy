@@ -46,6 +46,7 @@ model User {
   quizRecords      QuizRecord[]
   feedbackRecords  FeedbackRecord[]
   feedbackHistory  FeedbackHistoryEntry[]
+  userFeedbacks    UserFeedback[]
   absenceRecords   AbsenceRecord[]
   workflowTemplates WorkflowTemplate[]
   workflowTodos    WorkflowTodo[]
@@ -210,6 +211,24 @@ model FeedbackHistoryEntry {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserFeedback {
+  id          String   @id @default(cuid())
+  type        String   @default("bug")        // bug / suggestion / other
+  description String
+  screenshot  String   @default("")
+  status      String   @default("pending")    // pending / resolved / closed
+  reply       String   @default("")
+  repliedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }
 
 model AbsenceRecord {

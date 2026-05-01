@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { submitFeedback } from '@/lib/feedback-store'
+import { useAuth } from '@/lib/auth-store'
 import { FeedbackType } from '@/types'
 import {
   Search, LayoutDashboard, GitBranch, GraduationCap, FileText,
@@ -129,6 +129,7 @@ const FEEDBACK_TYPE_OPTIONS: { value: FeedbackType; label: string; icon: typeof 
 ]
 
 export default function HelpPage() {
+  const { getToken } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('help')
   const [search, setSearch] = useState('')
   const [expandedModule, setExpandedModule] = useState<string | null>(null)
@@ -164,7 +165,7 @@ export default function HelpPage() {
     reader.readAsDataURL(file)
   }
 
-  const handleSubmitFeedback = () => {
+  const handleSubmitFeedback = async () => {
     if (!feedbackDesc.trim()) {
       toast.error('请描述您的问题或建议')
       return
@@ -174,19 +175,33 @@ export default function HelpPage() {
       return
     }
     setSubmitting(true)
-    setTimeout(() => {
-      submitFeedback({
-        id: `fb-${Date.now()}`,
-        type: feedbackType,
-        description: feedbackDesc.trim(),
-        screenshot: screenshot || undefined,
-        createdAt: new Date(),
-        status: 'pending',
+    try {
+      const token = getToken()
+      const res = await fetch('/api/feedback/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: feedbackType,
+          description: feedbackDesc.trim(),
+          screenshot: screenshot || undefined,
+        }),
       })
+
+      if (res.ok) {
+        setSubmitted(true)
+        toast.success('反馈提交成功！预计1-3个工作日内回复')
+      } else {
+        const result = await res.json()
+        toast.error(result.error || '提交失败，请稍后重试')
+      }
+    } catch {
+      toast.error('网络错误，提交失败')
+    } finally {
       setSubmitting(false)
-      setSubmitted(true)
-      toast.success('反馈提交成功！预计1-3个工作日内回复')
-    }, 600)
+    }
   }
 
   if (submitted) {

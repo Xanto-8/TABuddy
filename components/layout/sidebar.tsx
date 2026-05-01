@@ -120,6 +120,7 @@ function NavArea({ expanded }: { expanded: boolean }) {
       { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
       { icon: ShieldCheck, label: '老师注册码管理', href: '/admin/teacher-code' },
       { icon: Users, label: '用户管理', href: '/admin/users' },
+      { icon: MessageSquare, label: '反馈管理', href: '/admin/feedback' },
       { icon: Settings, label: '系统配置', href: '/admin/guide-config' },
     ].map(item => ({
       ...item,
