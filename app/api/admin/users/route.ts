@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
         classGroupId: true,
         lastActiveAt: true,
         lastLoginIp: true,
+        lastLoginCity: true,
+        lastLoginRegion: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -40,6 +42,8 @@ export async function GET(request: NextRequest) {
       className: u.classGroupId ? classGroupMap.get(u.classGroupId) || null : null,
       lastActiveAt: u.lastActiveAt,
       lastLoginIp: u.lastLoginIp,
+      lastLoginCity: u.lastLoginCity,
+      lastLoginRegion: u.lastLoginRegion,
       createdAt: u.createdAt,
     }))
 

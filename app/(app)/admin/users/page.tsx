@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-store'
-import { Search, Shield, User, ChevronDown, ChevronUp, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle } from 'lucide-react'
+import { Search, Shield, User, ChevronDown, ChevronUp, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle, MapPin, Globe, Ban } from 'lucide-react'
+import Link from 'next/link'
 
 interface ClassGroup {
   id: string
@@ -20,6 +21,8 @@ interface UserInfo {
   className: string | null
   lastActiveAt: string | null
   lastLoginIp: string
+  lastLoginCity: string
+  lastLoginRegion: string
   createdAt: string
 }
 
@@ -207,10 +210,19 @@ export default function AdminUsersPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">管理所有注册用户的角色、班级和密码</p>
         </div>
-        <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-          <Shield className="w-3 h-3 inline mr-0.5" />
-          超级管理员
-        </span>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/banned-ips"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border hover:bg-accent transition-colors"
+          >
+            <Ban className="w-3.5 h-3.5" />
+            封禁IP管理
+          </Link>
+          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+            <Shield className="w-3 h-3 inline mr-0.5" />
+            超级管理员
+          </span>
+        </div>
       </div>
 
       {message && (
@@ -292,6 +304,16 @@ export default function AdminUsersPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-muted-foreground shrink-0">最后活跃:</span>
                     <span className="text-xs">{u.lastActiveAt ? new Date(u.lastActiveAt).toLocaleString('zh-CN') : '从未'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground shrink-0">登录IP:</span>
+                    <span className="font-mono text-xs">{u.lastLoginIp || '暂无'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground shrink-0">登录地点:</span>
+                    <span className="text-xs">{u.lastLoginCity && u.lastLoginRegion ? `${u.lastLoginRegion} ${u.lastLoginCity}` : '未知'}</span>
                   </div>
                 </div>
 
