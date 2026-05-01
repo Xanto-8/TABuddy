@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getTokenUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard'
 import { successResponse, errorResponse, getBody } from '@/lib/api-data-utils'
+import { emitNotification } from '@/lib/notification-event-bus'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const tokenUser = getTokenUser(request)
@@ -43,13 +44,26 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     })
 
     if (body.reply !== undefined && body.reply.trim()) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           title: '反馈已回复',
           message: `管理员回复了您的反馈：${body.reply.trim().substring(0, 100)}`,
           type: 'feedback',
           link: '/help',
           userId: existing.userId,
+        },
+      })
+      emitNotification({
+        type: 'new_notification',
+        userId: existing.userId,
+        notification: {
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          link: notification.link,
+          read: notification.read,
+          createdAt: notification.createdAt.toISOString(),
         },
       })
     }

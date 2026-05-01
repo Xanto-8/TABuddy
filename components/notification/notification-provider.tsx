@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { NotificationItem, ServerNotification } from '@/types'
 import {
   getUnreadNotifications,
@@ -64,10 +64,13 @@ async function fetchServerNotifications(): Promise<NotificationItem[]> {
   }
 }
 
+const TOKEN_KEY = 'tabuddy_auth_token'
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [activeNotifications, setActiveNotifications] = useState<NotificationItem[]>([])
   const [allNotifications, setAllNotifications] = useState<NotificationItem[]>([])
+  const sseConnectedRef = useRef(false)
 
   useReminderScheduler()
   useCheckInStatusWatcher()
@@ -95,8 +98,58 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     refresh()
-    const interval = setInterval(refresh, 5000)
-    return () => clearInterval(interval)
+
+    let eventSource: EventSource | null = null
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let destroyed = false
+
+    function connectSSE() {
+      const token = localStorage.getItem(TOKEN_KEY)
+      if (!token) {
+        reconnectTimer = setTimeout(connectSSE, 3000)
+        return
+      }
+
+      try {
+        const es = new EventSource(`/api/data/notifications/stream?token=${encodeURIComponent(token)}`)
+        eventSource = es
+
+        es.addEventListener('notification', () => {
+          refresh()
+        })
+
+        es.onopen = () => {
+          sseConnectedRef.current = true
+        }
+
+        es.onerror = () => {
+          sseConnectedRef.current = false
+          es.close()
+          eventSource = null
+          if (!destroyed) {
+            reconnectTimer = setTimeout(connectSSE, 5000)
+          }
+        }
+      } catch {
+        if (!destroyed) {
+          reconnectTimer = setTimeout(connectSSE, 5000)
+        }
+      }
+    }
+
+    connectSSE()
+
+    const fallbackInterval = setInterval(refresh, 30000)
+
+    return () => {
+      destroyed = true
+      clearInterval(fallbackInterval)
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      if (eventSource) {
+        eventSource.close()
+        eventSource = null
+      }
+    }
   }, [refresh])
 
   const markRead = useCallback(async (id: string) => {

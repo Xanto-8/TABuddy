@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getTokenUser, unauthorizedResponse } from '@/lib/auth-guard'
 import { successResponse, errorResponse, getBody } from '@/lib/api-data-utils'
+import { emitNotification } from '@/lib/notification-event-bus'
 
 export async function POST(request: NextRequest) {
   const tokenUser = getTokenUser(request)
@@ -44,15 +45,28 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     })
 
-    if (superadmins.length > 0) {
-      await prisma.notification.createMany({
-        data: superadmins.map(admin => ({
+    for (const admin of superadmins) {
+      const notification = await prisma.notification.create({
+        data: {
           title: '新的用户反馈',
           message: `${submitterName} 提交了 ${typeLabel}：${body.description.trim().substring(0, 100)}`,
           type: 'feedback',
           link: '/admin/feedback',
           userId: admin.id,
-        })),
+        },
+      })
+      emitNotification({
+        type: 'new_notification',
+        userId: admin.id,
+        notification: {
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          link: notification.link,
+          read: notification.read,
+          createdAt: notification.createdAt.toISOString(),
+        },
       })
     }
 
