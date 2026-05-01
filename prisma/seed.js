@@ -7,21 +7,26 @@ async function main() {
   })
 
   if (existingSuperAdmin) {
-    console.log('超级管理员已存在，跳过创建。')
+    console.log('超级管理员已存在，更新密码...')
+    await prisma.user.update({
+      where: { id: existingSuperAdmin.id },
+      data: { password: 'ADMIN 123' },
+    })
     console.log('用户名:', existingSuperAdmin.username)
+    console.log('密码: ADMIN 123')
     return
   }
 
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
     update: {
-      password: 'admin123',
+      password: 'ADMIN 123',
       displayName: '超级管理员',
       role: 'superadmin',
     },
     create: {
       username: 'admin',
-      password: 'admin123',
+      password: 'ADMIN 123',
       displayName: '超级管理员',
       role: 'superadmin',
     },
@@ -29,7 +34,7 @@ async function main() {
 
   console.log('✅ 默认超级管理员设置成功！')
   console.log('用户名: admin')
-  console.log('密码: admin123')
+  console.log('密码: ADMIN 123')
   console.log('请登录后立即修改密码！')
 }
 
