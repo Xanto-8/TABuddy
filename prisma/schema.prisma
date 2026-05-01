@@ -25,6 +25,7 @@ model User {
   avatar      String   @default("")
   settings    String   @default("{}")
   lastActiveAt DateTime?
+  lastLoginIp String   @default("")
   classGroupId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -268,6 +269,14 @@ model ReminderConfig {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BannedIP {
+  id        String   @id @default(cuid())
+  ip        String   @unique
+  reason    String   @default("")
+  bannedBy  String
+  createdAt DateTime @default(now())
 }
 
 model KnowledgeBaseEntry {

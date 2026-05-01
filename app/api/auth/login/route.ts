@@ -2,9 +2,17 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth-utils'
 import { errorResponse, successResponse, getBody } from '@/lib/api-data-utils'
+import { getClientIP } from '@/lib/auth-guard'
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIP = getClientIP(request)
+
+    const bannedIP = await prisma.bannedIP.findUnique({ where: { ip: clientIP } })
+    if (bannedIP) {
+      return errorResponse('该IP已被封禁，无法登录', 403)
+    }
+
     const body = await getBody<{ username: string; password: string }>(request)
     if (!body || !body.username || !body.password) {
       return errorResponse('Username and password are required')
@@ -23,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastActiveAt: new Date() },
+      data: { lastActiveAt: new Date(), lastLoginIp: clientIP },
     })
 
     const token = generateToken({ id: user.id, username: user.username, role: user.role, classGroupId: user.classGroupId })

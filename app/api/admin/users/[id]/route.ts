@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getTokenUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard'
+import { getTokenUser, getClientIP, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard'
 
 export async function PATCH(
   request: NextRequest,
@@ -87,5 +87,53 @@ export async function PATCH(
   } catch (error) {
     console.error('[admin/users/id] PATCH error:', error)
     return NextResponse.json({ error: '更新用户失败' }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const tokenUser = getTokenUser(request)
+  if (!tokenUser) return unauthorizedResponse()
+  if (tokenUser.role !== 'superadmin') return forbiddenResponse('仅超级管理员可注销账号')
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id } })
+    if (!user) {
+      return NextResponse.json({ error: '用户不存在' }, { status: 404 })
+    }
+
+    if (user.role === 'superadmin') {
+      return NextResponse.json({ error: '不能注销超级管理员账号' }, { status: 403 })
+    }
+
+    const clientIP = getClientIP(request)
+    const banIp = user.lastLoginIp || clientIP
+
+    await prisma.user.delete({ where: { id } })
+
+    if (banIp !== 'unknown') {
+      const existing = await prisma.bannedIP.findUnique({ where: { ip: banIp } })
+      if (!existing) {
+        await prisma.bannedIP.create({
+          data: {
+            ip: banIp,
+            reason: `账号注销 - ${user.username}`,
+            bannedBy: tokenUser.userId,
+          },
+        })
+      }
+    }
+
+    return NextResponse.json({
+      data: {
+        message: `用户 ${user.username} 已注销，IP ${banIp} 已被封禁`,
+      },
+    })
+  } catch (error) {
+    console.error('[admin/users/id] DELETE error:', error)
+    return NextResponse.json({ error: '注销失败' }, { status: 500 })
   }
 }

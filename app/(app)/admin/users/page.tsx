@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-store'
-import { Search, Shield, User, ChevronDown, ChevronUp, Key, X, Check, Users as UsersIcon, RefreshCw } from 'lucide-react'
+import { Search, Shield, User, ChevronDown, ChevronUp, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle } from 'lucide-react'
 
 interface ClassGroup {
   id: string
@@ -19,6 +19,7 @@ interface UserInfo {
   classGroupId: string | null
   className: string | null
   lastActiveAt: string | null
+  lastLoginIp: string
   createdAt: string
 }
 
@@ -53,6 +54,7 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingUser, setEditingUser] = useState<UserInfo | null>(null)
+  const [deletingUser, setDeletingUser] = useState<UserInfo | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [newDisplayName, setNewDisplayName] = useState('')
   const [newRole, setNewRole] = useState('')
@@ -156,6 +158,31 @@ export default function AdminUsersPage() {
         fetchData()
       } else {
         setMessage({ type: 'error', text: result.error || '更新失败' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: '网络错误' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return
+    setSaving(true)
+    setMessage(null)
+
+    try {
+      const res = await fetch(`/api/admin/users/${deletingUser.id}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setMessage({ type: 'success', text: result.data?.message || `用户 ${deletingUser.username} 已注销` })
+        setDeletingUser(null)
+        fetchData()
+      } else {
+        setMessage({ type: 'error', text: result.error || '注销失败' })
       }
     } catch {
       setMessage({ type: 'error', text: '网络错误' })
@@ -282,6 +309,14 @@ export default function AdminUsersPage() {
                     <Key className="w-3 h-3" />
                     编辑信息
                   </button>
+                  <button
+                    onClick={() => setDeletingUser(u)}
+                    disabled={u.role === 'superadmin' || u.id === user?.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    注销账号
+                  </button>
                 </div>
               </div>
             )}
@@ -363,6 +398,51 @@ export default function AdminUsersPage() {
                 className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {saving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeletingUser(null)}>
+          <div className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-red-500">注销账号</h3>
+                <p className="text-xs text-muted-foreground">此操作不可撤销</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-3 text-sm space-y-1">
+              <p>确定要注销用户 <strong>{deletingUser.displayName || deletingUser.username}</strong> 吗？</p>
+              <p>该用户的 IP <strong>{deletingUser.lastLoginIp || '未知'}</strong> 将被永久封禁，无法再注册或登录。</p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setDeletingUser(null)}
+                disabled={saving}
+                className="flex-1 px-4 py-2 rounded-lg border border-border text-sm hover:bg-accent transition-colors disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={saving}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {saving ? (
+                  '处理中...'
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    确认注销
+                  </>
+                )}
               </button>
             </div>
           </div>
