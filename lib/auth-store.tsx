@@ -20,7 +20,7 @@ export interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<boolean>
-  register: (username: string, password: string) => Promise<void>
+  register: (username: string, password: string, teacherCode?: string) => Promise<void>
   logout: () => void
   getToken: () => string | null
   updateAvatar: (avatarDataUrl: string) => Promise<void>
@@ -171,12 +171,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const register = useCallback(async (username: string, password: string): Promise<void> => {
+  const register = useCallback(async (username: string, password: string, teacherCode?: string): Promise<void> => {
     try {
+      const body: Record<string, string> = { username, password, displayName: username }
+      if (teacherCode) {
+        body.teacherCode = teacherCode
+      }
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, displayName: username }),
+        body: JSON.stringify(body),
       })
 
       const result = await res.json()

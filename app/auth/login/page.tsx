@@ -32,6 +32,11 @@ export default function LoginPage() {
   const [regLoading, setRegLoading] = useState(false)
   const [regAvatar, setRegAvatar] = useState<File | null>(null)
   const [regAvatarPreview, setRegAvatarPreview] = useState('')
+  const [regRole, setRegRole] = useState<'assistant' | 'classadmin'>('assistant')
+  const [regTeacherCode, setRegTeacherCode] = useState('')
+  const [regCodeVerifying, setRegCodeVerifying] = useState(false)
+  const [regCodeVerified, setRegCodeVerified] = useState<boolean | null>(null)
+  const [regCodeError, setRegCodeError] = useState('')
   const [isConverging, setIsConverging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const usernameTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -91,9 +96,15 @@ export default function LoginPage() {
       return
     }
 
+    if (regRole === 'classadmin' && !regTeacherCode.trim()) {
+      setRegError('请填写老师注册码')
+      return
+    }
+
     setRegLoading(true)
     try {
-      await register(regUsername, regPassword)
+      const code = regRole === 'classadmin' ? regTeacherCode.trim().toUpperCase() : undefined
+      await register(regUsername, regPassword, code)
       toast.success('注册成功，请登录')
       setIsRegistering(false)
       setRegUsername('')
@@ -101,6 +112,10 @@ export default function LoginPage() {
       setRegConfirmPassword('')
       setRegAvatar(null)
       setRegAvatarPreview('')
+      setRegRole('assistant')
+      setRegTeacherCode('')
+      setRegCodeVerified(null)
+      setRegCodeError('')
     } catch (err) {
       setRegError(err instanceof Error ? err.message : '注册失败')
     } finally {
@@ -666,6 +681,116 @@ export default function LoginPage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="mb-3 sm:mb-5">
+                  <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
+                    注册身份
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setRegRole('assistant'); setRegCodeVerified(null); setRegCodeError('') }}
+                      className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl transition-all duration-200 cursor-pointer border"
+                      style={{
+                        background: regRole === 'assistant' ? 'rgba(20, 184, 166, 0.08)' : 'rgba(248, 250, 252, 0.95)',
+                        borderColor: regRole === 'assistant' ? '#14b8a6' : '#d8dee8',
+                      }}
+                    >
+                      <User size={20} className={regRole === 'assistant' ? 'text-[#0f766e]' : 'text-[#94a3b8]'} />
+                      <span className="text-xs font-semibold mt-1.5" style={{ color: regRole === 'assistant' ? '#0f766e' : '#475569' }}>
+                        普通助教
+                      </span>
+                      <span className="text-[10px] text-[#94a3b8] mt-0.5">无需注册码</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRegRole('classadmin')}
+                      className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl transition-all duration-200 cursor-pointer border"
+                      style={{
+                        background: regRole === 'classadmin' ? 'rgba(20, 184, 166, 0.08)' : 'rgba(248, 250, 252, 0.95)',
+                        borderColor: regRole === 'classadmin' ? '#14b8a6' : '#d8dee8',
+                      }}
+                    >
+                      <ShieldCheck size={20} className={regRole === 'classadmin' ? 'text-[#0f766e]' : 'text-[#94a3b8]'} />
+                      <span className="text-xs font-semibold mt-1.5" style={{ color: regRole === 'classadmin' ? '#0f766e' : '#475569' }}>
+                        任课老师
+                      </span>
+                      <span className="text-[10px] text-[#94a3b8] mt-0.5">需老师注册码</span>
+                    </button>
+                  </div>
+                </div>
+
+                {regRole === 'classadmin' && (
+                  <div className="mb-3 sm:mb-5">
+                    <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
+                      老师注册码
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8] z-10">
+                        <ShieldCheck size={15} />
+                      </div>
+                      <input
+                        type="text"
+                        value={regTeacherCode}
+                        onChange={(e) => {
+                          setRegTeacherCode(e.target.value.toUpperCase())
+                          setRegCodeVerified(null)
+                          setRegCodeError('')
+                        }}
+                        placeholder="请输入老师注册码"
+                        className="w-full h-[44px] sm:h-[50px] pl-11 pr-4 text-sm outline-none transition-all duration-200 tracking-widest font-mono uppercase"
+                        style={{
+                          background: 'rgba(248, 250, 252, 0.95)',
+                          border: regCodeVerified === true ? '1px solid #14b8a6' : regCodeError ? '1px solid #b91c1c' : '1px solid #d8dee8',
+                          borderRadius: '14px',
+                          color: '#111827',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!e.currentTarget.matches(':focus')) {
+                            e.currentTarget.style.borderColor = '#14b8a6'
+                            e.currentTarget.style.background = '#ffffff'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!e.currentTarget.matches(':focus')) {
+                            e.currentTarget.style.borderColor = regCodeVerified === true ? '#14b8a6' : regCodeError ? '#b91c1c' : '#d8dee8'
+                            e.currentTarget.style.background = 'rgba(248, 250, 252, 0.95)'
+                          }
+                        }}
+                        onFocusCapture={(e) => {
+                          e.currentTarget.style.borderColor = '#0f766e'
+                          e.currentTarget.style.boxShadow = '0 0 0 4px rgba(20, 184, 166, 0.15)'
+                          e.currentTarget.style.background = '#ffffff'
+                        }}
+                        onBlurCapture={(e) => {
+                          e.currentTarget.style.borderColor = regCodeVerified === true ? '#14b8a6' : regCodeError ? '#b91c1c' : '#d8dee8'
+                          e.currentTarget.style.boxShadow = 'none'
+                          e.currentTarget.style.background = 'rgba(248, 250, 252, 0.95)'
+                        }}
+                        autoComplete="off"
+                      />
+                      {regCodeVerified === true && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#14b8a6]">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                      )}
+                      {regCodeError && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#b91c1c]">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-[#94a3b8] mt-1.5 ml-1">
+                      向班级管理员或超级管理员获取老师注册码，通过后自动成为班级管理员
+                    </p>
+                  </div>
+                )}
 
                 {regError && (
                   <div className="mb-4 px-[14px] py-[11px] text-xs text-[#b91c1c] bg-[#fff1f2] border border-[#fecdd3] rounded-xl">

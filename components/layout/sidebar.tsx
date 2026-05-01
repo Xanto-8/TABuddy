@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   LayoutDashboard, BookOpen, ClipboardList, GraduationCap, FileText,
   MessageSquare, Settings,
-  HelpCircle, X, GitBranch, Sun, Moon, Shield, Users, Activity, UserPlus, KeyRound,
+  HelpCircle, X, GitBranch, Sun, Moon, Shield, ShieldCheck, Users, Activity, UserPlus, KeyRound,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSidebar } from '@/components/providers/sidebar-provider'
@@ -89,6 +89,7 @@ const CLASSADMIN_SPECIFIC_ITEMS = [
   { icon: UserPlus, label: '助教与绑定管理', href: '/assistant-management' },
   { icon: KeyRound, label: '已绑定成员管理', href: '/assistant-management/bound-members' },
   { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
+  { icon: ShieldCheck, label: '老师注册码', href: '/assistant-management/teacher-code' },
 ] as const
 
 function NavArea({ expanded }: { expanded: boolean }) {
@@ -117,6 +118,7 @@ function NavArea({ expanded }: { expanded: boolean }) {
       { icon: Activity, label: '超级管理员面板', href: '/admin/dashboard' },
       { icon: Users, label: '班级管理', href: '/admin/classes' },
       { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
+      { icon: ShieldCheck, label: '老师注册码管理', href: '/admin/teacher-code' },
       { icon: Users, label: '用户管理', href: '/admin/users' },
     ].map(item => ({
       ...item,

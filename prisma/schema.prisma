@@ -54,6 +54,7 @@ model User {
   userStores       UserStore[]
   teacherBinds     TeacherAssistantBind[] @relation("TeacherBindRelation")
   assistantBinds   TeacherAssistantBind[] @relation("AssistantBindRelation")
+  teacherRegCodes  TeacherRegCode[]
 }
 
 model PublicKnowledgeItem {
@@ -330,4 +331,18 @@ model TeacherAssistantBind {
   @@index([inviteCode, status])
   @@index([teacherId, status])
   @@index([assistantId, status])
+}
+
+model TeacherRegCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  creatorId String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([code, isActive])
+  @@index([creatorId])
 }

@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('该IP已被封禁，无法注册', 403)
     }
 
-    const body = await getBody<{ username: string; password: string; displayName?: string }>(request)
+    const body = await getBody<{ username: string; password: string; displayName?: string; teacherCode?: string }>(request)
     if (!body || !body.username || !body.password) {
       return errorResponse('Username and password are required')
     }
 
-    const { username, password, displayName } = body
+    const { username, password, displayName, teacherCode } = body
 
     if (password.length < 6) {
       return errorResponse('Password must be at least 6 characters')
@@ -32,6 +32,21 @@ export async function POST(request: NextRequest) {
 
     const userCount = await prisma.user.count()
 
+    let role = 'assistant'
+
+    if (userCount === 0) {
+      role = 'superadmin'
+    } else if (teacherCode) {
+      const code = teacherCode.trim().toUpperCase()
+      const validCode = await prisma.teacherRegCode.findFirst({
+        where: { code, isActive: true },
+      })
+      if (!validCode) {
+        return errorResponse('老师注册码无效或已失效，请检查后重试', 400)
+      }
+      role = 'classadmin'
+    }
+
     const location = await getLocationFromRequest(request)
 
     const user = await prisma.user.create({
@@ -39,7 +54,7 @@ export async function POST(request: NextRequest) {
         username,
         password,
         displayName: displayName || '',
-        role: userCount === 0 ? 'superadmin' : 'assistant',
+        role,
         lastActiveAt: new Date(),
         lastLoginIp: location.ip,
         lastLoginCountry: location.country,
