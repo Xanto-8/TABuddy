@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
         password,
         displayName,
         role: userCount === 0 ? 'superadmin' : 'assistant',
+        lastActiveAt: new Date(),
       },
     })
 

@@ -25,6 +25,7 @@ export function Header() {
   const [showSwitchModal, setShowSwitchModal] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [userOnline, setUserOnline] = useState(true)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const profile = user ? ACCOUNT_PROFILES[user.username] : null
@@ -39,14 +40,22 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      setUserOnline(document.visibilityState === 'visible')
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
+
   const goHome = () => {
     setOpen(true)
     router.push('/dashboard')
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setDropdownOpen(false)
-    logout()
+    await logout()
     router.push('/auth/login')
   }
 
@@ -164,7 +173,7 @@ export function Header() {
                         <Shield className="h-5 w-5 text-white" />
                       </div>
                     )}
-                    <div className="absolute -bottom-1 -right-1 h-3 w-3 md:h-4 md:w-4 rounded-full border-2 border-background bg-success" />
+                    <div className={`absolute -bottom-1 -right-1 h-3 w-3 md:h-4 md:w-4 rounded-full border-2 border-background ${userOnline ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
                   </div>
                   <ChevronDown className={cn('hidden md:block h-4 w-4 text-muted-foreground transition-transform', dropdownOpen && 'rotate-180')} />
                 </button>

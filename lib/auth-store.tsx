@@ -117,8 +117,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: { authorization: `Bearer ${state.token}` },
         })
       } catch {}
-    }, 120000)
+    }, 30000)
     return () => clearInterval(id)
+  }, [state.token, state.isAuthenticated])
+
+  useEffect(() => {
+    if (!state.token || !state.isAuthenticated) return
+    const handleUnload = () => {
+      fetch('/api/heartbeat/offline', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${state.token}` },
+        keepalive: true,
+      })
+    }
+    window.addEventListener('beforeunload', handleUnload)
+    return () => window.removeEventListener('beforeunload', handleUnload)
   }, [state.token, state.isAuthenticated])
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
@@ -189,11 +202,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const token = state.token
     clearAuth()
     setState({ user: null, isAuthenticated: false, token: null })
+    try {
+      await fetch('/api/heartbeat/offline', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+      })
+    } catch {}
     toast.info('已退出登录')
-  }, [])
+  }, [state.token])
 
   const getToken = useCallback((): string | null => {
     return state.token

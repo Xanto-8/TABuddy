@@ -21,6 +21,11 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid username or password', 401)
     }
 
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastActiveAt: new Date() },
+    })
+
     const token = generateToken({ id: user.id, username: user.username, role: user.role, classGroupId: user.classGroupId })
 
     return successResponse({
