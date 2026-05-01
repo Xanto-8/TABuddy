@@ -12,7 +12,7 @@ import { useSidebar } from '@/components/providers/sidebar-provider'
 import { NotificationCenter } from '@/components/notification/notification-center'
 import { useAuth } from '@/lib/auth-store'
 import { useRoleAccess } from '@/lib/use-role-access'
-import { getSavedAccounts, saveAccount, removeAccount, savePassword, removePassword, type SavedAccount, ACCOUNT_PROFILES } from '@/lib/account-store'
+import { getSavedAccounts, saveAccount, removeAccount, savePassword, removePassword, getStoredPassword, type SavedAccount, ACCOUNT_PROFILES } from '@/lib/account-store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { BindInviteCodeModal } from '@/components/assistant/bind-invite-code-modal'
@@ -26,7 +26,6 @@ export function Header() {
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [showSwitchModal, setShowSwitchModal] = useState(false)
-  const [switching, setSwitching] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [userOnline, setUserOnline] = useState(true)
   const [showBindModal, setShowBindModal] = useState(false)
@@ -235,18 +234,6 @@ export function Header() {
         <SwitchAccountModal
           currentUsername={user?.username || ''}
           onClose={() => setShowSwitchModal(false)}
-          onSwitch={async (targetUsername) => {
-            setSwitching(true)
-            try {
-              logout()
-              setShowSwitchModal(false)
-              toast.info('已退出，请登录新账号')
-            } catch {
-              toast.error('账号切换失败，请重试')
-              setSwitching(false)
-            }
-          }}
-          switching={switching}
         />
       )}
       {showBindModal && (
@@ -266,18 +253,20 @@ export function Header() {
 function SwitchAccountModal({
   currentUsername,
   onClose,
-  onSwitch,
-  switching,
 }: {
   currentUsername: string
   onClose: () => void
-  onSwitch: (username: string) => Promise<void>
-  switching: boolean
 }) {
+  const { login } = useAuth()
+  const router = useRouter()
   const [accounts, setAccounts] = useState<SavedAccount[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [newUsername, setNewUsername] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [switching, setSwitching] = useState(false)
+  const [passwordPromptAccount, setPasswordPromptAccount] = useState<string | null>(null)
+  const [promptPassword, setPromptPassword] = useState('')
   const modalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -294,7 +283,7 @@ function SwitchAccountModal({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [onClose])
 
-  const handleAddAccount = () => {
+  const handleAddAccount = async () => {
     if (!newUsername.trim() || !newPassword.trim()) {
       toast.error('请填写用户名和密码')
       return
@@ -305,18 +294,38 @@ function SwitchAccountModal({
       return
     }
 
-    const profile = ACCOUNT_PROFILES[newUsername.trim()]
-    savePassword(newUsername.trim(), newPassword.trim())
-    const newAccount: SavedAccount = {
-      username: newUsername.trim(),
-      subtitle: profile?.subtitle || '',
+    setVerifying(true)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: newUsername.trim(), password: newPassword.trim() }),
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        toast.error(result.error || '账号或密码错误')
+        return
+      }
+
+      const { user } = result.data
+      savePassword(newUsername.trim(), newPassword.trim())
+      const newAccount: SavedAccount = {
+        username: newUsername.trim(),
+        displayName: user.displayName || user.username,
+        role: user.role,
+        subtitle: ACCOUNT_PROFILES[newUsername.trim()]?.subtitle || '',
+      }
+      saveAccount(newAccount)
+      setAccounts(getSavedAccounts())
+      setNewUsername('')
+      setNewPassword('')
+      setShowAddForm(false)
+      toast.success('账号已添加')
+    } catch {
+      toast.error('网络错误，请重试')
+    } finally {
+      setVerifying(false)
     }
-    saveAccount(newAccount)
-    setAccounts(getSavedAccounts())
-    setNewUsername('')
-    setNewPassword('')
-    setShowAddForm(false)
-    toast.success('账号已添加')
   }
 
   const handleRemoveAccount = (username: string) => {
@@ -324,6 +333,7 @@ function SwitchAccountModal({
       toast.error('不能删除当前登录的账号')
       return
     }
+    removePassword(username)
     removeAccount(username)
     setAccounts(getSavedAccounts())
     toast.success('账号已移除')
@@ -334,7 +344,103 @@ function SwitchAccountModal({
       onClose()
       return
     }
-    await onSwitch(username)
+
+    const storedPassword = getStoredPassword(username)
+    if (storedPassword) {
+      setSwitching(true)
+      try {
+        const success = await login(username, storedPassword)
+        if (success) {
+          onClose()
+          router.push('/dashboard')
+        }
+      } catch {
+        toast.error('账号切换失败，请重试')
+      } finally {
+        setSwitching(false)
+      }
+    } else {
+      setPasswordPromptAccount(username)
+      setPromptPassword('')
+    }
+  }
+
+  const handlePromptSubmit = async () => {
+    if (!promptPassword.trim()) {
+      toast.error('请输入密码')
+      return
+    }
+    setSwitching(true)
+    try {
+      const success = await login(passwordPromptAccount!, promptPassword)
+      if (success) {
+        savePassword(passwordPromptAccount!, promptPassword)
+        onClose()
+        router.push('/dashboard')
+      }
+    } catch {
+      toast.error('密码错误，切换失败')
+    } finally {
+      setSwitching(false)
+      setPasswordPromptAccount(null)
+      setPromptPassword('')
+    }
+  }
+
+  const handleCancelPrompt = () => {
+    setPasswordPromptAccount(null)
+    setPromptPassword('')
+  }
+
+  if (passwordPromptAccount) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-background/60 backdrop-blur-sm">
+        <div
+          ref={modalRef}
+          className="w-full max-w-md mx-4 rounded-2xl border border-border bg-card shadow-2xl overflow-hidden"
+        >
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h2 className="text-base font-semibold text-foreground">切换账号</h2>
+            <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="px-6 py-6 space-y-4">
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">请输入 <span className="text-primary">{passwordPromptAccount}</span> 的密码</p>
+              <p className="text-xs text-muted-foreground mt-1">验证后将自动切换到该账号</p>
+            </div>
+            <div>
+              <input
+                type="password"
+                value={promptPassword}
+                onChange={e => setPromptPassword(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handlePromptSubmit() }}
+                placeholder="输入密码"
+                autoFocus
+                className="w-full h-10 px-3 text-sm rounded-lg border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </div>
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={handleCancelPrompt}
+                className="px-4 py-2 text-sm rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handlePromptSubmit}
+                disabled={!promptPassword.trim() || switching}
+                className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+              >
+                {switching ? '验证中...' : '确认切换'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -399,7 +505,7 @@ function SwitchAccountModal({
                 {!isCurrent && !switching && (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRemoveAccount(account.username) }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0 md:opacity-0 md:group-hover:opacity-100"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                     title="移除账号"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -433,17 +539,18 @@ function SwitchAccountModal({
               </div>
               <div className="flex items-center gap-2 justify-end">
                 <button
-                  onClick={() => setShowAddForm(false)}
+                  onClick={() => { setShowAddForm(false); setNewUsername(''); setNewPassword('') }}
                   className="px-3 py-1.5 text-xs rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleAddAccount}
-                  disabled={!newUsername.trim() || !newPassword.trim()}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+                  disabled={verifying || !newUsername.trim() || !newPassword.trim()}
+                  className="px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40 flex items-center gap-1.5"
                 >
-                  添加
+                  {verifying && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {verifying ? '验证中...' : '添加'}
                 </button>
               </div>
             </div>

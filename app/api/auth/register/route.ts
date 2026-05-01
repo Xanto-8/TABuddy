@@ -30,9 +30,13 @@ export async function POST(request: NextRequest) {
       return errorResponse('Username already exists')
     }
 
+    const userCount = await prisma.user.count()
+
     let role = 'assistant'
 
-    if (teacherCode) {
+    if (userCount === 0) {
+      role = 'superadmin'
+    } else if (teacherCode) {
       const code = teacherCode.trim().toUpperCase()
       const validCode = await prisma.teacherRegCode.findFirst({
         where: { code, isActive: true },
