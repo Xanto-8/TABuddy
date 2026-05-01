@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       data: {
         lastActiveAt: new Date(),
         lastLoginIp: clientIP,
+        lastLoginCountry: location?.country || '',
         lastLoginCity: location?.city || '',
         lastLoginRegion: location?.region || '',
       },

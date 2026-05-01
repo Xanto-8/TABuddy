@@ -21,6 +21,7 @@ interface UserInfo {
   className: string | null
   lastActiveAt: string | null
   lastLoginIp: string
+  lastLoginCountry: string
   lastLoginCity: string
   lastLoginRegion: string
   createdAt: string
@@ -313,7 +314,7 @@ export default function AdminUsersPage() {
                   <div className="flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground shrink-0">登录地点:</span>
-                    <span className="text-xs">{u.lastLoginCity && u.lastLoginRegion ? `${u.lastLoginRegion} ${u.lastLoginCity}` : '未知'}</span>
+                    <span className="text-xs">{u.lastLoginCountry || u.lastLoginRegion ? `${u.lastLoginCountry} ${u.lastLoginRegion} ${u.lastLoginCity}`.trim() : '未知'}</span>
                   </div>
                 </div>
 

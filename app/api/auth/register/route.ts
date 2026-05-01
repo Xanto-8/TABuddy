@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
         role: userCount === 0 ? 'superadmin' : 'assistant',
         lastActiveAt: new Date(),
         lastLoginIp: clientIP,
+        lastLoginCountry: location?.country || '',
         lastLoginCity: location?.city || '',
         lastLoginRegion: location?.region || '',
       },

@@ -25,9 +25,10 @@ model User {
   avatar      String   @default("")
   settings    String   @default("{}")
   lastActiveAt DateTime?
-  lastLoginIp     String   @default("")
-  lastLoginCity   String   @default("")
-  lastLoginRegion String   @default("")
+  lastLoginIp      String   @default("")
+  lastLoginCountry String   @default("")
+  lastLoginCity    String   @default("")
+  lastLoginRegion  String   @default("")
   classGroupId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
