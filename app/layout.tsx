@@ -11,9 +11,22 @@ import { AuthProvider } from '@/lib/auth-store'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'TABuddy - 新东方助教效率工具',
+  title: {
+    default: 'TABuddy - 新东方助教效率工具',
+    template: '%s | TABuddy',
+  },
   description: '帮助新东方国际教育助教提升工作效率的智能工具',
   keywords: ['教育', '助教', '效率工具', '新东方', 'GY', 'KET'],
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'TABuddy',
+  },
 }
 
 export default function RootLayout({

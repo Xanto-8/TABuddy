@@ -17,12 +17,14 @@ export async function POST(request: NextRequest) {
       return errorResponse('Username already exists', 409)
     }
 
+    const userCount = await prisma.user.count()
+
     const user = await prisma.user.create({
       data: {
         username,
         password,
         displayName,
-        role: 'ta',
+        role: userCount === 0 ? 'admin' : 'ta',
       },
     })
 
