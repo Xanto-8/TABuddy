@@ -67,6 +67,7 @@ interface DataCache {
   workflowTodos: WorkflowTodo[]
   absenceRecords: AbsenceRecord[]
   userFeedbacks: UserFeedback[]
+  boundTeachers: { id: string; username: string; displayName: string }[]
 }
 
 const cache: DataCache = {
@@ -93,6 +94,7 @@ const cache: DataCache = {
   workflowTodos: [],
   absenceRecords: [],
   userFeedbacks: [],
+  boundTeachers: [],
 }
 
 let cacheLoaded = false
@@ -145,6 +147,7 @@ export async function loadAllDataFromAPI(): Promise<void> {
     cache.classes = data.classes || []
     cache.students = data.students || []
     cache.schedules = data.classSchedules || []
+    cache.boundTeachers = data.boundTeachers || []
 
     const store: Record<string, unknown> = data.storeData || {}
     cache.records = (store.records as ClassRecord[]) || []
@@ -562,6 +565,10 @@ export function getResourceTypeIcon(type: ResourceType): string {
 }
 
 // ========== 班级上课时间 (Schedules) ==========
+
+export function getBoundTeachers(): { id: string; username: string; displayName: string }[] {
+  return cache.boundTeachers
+}
 
 export function getClassSchedules(classId: string): ClassSchedule[] {
   return cache.schedules.filter((s) => s.classId === classId)

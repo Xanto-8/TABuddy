@@ -56,13 +56,17 @@ export async function getAllUserData(userId: string) {
 
   const isAssistant = user.role === 'assistant'
   let teacherIds: string[] = []
+  let boundTeachers: { id: string; username: string; displayName: string }[] = []
 
   if (isAssistant) {
     const binds = await prisma.teacherAssistantBind.findMany({
       where: { assistantId: userId, status: 'active' },
-      select: { teacherId: true },
+      include: {
+        teacher: { select: { id: true, username: true, displayName: true } },
+      },
     })
     teacherIds = binds.map(b => b.teacherId)
+    boundTeachers = binds.map(b => b.teacher)
   }
 
   const dataUserId = isAssistant && teacherIds.length > 0 ? undefined : userId
@@ -90,7 +94,7 @@ export async function getAllUserData(userId: string) {
     reminderConfigs,
     knowledgeEntries,
   ] = await Promise.all([
-    prisma.class.findMany({ where: teacherDataFilter }),
+    prisma.class.findMany({ where: teacherDataFilter, include: { schedules: true } }),
     prisma.student.findMany({ where: teacherDataFilter }),
     prisma.classSchedule.findMany({ where: teacherDataFilter }),
     prisma.courseTask.findMany({ where: teacherDataFilter }),
@@ -108,9 +112,21 @@ export async function getAllUserData(userId: string) {
     prisma.knowledgeBaseEntry.findMany({ where: teacherDataFilter }),
   ])
 
+  const studentCountMap = students.reduce((map, s) => {
+    if (s.classId) {
+      map[s.classId] = (map[s.classId] || 0) + 1
+    }
+    return map
+  }, {} as Record<string, number>)
+
+  const classesWithCount = classes.map(cls => ({
+    ...cls,
+    studentCount: studentCountMap[cls.id] || 0,
+  }))
+
   return {
     user,
-    classes,
+    classes: classesWithCount,
     students,
     classSchedules,
     courseTasks,
@@ -126,5 +142,6 @@ export async function getAllUserData(userId: string) {
     pushLogs,
     reminderConfigs,
     knowledgeEntries,
+    ...(isAssistant && boundTeachers.length > 0 ? { boundTeachers } : {}),
   }
 }

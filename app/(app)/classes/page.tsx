@@ -6,7 +6,7 @@ import { Plus, Search, Users, MoreHorizontal, Pencil, Trash2, BookOpen, Home, Cl
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Class, ClassType, ClassSchedule } from '@/types'
-import { getClasses, deleteClass, getClassTypeLabel, getClassTypeColor } from '@/lib/store'
+import { getClasses, deleteClass, getClassTypeLabel, getClassTypeColor, getClassSchedules } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import { useAuth } from '@/lib/auth-store'
@@ -179,7 +179,7 @@ export default function ClassesPage() {
 
                 <div className="flex items-center text-sm text-muted-foreground mt-1">
                   <Clock className="h-4 w-4 mr-1.5" />
-                  <span>{formatScheduleDisplay(cls.schedules)}</span>
+                  <span>{formatScheduleDisplay(getClassSchedules(cls.id))}</span>
                 </div>
 
                 {cls.description && (

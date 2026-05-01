@@ -30,6 +30,7 @@ import {
   getStudentsByClass,
   getAllOverallAccuracyRecords,
   getClassOverallAccuracyRecords,
+  getBoundTeachers,
 } from '@/lib/store'
 
 function ClassLearningOverview() {
@@ -209,13 +210,66 @@ export default function DashboardPage() {
   const data = useDashboardData()
   const { isAssistant } = useRoleAccess()
   const [showBindModal, setShowBindModal] = useState(false)
+  const [boundTeachers, setBoundTeachers] = useState<{ id: string; username: string; displayName: string }[]>([])
+
+  useEffect(() => {
+    if (isAssistant) {
+      setBoundTeachers(getBoundTeachers())
+    }
+  }, [isAssistant])
 
   return (
     <PageContainer>
       <div className="space-y-6 pb-8">
         <WelcomeBanner data={data} />
 
-        {isAssistant && (
+        {isAssistant && boundTeachers.length > 0 && (
+          <div className="bg-gradient-to-r from-primary/5 to-primary/[0.02] border border-primary/10 rounded-xl p-4 sm:p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground text-sm">我绑定的老师</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">你正在协助以下老师管理班级</p>
+                  <div className="mt-3 space-y-2">
+                    {boundTeachers.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2 text-sm">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                          {t.displayName?.charAt(0) || t.username?.charAt(0) || '?'}
+                        </div>
+                        <div>
+                          <span className="font-medium text-foreground">{t.displayName || t.username}</span>
+                          <span className="text-muted-foreground ml-2">({t.username})</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBindModal(true)}
+                className="h-9 px-3 rounded-xl border border-primary/20 text-primary text-xs font-medium hover:bg-primary/5 transition-colors flex items-center gap-1.5 shrink-0"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                绑定其他老师
+              </button>
+            </div>
+            {showBindModal && (
+              <BindInviteCodeModal
+                onClose={() => setShowBindModal(false)}
+                onSuccess={() => {
+                  setShowBindModal(false)
+                  toast.success('绑定成功，已加载老师班级数据')
+                  window.location.reload()
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {isAssistant && boundTeachers.length === 0 && (
           <div className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
