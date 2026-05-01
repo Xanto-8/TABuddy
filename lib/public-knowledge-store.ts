@@ -255,12 +255,13 @@ export async function deletePublicEntry(id: string): Promise<{ ok: boolean; erro
   return syncToServer()
 }
 
-export async function togglePublicEntry(id: string): Promise<{ ok: boolean; error?: string }> {
+export function togglePublicEntry(id: string): { ok: boolean; error?: string } {
   const entry = cachedEntries.find(e => e.id === id)
   if (!entry) return { ok: false, error: '条目不存在' }
   entry.enabled = !entry.enabled
   broadcastChange()
-  return syncToServer()
+  syncToServer()
+  return { ok: true }
 }
 
 export async function resetPublicKnowledgeBase(): Promise<{ ok: boolean; error?: string }> {

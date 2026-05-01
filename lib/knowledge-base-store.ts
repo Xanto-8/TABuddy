@@ -56,10 +56,10 @@ export function getKnowledgeBase(): KnowledgeEntry[] {
   }
   const local = getLocalKnowledgeBase()
   if (local.length > 0) {
-    localFallback = local
-    return local
+    localFallback = [...local.map(e => ({ ...e }))]
+    return localFallback
   }
-  return defaultEntries
+  return defaultEntries.map(e => ({ ...e }))
 }
 
 export function addKnowledgeEntry(entry: KnowledgeEntry): void {
@@ -93,23 +93,17 @@ export function updateKnowledgeEntry(updated: KnowledgeEntry): void {
 }
 
 export function deleteKnowledgeEntry(id: string): void {
-  if (isCacheLoaded()) {
-    const cache = getCache()
-    const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    const index = entries.findIndex(e => e.id === id)
-    if (index !== -1) {
-      entries.splice(index, 1)
-      saveLocalKnowledgeBase([...entries])
+  const entries = getKnowledgeBase()
+  const index = entries.findIndex(e => e.id === id)
+  if (index !== -1) {
+    entries.splice(index, 1)
+    saveLocalKnowledgeBase([...entries])
+    const loaded = isCacheLoaded()
+    if (loaded) {
       triggerSync()
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('knowledgeBaseChanged'))
-      }
     }
-  } else {
-    const index = localFallback.findIndex(e => e.id === id)
-    if (index !== -1) {
-      localFallback.splice(index, 1)
-      saveLocalKnowledgeBase(localFallback)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('knowledgeBaseChanged'))
     }
   }
 }

@@ -181,10 +181,24 @@ export default function AdminKnowledgeBasePage() {
     loadEntries()
   }
 
-  const handleToggle = async (id: string) => {
-    const result = await togglePublicEntry(id)
-    if (!result.ok) toast.error(result.error || '操作失败，请重试')
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
+
+  const handleToggle = (id: string) => {
+    setTogglingIds(prev => new Set(prev).add(id))
+    const result = togglePublicEntry(id)
+    if (!result.ok) {
+      toast.error(result.error || '操作失败，请重试')
+    } else {
+      toast.success('已更新显示状态')
+    }
     loadEntries()
+    setTimeout(() => {
+      setTogglingIds(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }, 300)
   }
 
   const handleReset = async () => {
@@ -347,10 +361,16 @@ export default function AdminKnowledgeBasePage() {
                   <div className="shrink-0 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleToggle(entry.id)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                      className={cn(
+                        'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+                        togglingIds.has(entry.id) ? 'scale-110 text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                      )}
                       title={entry.enabled ? '隐藏' : '取消隐藏'}
                     >
-                      {entry.enabled ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {entry.enabled
+                        ? <EyeOff className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                        : <Eye className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                      }
                     </button>
                     <button
                       onClick={() => openEdit(entry)}
