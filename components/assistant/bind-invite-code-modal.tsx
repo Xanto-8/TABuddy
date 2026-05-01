@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Loader2, KeyRound, CheckCircle } from 'lucide-react'
+import { useAuth } from '@/lib/auth-store'
 
 interface BindInviteCodeModalProps {
   onClose: () => void
@@ -9,6 +10,7 @@ interface BindInviteCodeModalProps {
 }
 
 export function BindInviteCodeModal({ onClose, onSuccess }: BindInviteCodeModalProps) {
+  const { getToken } = useAuth()
   const [inviteCode, setInviteCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -29,10 +31,12 @@ export function BindInviteCodeModal({ onClose, onSuccess }: BindInviteCodeModalP
     setLoading(true)
     setError('')
 
+    const token = getToken()
+
     try {
       const res = await fetch('/api/invite-code/bind', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}), 'Content-Type': 'application/json' },
         body: JSON.stringify({ inviteCode: code }),
       })
 

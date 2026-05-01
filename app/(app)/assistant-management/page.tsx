@@ -40,8 +40,13 @@ const PERIOD_OPTIONS: { value: ValidPeriod; label: string; icon: typeof Infinity
 
 export default function AssistantManagementPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const { isClassAdmin } = useRoleAccess()
+
+  const authHeaders = (): Record<string, string> => {
+    const token = getToken()
+    return token ? { 'Authorization': `Bearer ${token}` } : {}
+  }
 
   const [inviteCodeData, setInviteCodeData] = useState<InviteCodeData | null>(null)
   const [validPeriod, setValidPeriod] = useState<ValidPeriod>('permanent')
@@ -54,7 +59,7 @@ export default function AssistantManagementPage() {
   const fetchInviteCode = useCallback(async () => {
     setLoadingCode(true)
     try {
-      const res = await fetch('/api/invite-code/my')
+      const res = await fetch('/api/invite-code/my', { headers: authHeaders() })
       const data = await res.json()
       if (res.ok && data.data) {
         setInviteCodeData(data.data)
@@ -72,7 +77,7 @@ export default function AssistantManagementPage() {
   const fetchBoundAssistants = useCallback(async () => {
     setLoadingAssistants(true)
     try {
-      const res = await fetch('/api/invite-code/bound-assistants')
+      const res = await fetch('/api/invite-code/bound-assistants', { headers: authHeaders() })
       const data = await res.json()
       if (res.ok) {
         setBoundAssistants(data.data || [])
@@ -98,7 +103,7 @@ export default function AssistantManagementPage() {
     try {
       const res = await fetch('/api/invite-code/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ validPeriod }),
       })
       const data = await res.json()
@@ -130,7 +135,7 @@ export default function AssistantManagementPage() {
     try {
       const res = await fetch('/api/invite-code/unbind', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ bindId }),
       })
       const data = await res.json()
