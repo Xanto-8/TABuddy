@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProgress } from '@/components/providers/progress-provider'
-import { Search, User, ChevronDown, Home, Menu, LogOut, Settings, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2 } from 'lucide-react'
+import { Search, User, ChevronDown, Home, Menu, LogOut, RefreshCw, UserPlus, Trash2, Shield, Check, X, Loader2 } from 'lucide-react'
 import GlobalSearch from '@/components/GlobalSearch'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Button } from '@/components/ui/button'
@@ -177,7 +177,7 @@ export function Header() {
                     </div>
                     <div className="py-1">
                       <button
-                        onClick={() => { setDropdownOpen(false); router.push('/profile') }}
+                        onClick={() => { setDropdownOpen(false); router.push('/settings') }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
                       >
                         <User className="w-4 h-4 text-muted-foreground" />
@@ -189,13 +189,6 @@ export function Header() {
                       >
                         <RefreshCw className="w-4 h-4 text-muted-foreground" />
                         切换账号
-                      </button>
-                      <button
-                        onClick={() => { setDropdownOpen(false); router.push('/settings') }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors"
-                      >
-                        <Settings className="w-4 h-4 text-muted-foreground" />
-                        设置
                       </button>
                     </div>
                     <div className="border-t border-border py-1">
