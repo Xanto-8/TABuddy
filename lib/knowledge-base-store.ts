@@ -11,7 +11,30 @@ export interface KnowledgeEntry {
 }
 
 const STORAGE_KEY = 'tabuddy_knowledge_base'
+const VERSION_KEY = 'tabuddy_knowledge_base_ver'
+const CURRENT_VERSION = 2
 let syncedOnceFromServer = false
+
+const oldDefaultIds = new Set(['kb-1','kb-2','kb-3','kb-4','kb-5','kb-6','kb-7','kb-8','kb-9','kb-10','kb-11','kb-12'])
+
+function migrateIfNeeded(): void {
+  if (typeof window === 'undefined') return
+  const ver = localStorage.getItem(VERSION_KEY)
+  if (ver === String(CURRENT_VERSION)) return
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if (raw) {
+    try {
+      const entries: KnowledgeEntry[] = JSON.parse(raw)
+      const allOldDefaults = entries.length > 0 && entries.every(e => oldDefaultIds.has(e.id))
+      if (allOldDefaults) {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    } catch {}
+  }
+  localStorage.setItem(VERSION_KEY, String(CURRENT_VERSION))
+}
+
+migrateIfNeeded()
 
 function getStoredEntries(): KnowledgeEntry[] {
   if (typeof window === 'undefined') return []
