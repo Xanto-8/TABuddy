@@ -33,7 +33,11 @@ export function NotificationCenter() {
 
   function handleNotificationClick(n: typeof allNotifications[0]) {
     markRead(n.id)
-    router.push(`/tasks?classId=${n.classId}`)
+    if (n.link) {
+      router.push(n.link)
+    } else {
+      router.push(`/tasks?classId=${n.classId}`)
+    }
     setIsOpen(false)
   }
 
@@ -41,6 +45,7 @@ export function NotificationCenter() {
     if (type === 'workflow_node') return 'bg-green-500'
     if (type === '15min') return 'bg-amber-500'
     if (type === '30min') return 'bg-blue-500'
+    if (type === 'feedback') return 'bg-purple-500'
     return 'bg-blue-500'
   }
 
@@ -48,6 +53,7 @@ export function NotificationCenter() {
     if (type === 'workflow_node') return '课中节点提醒'
     if (type === '15min') return '课前15分钟'
     if (type === '30min') return '课前30分钟'
+    if (type === 'feedback') return '系统通知'
     return '课前1小时'
   }
 
@@ -138,7 +144,7 @@ export function NotificationCenter() {
                       </p>
                       <div className="flex items-center gap-3 mt-1.5">
                         <span className="text-xs text-muted-foreground">
-                          {n.className}
+                          {n.className || n.title}
                         </span>
                         <button
                           onClick={(e) => {

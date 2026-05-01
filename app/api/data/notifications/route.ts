@@ -21,11 +21,11 @@ export async function POST(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request)
     if (!userId) return errorResponse('Unauthorized', 401)
-    const body = await getBody<{ title: string; message: string; type?: string; read?: boolean }>(request)
+    const body = await getBody<{ title: string; message: string; type?: string; read?: boolean; link?: string }>(request)
     if (!body || !body.title || !body.message) return errorResponse('Title and message are required', 400)
 
     const notification = await prisma.notification.create({
-      data: { title: body.title, message: body.message, type: body.type || 'info', read: body.read || false, userId },
+      data: { title: body.title, message: body.message, type: body.type || 'info', read: body.read || false, link: body.link || '', userId },
     })
     return successResponse(notification, 201)
   } catch (error) {

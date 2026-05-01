@@ -277,6 +277,7 @@ model Notification {
   message   String
   type      String   @default("info")
   read      Boolean  @default(false)
+  link      String   @default("")
   createdAt DateTime @default(now())
 
   userId String

@@ -42,6 +42,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       data: updateData,
     })
 
+    if (body.reply !== undefined && body.reply.trim()) {
+      await prisma.notification.create({
+        data: {
+          title: '反馈已回复',
+          message: `管理员回复了您的反馈：${body.reply.trim().substring(0, 100)}`,
+          type: 'feedback',
+          link: '/help',
+          userId: existing.userId,
+        },
+      })
+    }
+
     return successResponse(updated)
   } catch (error) {
     console.error('[admin/feedback] PUT error:', error)

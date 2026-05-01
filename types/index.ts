@@ -233,7 +233,7 @@ export interface FeedbackRecord {
 
 // ========== 打卡提醒通知系统 ==========
 
-export type ReminderType = '60min' | '30min' | '15min' | 'workflow_node'
+export type ReminderType = '60min' | '30min' | '15min' | 'workflow_node' | 'feedback'
 export type PushStatus = 'sent' | 'failed' | 'cancelled'
 
 export interface NotificationItem {
@@ -247,6 +247,18 @@ export interface NotificationItem {
   read: boolean
   dismissed: boolean
   completed: boolean
+  link?: string
+}
+
+export interface ServerNotification {
+  id: string
+  title: string
+  message: string
+  type: string
+  read: boolean
+  link: string
+  createdAt: string
+  userId: string
 }
 
 export interface PushLogEntry {

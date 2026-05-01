@@ -36,6 +36,26 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const typeLabel = { bug: 'Bug 反馈', suggestion: '功能建议', other: '其他' }[body.type] || body.type
+    const submitterName = tokenUser.username
+
+    const superadmins = await prisma.user.findMany({
+      where: { role: 'superadmin' },
+      select: { id: true },
+    })
+
+    if (superadmins.length > 0) {
+      await prisma.notification.createMany({
+        data: superadmins.map(admin => ({
+          title: '新的用户反馈',
+          message: `${submitterName} 提交了 ${typeLabel}：${body.description.trim().substring(0, 100)}`,
+          type: 'feedback',
+          link: '/admin/feedback',
+          userId: admin.id,
+        })),
+      })
+    }
+
     return successResponse({ id: feedback.id, message: '反馈提交成功' })
   } catch (error) {
     console.error('[feedback/submit] error:', error)
