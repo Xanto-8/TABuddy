@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth-utils'
 import { errorResponse, successResponse, getBody } from '@/lib/api-data-utils'
 import { getClientIP } from '@/lib/auth-guard'
-import { getIPLocation } from '@/lib/ip-location'
+import { getLocationFromRequest } from '@/lib/ip-location'
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,16 +30,16 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid username or password', 401)
     }
 
-    const location = await getIPLocation(clientIP)
+    const location = await getLocationFromRequest(request)
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
         lastActiveAt: new Date(),
-        lastLoginIp: clientIP,
-        lastLoginCountry: location?.country || '',
-        lastLoginCity: location?.city || '',
-        lastLoginRegion: location?.region || '',
+        lastLoginIp: location.ip,
+        lastLoginCountry: location.country,
+        lastLoginCity: location.city,
+        lastLoginRegion: location.region,
       },
     })
 

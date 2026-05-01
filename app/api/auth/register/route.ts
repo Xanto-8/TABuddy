@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { generateToken } from '@/lib/auth-utils'
 import { getClientIP } from '@/lib/auth-guard'
 import { errorResponse, successResponse, getBody } from '@/lib/api-data-utils'
-import { getIPLocation } from '@/lib/ip-location'
+import { getLocationFromRequest } from '@/lib/ip-location'
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const userCount = await prisma.user.count()
 
-    const location = await getIPLocation(clientIP)
+    const location = await getLocationFromRequest(request)
 
     const user = await prisma.user.create({
       data: {
@@ -41,10 +41,10 @@ export async function POST(request: NextRequest) {
         displayName: displayName || '',
         role: userCount === 0 ? 'superadmin' : 'assistant',
         lastActiveAt: new Date(),
-        lastLoginIp: clientIP,
-        lastLoginCountry: location?.country || '',
-        lastLoginCity: location?.city || '',
-        lastLoginRegion: location?.region || '',
+        lastLoginIp: location.ip,
+        lastLoginCountry: location.country,
+        lastLoginCity: location.city,
+        lastLoginRegion: location.region,
       },
     })
 
