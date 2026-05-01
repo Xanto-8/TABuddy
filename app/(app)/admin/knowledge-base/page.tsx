@@ -323,8 +323,9 @@ export default function AdminKnowledgeBasePage() {
                       </span>
                       <span className="text-[10px] text-muted-foreground shrink-0">优先级 {entry.priority}</span>
                       {!entry.enabled && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
-                          已禁用
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 flex items-center gap-0.5">
+                          <EyeOff className="w-2.5 h-2.5" />
+                          已隐藏
                         </span>
                       )}
                     </div>
@@ -347,7 +348,7 @@ export default function AdminKnowledgeBasePage() {
                     <button
                       onClick={() => handleToggle(entry.id)}
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                      title={entry.enabled ? '禁用' : '启用'}
+                      title={entry.enabled ? '隐藏' : '取消隐藏'}
                     >
                       {entry.enabled ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>

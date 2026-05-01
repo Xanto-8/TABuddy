@@ -99,7 +99,11 @@ export function deleteKnowledgeEntry(id: string): void {
     const index = entries.findIndex(e => e.id === id)
     if (index !== -1) {
       entries.splice(index, 1)
+      saveLocalKnowledgeBase([...entries])
       triggerSync()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('knowledgeBaseChanged'))
+      }
     }
   } else {
     const index = localFallback.findIndex(e => e.id === id)
@@ -149,6 +153,7 @@ export function resetKnowledgeBase(): void {
     const entries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
     entries.length = 0
     defaultEntries.forEach(e => entries.push({ ...e }))
+    saveLocalKnowledgeBase([...entries])
     triggerSync()
   }
 }

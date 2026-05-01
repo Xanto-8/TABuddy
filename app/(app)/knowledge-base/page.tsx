@@ -91,15 +91,17 @@ export default function KnowledgeBasePage() {
     )
   })
 
-  const filteredPublic = publicEntries.filter(e => {
-    if (!searchQuery) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      e.title.toLowerCase().includes(q) ||
-      e.content.toLowerCase().includes(q) ||
-      e.keywords.some(k => k.toLowerCase().includes(q))
-    )
-  })
+  const filteredPublic = publicEntries
+    .filter(e => e.enabled !== false)
+    .filter(e => {
+      if (!searchQuery) return true
+      const q = searchQuery.toLowerCase()
+      return (
+        e.title.toLowerCase().includes(q) ||
+        e.content.toLowerCase().includes(q) ||
+        e.keywords.some(k => k.toLowerCase().includes(q))
+      )
+    })
 
   const openCreate = () => {
     setEditingEntry(null)
@@ -205,7 +207,7 @@ export default function KnowledgeBasePage() {
               {tab.label}
               {tab.key === 'public' && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground ml-1">
-                  {publicEntries.length}
+                  {publicEntries.filter(e => e.enabled !== false).length}
                 </span>
               )}
               {tab.key === 'private' && (
@@ -307,12 +309,7 @@ export default function KnowledgeBasePage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className={cn(
-                      'flex items-start gap-4 p-4 rounded-xl border transition-colors',
-                      entry.enabled
-                        ? 'border-border bg-card'
-                        : 'border-dashed border-muted bg-muted/30 opacity-50'
-                    )}
+                    className="flex items-start gap-4 p-4 rounded-xl border border-border bg-card transition-colors"
                   >
                     <div className={cn('shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
                       {typeCfg.icon}
@@ -324,12 +321,6 @@ export default function KnowledgeBasePage() {
                           {typeCfg.label}
                         </span>
                         <span className="text-[10px] text-muted-foreground shrink-0">优先级 {entry.priority}</span>
-                        {!entry.enabled && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 flex items-center gap-0.5">
-                            <EyeOff className="w-2.5 h-2.5" />
-                            已禁用
-                          </span>
-                        )}
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{entry.content}</p>
                       <div className="flex flex-wrap gap-1">
