@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
         avatar: user.avatar,
         classGroupId: user.classGroupId,
         hasReadGuide: user.hasReadGuide,
+        hasFillSurvey: user.hasFillSurvey,
       },
     })
   } catch (error) {

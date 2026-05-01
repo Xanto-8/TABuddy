@@ -11,6 +11,7 @@ export interface AuthUser {
   classGroupId?: string | null
   avatar?: string
   hasReadGuide?: boolean
+  hasFillSurvey?: boolean
 }
 
 export interface AuthState {
@@ -26,6 +27,7 @@ interface AuthContextType extends AuthState {
   getToken: () => string | null
   updateAvatar: (avatarDataUrl: string) => Promise<void>
   updateProfile: (fields: { username?: string; displayName?: string; avatar?: string }) => Promise<boolean>
+  updateUser: (fields: Partial<AuthUser>) => void
 }
 
 async function verifyTokenFromBackend(token: string): Promise<{ user: AuthUser } | null> {
@@ -278,8 +280,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [state.user, state.token])
 
+  const updateUser = useCallback((fields: Partial<AuthUser>) => {
+    if (!state.user) return
+    const updatedUser = { ...state.user, ...fields }
+    saveAuth(updatedUser, state.token || '')
+    setState(prev => ({
+      ...prev,
+      user: updatedUser,
+    }))
+  }, [state.user, state.token])
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, getToken, updateAvatar, updateProfile }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, getToken, updateAvatar, updateProfile, updateUser }}>
       {children}
     </AuthContext.Provider>
   )

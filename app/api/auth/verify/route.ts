@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         avatar: user.avatar,
         classGroupId: user.classGroupId,
         hasReadGuide: user.hasReadGuide,
+        hasFillSurvey: user.hasFillSurvey,
       },
     })
   } catch (error) {

@@ -24,8 +24,9 @@ model User {
   role        String   @default("student")
   avatar      String   @default("")
   settings    String   @default("{}")
-  hasReadGuide Boolean @default(false)
-  lastActiveAt DateTime?
+  hasReadGuide  Boolean @default(false)
+  hasFillSurvey Boolean @default(false)
+  lastActiveAt  DateTime?
   lastLoginIp      String   @default("")
   lastLoginCountry String   @default("")
   lastLoginCity    String   @default("")
