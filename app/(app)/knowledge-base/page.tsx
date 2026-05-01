@@ -12,6 +12,7 @@ import {
   createKnowledgeEntry,
   deleteKnowledgeEntry,
   resetKnowledgeBase,
+  syncCacheFromServer,
 } from '@/lib/knowledge-base-store'
 import {
   PublicKnowledgeEntry,
@@ -79,6 +80,20 @@ export default function KnowledgeBasePage() {
       window.removeEventListener('knowledgeBaseChanged', handleChange)
       window.removeEventListener('publicKnowledgeBaseChanged', handleChange)
     }
+  }, [loadEntries])
+
+  useEffect(() => {
+    if (syncCacheFromServer()) {
+      loadEntries()
+      return
+    }
+    const timer = setInterval(() => {
+      if (syncCacheFromServer()) {
+        loadEntries()
+        clearInterval(timer)
+      }
+    }, 300)
+    return () => clearInterval(timer)
   }, [loadEntries])
 
   const filteredPrivate = entries.filter(e => {

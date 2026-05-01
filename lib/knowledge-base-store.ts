@@ -10,8 +10,6 @@ export interface KnowledgeEntry {
   priority: number
 }
 
-let localFallback: KnowledgeEntry[] = []
-
 const defaultEntries: KnowledgeEntry[] = [
   { id: 'kb-1', keywords: ['备课', '教案', '教学设计'], title: '备课指南', content: '备课是教学工作的首要环节...', type: 'template', url: '', priority: 5 },
   { id: 'kb-2', keywords: ['课堂', '互动', '管理'], title: '课堂互动技巧', content: '通过提问、小组讨论等方式提高学生参与度...', type: 'document', url: '', priority: 4 },
@@ -27,96 +25,120 @@ const defaultEntries: KnowledgeEntry[] = [
   { id: 'kb-12', keywords: ['安全教育', '预案', '应急'], title: '班级安全应急预案', content: '一、火灾逃生\n二、地震避险\n三、突发疾病...', type: 'document', url: '', priority: 5 },
 ]
 
-function getLocalKnowledgeBase(): KnowledgeEntry[] {
+const STORAGE_KEY = 'tabuddy_knowledge_base'
+let syncedOnceFromServer = false
+
+function getStoredEntries(): KnowledgeEntry[] {
   if (typeof window === 'undefined') return []
   try {
-    const stored = localStorage.getItem('tabuddy_knowledge_base')
-    if (stored) {
-      return JSON.parse(stored)
-    }
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) return JSON.parse(stored)
   } catch { }
   return []
 }
 
-function saveLocalKnowledgeBase(entries: KnowledgeEntry[]): void {
+function saveEntries(entries: KnowledgeEntry[]): void {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem('tabuddy_knowledge_base', JSON.stringify(entries))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
   } catch { }
 }
 
+function syncCache(data: KnowledgeEntry[]): void {
+  if (!isCacheLoaded()) return
+  const cache = getCache()
+  const cacheEntries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+  cacheEntries.length = 0
+  cacheEntries.push(...data.map(e => ({ ...e })))
+}
+
+function broadcastChange(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('knowledgeBaseChanged'))
+  }
+}
+
+export function syncCacheFromServer(): boolean {
+  if (!isCacheLoaded() || syncedOnceFromServer) return false
+  const cache = getCache()
+  const cacheEntries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
+  const stored = getStoredEntries()
+  const cacheIds = new Set(cacheEntries.map(e => e.id))
+  const localOnly = stored.filter(e => !cacheIds.has(e.id))
+  if (cacheEntries.length > 0 || localOnly.length > 0) {
+    const merged = [...cacheEntries.map(e => ({ ...e })), ...localOnly]
+    saveEntries(merged)
+    syncCache(merged)
+  }
+  syncedOnceFromServer = true
+  return true
+}
+
 export function getKnowledgeBase(): KnowledgeEntry[] {
-  const local = getLocalKnowledgeBase()
-  if (local.length > 0) {
-    localFallback = [...local.map(e => ({ ...e }))]
+  const stored = getStoredEntries()
+  if (stored.length > 0) {
+    syncCache(stored)
+    return stored.map(e => ({ ...e }))
   }
   if (isCacheLoaded()) {
     const cache = getCache()
     const cacheEntries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    if (localFallback.length > 0) {
-      cacheEntries.length = 0
-      cacheEntries.push(...localFallback.map(e => ({ ...e })))
-    } else if (cacheEntries.length === 0) {
-      defaultEntries.forEach(e => cacheEntries.push({ ...e }))
+    if (cacheEntries.length > 0) {
+      saveEntries(cacheEntries)
+      return cacheEntries.map(e => ({ ...e }))
     }
-    return cacheEntries
+    return []
   }
-  if (localFallback.length > 0) {
-    return localFallback
-  }
-  return defaultEntries.map(e => ({ ...e }))
+  const data = defaultEntries.map(e => ({ ...e }))
+  saveEntries(data)
+  syncCache(data)
+  return data
 }
 
 export function addKnowledgeEntry(entry: KnowledgeEntry): void {
-  const entries = getKnowledgeBase()
+  const entries = getStoredEntries()
   entries.push(entry)
-  saveLocalKnowledgeBase([...entries])
-  if (isCacheLoaded()) {
-    triggerSync()
-  }
+  saveEntries(entries)
+  syncCache(entries)
+  triggerSync()
+  broadcastChange()
 }
 
 export function updateKnowledgeEntry(updated: KnowledgeEntry): void {
-  const entries = getKnowledgeBase()
+  const entries = getStoredEntries()
   const index = entries.findIndex(e => e.id === updated.id)
-  if (index !== -1) {
-    entries[index] = updated
-    saveLocalKnowledgeBase([...entries])
-    if (isCacheLoaded()) {
-      triggerSync()
-    }
-  }
+  if (index === -1) return
+  entries[index] = updated
+  saveEntries(entries)
+  syncCache(entries)
+  triggerSync()
+  broadcastChange()
 }
 
 export function deleteKnowledgeEntry(id: string): void {
-  const entries = getKnowledgeBase()
+  const entries = getStoredEntries()
   const index = entries.findIndex(e => e.id === id)
-  if (index !== -1) {
-    entries.splice(index, 1)
-    saveLocalKnowledgeBase([...entries])
-    const loaded = isCacheLoaded()
-    if (loaded) {
-      triggerSync()
-    }
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('knowledgeBaseChanged'))
-    }
-  }
+  if (index === -1) return
+  entries.splice(index, 1)
+  saveEntries(entries)
+  syncCache(entries)
+  triggerSync()
+  broadcastChange()
 }
 
 export function getEntryById(id: string): KnowledgeEntry | undefined {
-  return getKnowledgeBase().find(e => e.id === id)
+  return getStoredEntries().find(e => e.id === id)
 }
 
 export function saveKnowledgeEntry(entry: KnowledgeEntry): void {
-  const entries = getKnowledgeBase()
+  const entries = getStoredEntries()
   const index = entries.findIndex(e => e.id === entry.id)
   if (index !== -1) {
     entries[index] = entry
-    saveLocalKnowledgeBase([...entries])
-    if (isCacheLoaded()) {
-      triggerSync()
-    }
+    saveEntries(entries)
+    syncCache(entries)
+    triggerSync()
+    broadcastChange()
   } else {
     addKnowledgeEntry(entry)
   }
@@ -127,15 +149,11 @@ export function createKnowledgeEntry(entry: KnowledgeEntry): void {
 }
 
 export function resetKnowledgeBase(): void {
-  const entries = defaultEntries.map(e => ({ ...e }))
-  saveLocalKnowledgeBase(entries)
-  if (isCacheLoaded()) {
-    const cache = getCache()
-    const cacheEntries = cache.knowledgeEntries as unknown as KnowledgeEntry[]
-    cacheEntries.length = 0
-    cacheEntries.push(...entries)
-    triggerSync()
-  }
+  const data = defaultEntries.map(e => ({ ...e }))
+  saveEntries(data)
+  syncCache(data)
+  triggerSync()
+  broadcastChange()
 }
 
 export function matchKnowledgeBase(query: string): KnowledgeEntry[] {
