@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         username,
         password,
         displayName,
-        role: userCount === 0 ? 'superadmin' : 'student',
+        role: userCount === 0 ? 'superadmin' : 'assistant',
       },
     })
 

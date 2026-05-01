@@ -75,7 +75,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (role !== undefined) {
-      if (!['superadmin', 'classadmin', 'student'].includes(role)) {
+      const VALID_ROLES = ['superadmin', 'classadmin', 'assistant', 'student']
+      if (!VALID_ROLES.includes(role)) {
         return NextResponse.json({ error: '无效的角色类型' }, { status: 400 })
       }
       updateData.role = role

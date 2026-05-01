@@ -28,8 +28,11 @@ function getRoleStyle(role: string) {
       return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
     case 'classadmin':
       return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-    default:
+    case 'assistant':
+    case 'student':
       return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800'
+    default:
+      return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800'
   }
 }
 
@@ -37,6 +40,7 @@ function getRoleLabel(role: string) {
   switch (role) {
     case 'superadmin': return '超级管理员'
     case 'classadmin': return '班级管理员'
+    case 'assistant': return '助教'
     default: return '助教'
   }
 }
@@ -107,15 +111,21 @@ export default function AdminUsersPage() {
     setSaving(true)
     setMessage(null)
 
-    const body: Record<string, unknown> = { userId: editingUser.id }
+    const body: Record<string, unknown> = {}
     if (newPassword) body.password = newPassword
     if (newDisplayName) body.displayName = newDisplayName
     if (newRole) body.role = newRole
-    if (newClassGroupId !== undefined) body.classGroupId = newClassGroupId || null
+    body.classGroupId = newClassGroupId || null
+
+    if (Object.keys(body).length === 0) {
+      setMessage({ type: 'error', text: '没有需要更新的字段' })
+      setSaving(false)
+      return
+    }
 
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           authorization: `Bearer ${token}`,
@@ -293,7 +303,8 @@ export default function AdminUsersPage() {
                   onChange={e => setNewRole(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="student">助教</option>
+                  <option value="assistant">助教</option>
+                  <option value="student">学生</option>
                   <option value="classadmin">班级管理员</option>
                   <option value="superadmin">超级管理员</option>
                 </select>

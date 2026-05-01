@@ -62,9 +62,17 @@ function ProfileSection({ user }: { user: { username: string; role?: string; ava
   const [avatarError, setAvatarError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const roleLabel = (r?: string) => {
+    switch (r) {
+      case 'superadmin': return '超级管理员'
+      case 'classadmin': return '班级管理员'
+      case 'assistant': return '助教'
+      default: return '助教'
+    }
+  }
   const isSuperAdmin = user?.role === 'superadmin'
-  const profileLabel = isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '助教'
-  const displayName = nickname || (isSuperAdmin ? '超级管理员' : user?.role === 'classadmin' ? '班级管理员' : '助教')
+  const profileLabel = roleLabel(user?.role)
+  const displayName = nickname || roleLabel(user?.role)
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -162,7 +170,7 @@ function ProfileSection({ user }: { user: { username: string; role?: string; ava
             <p className="text-base font-semibold text-foreground">{displayName}</p>
             <p className="text-sm text-muted-foreground">@{user?.username}</p>
           </div>
-          <div className="ml-auto hidden sm:block">
+          <div className="ml-auto">
             <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
               {profileLabel}
             </span>
