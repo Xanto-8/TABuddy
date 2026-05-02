@@ -98,6 +98,7 @@ const cache: DataCache = {
 }
 
 let cacheLoaded = false
+let cacheLoading = false
 
 // 导出缓存访问函数供其他 store 使用
 export function getCache(): DataCache {
@@ -106,6 +107,10 @@ export function getCache(): DataCache {
 
 export function isCacheLoaded(): boolean {
   return cacheLoaded
+}
+
+export function isCacheLoading(): boolean {
+  return cacheLoading
 }
 
 export function triggerSync(): void {
@@ -130,6 +135,7 @@ function authHeaders(): Record<string, string> {
 
 // ========== 从 API 加载所有数据 ==========
 export async function loadAllDataFromAPI(): Promise<void> {
+  cacheLoading = true
   try {
     const token = getAuthToken()
     if (!token) {
@@ -175,6 +181,11 @@ export async function loadAllDataFromAPI(): Promise<void> {
   } catch (error) {
     console.error('loadAllDataFromAPI failed:', error)
     cacheLoaded = false
+  } finally {
+    cacheLoading = false
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('appDataReady'))
+    }
   }
 }
 

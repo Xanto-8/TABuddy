@@ -163,8 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       saveAuth(userData, token)
       setState({ user: userData, isAuthenticated: true, token })
 
-      const { loadAllDataFromAPI } = await import('@/lib/store')
-      await loadAllDataFromAPI()
+      import('@/lib/store').then(m => m.loadAllDataFromAPI()).catch(console.error)
 
       toast.success('登录成功，欢迎回来！')
       return true
@@ -201,8 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       saveAuth(userData, token)
       setState({ user: userData, isAuthenticated: true, token })
 
-      const { loadAllDataFromAPI } = await import('@/lib/store')
-      await loadAllDataFromAPI()
+      import('@/lib/store').then(m => m.loadAllDataFromAPI()).catch(console.error)
 
       toast.success('注册成功！')
     } catch (error: unknown) {

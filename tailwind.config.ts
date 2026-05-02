@@ -129,6 +129,10 @@ const config: Config = {
           '0%': { transform: 'translateY(0) rotate(0deg)', opacity: '1' },
           '100%': { transform: 'translateY(100vh) rotate(360deg)', opacity: '0' },
         },
+        'shimmer': {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -142,6 +146,7 @@ const config: Config = {
         'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
         'bounce-subtle': 'bounce-subtle 0.5s ease-in-out infinite',
         'confetti': 'confetti 1s ease-out forwards',
+        'shimmer': 'shimmer 2s ease-in-out infinite',
       },
     },
   },
