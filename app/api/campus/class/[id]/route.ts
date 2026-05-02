@@ -80,22 +80,42 @@ export async function GET(
 
     const studentMap = new Map(classItem.students.map(s => [s.id, s.name]))
 
-    const classAdminStore = await prisma.userStore.findUnique({
-      where: { userId_key: { userId: classItem.userId, key: 'appStore' } },
+    const bindRecords = await prisma.teacherAssistantBind.findMany({
+      where: { teacherId: classItem.userId, status: 'active' },
+      select: { assistantId: true },
+    })
+    const boundAssistantIds = bindRecords.map(b => b.assistantId).filter(Boolean) as string[]
+
+    const allRelevantUserIds = [classItem.userId, ...boundAssistantIds]
+    const stores = await prisma.userStore.findMany({
+      where: { userId: { in: allRelevantUserIds }, key: 'appStore' },
     })
 
     let storeQuizRecords: any[] = []
     let storeFeedbackHistory: any[] = []
-    if (classAdminStore && classAdminStore.value) {
+    for (const store of stores) {
+      if (!store.value) continue
       try {
-        const parsed = JSON.parse(classAdminStore.value)
-        storeQuizRecords = parsed.quizRecords || []
-        storeFeedbackHistory = parsed.feedbackHistory || []
+        const parsed = JSON.parse(store.value)
+        if (parsed.quizRecords) {
+          storeQuizRecords = storeQuizRecords.concat(parsed.quizRecords)
+        }
+        if (parsed.feedbackHistory) {
+          storeFeedbackHistory = storeFeedbackHistory.concat(parsed.feedbackHistory)
+        }
       } catch {}
     }
 
+    const seenQuizIds = new Set<string>()
     const filteredQuizRecords = storeQuizRecords
-      .filter((r: any) => r && r.studentId && (r.completion || r.notes))
+      .filter((r: any) => {
+        if (!r || !r.studentId) return false
+        if (r.classId && r.classId !== classId) return false
+        if (!r.completion && !r.notes) return false
+        if (seenQuizIds.has(r.id)) return false
+        seenQuizIds.add(r.id)
+        return true
+      })
       .slice(0, 200)
 
     const quizStats = filteredQuizRecords.map((r: any) => {
@@ -118,8 +138,15 @@ export async function GET(
       ? Math.round(accuracyValues.reduce((a, b) => a + b, 0) / accuracyValues.length)
       : null
 
+    const seenFeedbackIds = new Set<string>()
     const filteredFeedbackRecords = storeFeedbackHistory
-      .filter((r: any) => r && r.studentName && r.generatedContent)
+      .filter((r: any) => {
+        if (!r || !r.studentName || !r.generatedContent) return false
+        if (r.classId && r.classId !== classId) return false
+        if (seenFeedbackIds.has(r.id)) return false
+        seenFeedbackIds.add(r.id)
+        return true
+      })
       .slice(0, 200)
 
     const classFeedbackRecords = filteredFeedbackRecords.map((r: any) => ({

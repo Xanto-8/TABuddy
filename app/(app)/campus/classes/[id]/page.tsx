@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -108,30 +108,38 @@ export default function CampusClassDetailPage() {
   const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null)
   const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null)
 
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const authHeaders: Record<string, string> = {
     ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
   }
 
-  const fetchData = async () => {
-    setLoading(true)
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true)
     setError('')
     try {
       const res = await fetch(`/api/campus/class/${params.id}`, { headers: authHeaders })
       const result = await res.json()
       if (!res.ok) {
-        setError(result.error || '获取数据失败')
+        if (!silent) setError(result.error || '获取数据失败')
         return
       }
       setData(result.data)
     } catch {
-      setError('网络错误')
+      if (!silent) setError('网络错误')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (isCampusAdmin && params.id) fetchData()
+    if (isCampusAdmin && params.id) {
+      fetchData()
+      pollingRef.current = setInterval(() => fetchData(true), 5000)
+    }
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
   }, [isCampusAdmin, params.id])
 
   if (!isCampusAdmin) {
@@ -165,7 +173,7 @@ export default function CampusClassDetailPage() {
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <p className="text-destructive">{error || '数据加载失败'}</p>
             <button
-              onClick={fetchData}
+              onClick={() => fetchData()}
               className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />重试
@@ -222,7 +230,7 @@ export default function CampusClassDetailPage() {
             </div>
           </div>
           <button
-            onClick={fetchData}
+            onClick={() => fetchData()}
             className="flex items-center gap-2 px-4 py-2 text-sm rounded-xl border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <RefreshCw className="w-4 h-4" />刷新
