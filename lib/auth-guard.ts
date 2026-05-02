@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from './auth-utils'
 import { prisma } from './prisma'
 
-export type Role = 'superadmin' | 'classadmin' | 'assistant' | 'student'
+export type Role = 'superadmin' | 'classadmin' | 'assistant' | 'student' | 'campusadmin'
 
 export interface TokenUser {
   userId: string
@@ -50,7 +50,7 @@ export function requireRole(tokenUser: TokenUser | null, allowedRoles: Role[]): 
 
 export function requireOwnClassGroup(tokenUser: TokenUser | null, targetClassGroupId: string | null): boolean {
   if (!tokenUser) return false
-  if (tokenUser.role === 'superadmin') return true
+  if (tokenUser.role === 'superadmin' || tokenUser.role === 'campusadmin') return true
   if (tokenUser.role === 'classadmin' || tokenUser.role === 'assistant' || tokenUser.role === 'student') {
     return tokenUser.classGroupId === targetClassGroupId
   }
@@ -59,7 +59,7 @@ export function requireOwnClassGroup(tokenUser: TokenUser | null, targetClassGro
 
 export function canManageKnowledge(tokenUser: TokenUser | null, entry: { scope: string; classGroupId: string | null; userId: string | null }): boolean {
   if (!tokenUser) return false
-  if (tokenUser.role === 'superadmin') return true
+  if (tokenUser.role === 'superadmin' || tokenUser.role === 'campusadmin') return true
   if (entry.scope === 'personal') return entry.userId === tokenUser.userId
   if (entry.scope === 'class') {
     return tokenUser.role === 'classadmin' && tokenUser.classGroupId === entry.classGroupId
@@ -70,7 +70,7 @@ export function canManageKnowledge(tokenUser: TokenUser | null, entry: { scope: 
 
 export function canViewKnowledge(tokenUser: TokenUser | null, entry: { scope: string; classGroupId: string | null }): boolean {
   if (!tokenUser) return false
-  if (tokenUser.role === 'superadmin') return true
+  if (tokenUser.role === 'superadmin' || tokenUser.role === 'campusadmin') return true
   if (entry.scope === 'global') return true
   if (entry.scope === 'class') {
     return tokenUser.classGroupId === entry.classGroupId

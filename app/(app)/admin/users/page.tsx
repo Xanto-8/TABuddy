@@ -426,6 +426,7 @@ export default function AdminUsersPage() {
                   <option value="assistant">助教</option>
                   <option value="student">学生</option>
                   <option value="classadmin">班级管理员</option>
+                  <option value="campusadmin">校区班主任</option>
                   <option value="superadmin">超级管理员</option>
                 </select>
               </div>

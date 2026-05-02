@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-store'
 import { useRoleAccess } from '@/lib/use-role-access'
 import { PageContainer } from '@/components/ui/page-container'
-import { Copy, RefreshCw, UserX, Loader2, CheckCheck, Clock, Infinity, Users, KeyRound, CalendarClock, AlertCircle } from 'lucide-react'
+import { Copy, RefreshCw, UserX, Loader2, CheckCheck, Clock, Infinity, Users, KeyRound, CalendarClock, AlertCircle, School } from 'lucide-react'
 import { toast } from 'sonner'
 
 type ValidPeriod = 'permanent' | '24h' | '7d'
@@ -56,6 +56,11 @@ export default function AssistantManagementPage() {
   const [loadingAssistants, setLoadingAssistants] = useState(false)
   const [unbindingId, setUnbindingId] = useState<string | null>(null)
 
+  const [campusCodeData, setCampusCodeData] = useState<{ inviteCode: string; validPeriod: string; expiresAt: string | null } | null>(null)
+  const [loadingCampusCode, setLoadingCampusCode] = useState(false)
+  const [generatingCampusCode, setGeneratingCampusCode] = useState(false)
+  const [campusCodePeriod, setCampusCodePeriod] = useState<ValidPeriod>('permanent')
+
   const fetchInviteCode = useCallback(async () => {
     setLoadingCode(true)
     try {
@@ -89,6 +94,56 @@ export default function AssistantManagementPage() {
     }
   }, [])
 
+  const fetchCampusCode = useCallback(async () => {
+    setLoadingCampusCode(true)
+    try {
+      const res = await fetch('/api/campus/code/my', { headers: authHeaders() })
+      const data = await res.json()
+      if (res.ok && data.data) {
+        setCampusCodeData(data.data)
+        setCampusCodePeriod(data.data.validPeriod)
+      } else {
+        setCampusCodeData(null)
+      }
+    } catch {
+      setCampusCodeData(null)
+    } finally {
+      setLoadingCampusCode(false)
+    }
+  }, [])
+
+  const handleGenerateCampusCode = async () => {
+    setGeneratingCampusCode(true)
+    try {
+      const res = await fetch('/api/campus/code/generate', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ validPeriod: campusCodePeriod }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setCampusCodeData(data.data)
+        toast.success(campusCodeData ? '校区邀请码已重置' : '校区邀请码已生成')
+      } else {
+        toast.error(data.error || '生成失败')
+      }
+    } catch {
+      toast.error('生成失败，请重试')
+    } finally {
+      setGeneratingCampusCode(false)
+    }
+  }
+
+  const handleCopyCampusCode = async () => {
+    if (!campusCodeData?.inviteCode) return
+    try {
+      await navigator.clipboard.writeText(campusCodeData.inviteCode)
+      toast.success('校区邀请码已复制')
+    } catch {
+      toast.error('复制失败，请手动复制')
+    }
+  }
+
   useEffect(() => {
     if (!isClassAdmin) {
       router.push('/dashboard')
@@ -96,7 +151,8 @@ export default function AssistantManagementPage() {
     }
     fetchInviteCode()
     fetchBoundAssistants()
-  }, [isClassAdmin, router, fetchInviteCode, fetchBoundAssistants])
+    fetchCampusCode()
+  }, [isClassAdmin, router, fetchInviteCode, fetchBoundAssistants, fetchCampusCode])
 
   const handleGenerate = async () => {
     setGenerating(true)
@@ -188,7 +244,7 @@ export default function AssistantManagementPage() {
             <div className="px-6 py-4 border-b border-border bg-accent/30">
               <div className="flex items-center gap-2">
                 <KeyRound className="w-5 h-5 text-primary" />
-                <h2 className="text-base font-semibold text-foreground">我的邀请码</h2>
+                <h2 className="text-base font-semibold text-foreground">我的邀请码（助教）</h2>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 将邀请码发给助教，对方输入后即可绑定您名下所有班级
@@ -356,6 +412,99 @@ export default function AssistantManagementPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-border bg-accent/30">
+            <div className="flex items-center gap-2">
+              <School className="w-5 h-5 text-primary" />
+              <h2 className="text-base font-semibold text-foreground">校区邀请码</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              生成校区邀请码后发给校区班主任，对方输入后即可查看您名下所有班级的情况
+            </p>
+          </div>
+          <div className="px-6 py-5 space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-3">
+                有效期设置
+              </label>
+              <div className="flex gap-2">
+                {PERIOD_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setCampusCodePeriod(opt.value)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                      campusCodePeriod === opt.value
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                    }`}
+                  >
+                    <opt.icon className="w-4 h-4" />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-foreground">
+                校区邀请码
+              </label>
+              {loadingCampusCode ? (
+                <div className="h-14 rounded-xl border border-border bg-accent/30 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : campusCodeData ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-14 rounded-xl border-2 border-emerald-500/20 bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center">
+                    <span className="text-2xl tracking-[0.4em] font-mono font-bold text-emerald-600 dark:text-emerald-400 select-all">
+                      {campusCodeData.inviteCode}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleCopyCampusCode}
+                    className="h-14 px-4 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-colors flex items-center gap-2 font-medium"
+                    title="复制校区邀请码"
+                  >
+                    <Copy className="w-4 h-4" />
+                    复制
+                  </button>
+                </div>
+              ) : (
+                <div className="h-14 rounded-xl border border-dashed border-border bg-accent/20 flex items-center justify-center">
+                  <p className="text-sm text-muted-foreground">还没有校区邀请码，点击下方生成</p>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleGenerateCampusCode}
+              disabled={generatingCampusCode}
+              className="w-full h-11 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-500 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+            >
+              {generatingCampusCode ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {campusCodeData ? '重置中...' : '生成中...'}
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4" />
+                  {campusCodeData ? '重新生成校区邀请码' : '生成校区邀请码'}
+                </>
+              )}
+            </button>
+
+            {campusCodeData && (
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  重新生成后，之前的校区邀请码将立即失效，已绑定的校区班主任不受影响。
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

@@ -57,6 +57,8 @@ model User {
   userStores       UserStore[]
   teacherBinds     TeacherAssistantBind[] @relation("TeacherBindRelation")
   assistantBinds   TeacherAssistantBind[] @relation("AssistantBindRelation")
+  campusAdminBinds CampusAdminBind[]      @relation("CampusBindClassAdminRelation")
+  campusBinds      CampusAdminBind[]      @relation("CampusAdminRelation")
   teacherRegCodes  TeacherRegCode[]
 }
 
@@ -359,6 +361,27 @@ model TeacherAssistantBind {
   @@index([inviteCode, status])
   @@index([teacherId, status])
   @@index([assistantId, status])
+}
+
+model CampusAdminBind {
+  id           String   @id @default(cuid())
+  inviteCode   String
+  status       String   @default("active") // active / unbinded
+  validPeriod  String   @default("permanent")
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  bindedAt     DateTime?
+
+  classAdminId String
+  classAdmin   User   @relation("CampusBindClassAdminRelation", fields: [classAdminId], references: [id], onDelete: Cascade)
+
+  campusAdminId String?
+  campusAdmin   User?  @relation("CampusAdminRelation", fields: [campusAdminId], references: [id], onDelete: SetNull)
+
+  @@unique([classAdminId, campusAdminId])
+  @@index([inviteCode, status])
+  @@index([classAdminId, status])
+  @@index([campusAdminId, status])
 }
 
 model TeacherRegCode {

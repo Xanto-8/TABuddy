@@ -22,7 +22,7 @@ export interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<boolean>
-  register: (username: string, password: string, teacherCode?: string) => Promise<void>
+  register: (username: string, password: string, teacherCode?: string, registerRole?: string) => Promise<void>
   logout: () => void
   getToken: () => string | null
   updateAvatar: (avatarDataUrl: string) => Promise<void>
@@ -174,11 +174,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const register = useCallback(async (username: string, password: string, teacherCode?: string): Promise<void> => {
+  const register = useCallback(async (username: string, password: string, teacherCode?: string, registerRole?: string): Promise<void> => {
     try {
       const body: Record<string, string> = { username, password, displayName: username }
       if (teacherCode) {
         body.teacherCode = teacherCode
+      }
+      if (registerRole) {
+        body.registerRole = registerRole
       }
       const res = await fetch('/api/auth/register', {
         method: 'POST',
