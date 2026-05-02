@@ -12,7 +12,7 @@
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma db push && next build"
+    "vercel-build": "prisma generate && prisma db push --accept-data-loss && next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
