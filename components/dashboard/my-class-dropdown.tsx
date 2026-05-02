@@ -16,7 +16,7 @@ export function MyClassDropdown() {
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({})
 
   const refreshClasses = useCallback(() => {
-    setClasses(getClasses())
+    setClasses([...getClasses()])
   }, [])
 
   useEffect(() => {

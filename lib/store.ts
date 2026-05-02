@@ -240,12 +240,7 @@ export async function saveClassAsync(data: Omit<Class, 'id' | 'studentCount' | '
   })
   if (!response.ok) throw new Error('Failed to save class')
   const result = await response.json()
-  const newClass = result.data as Class
-  if (newClass && newClass.id) {
-    const existing = cache.classes.find(c => c.id === newClass.id)
-    if (!existing) cache.classes.push(newClass)
-  }
-  return newClass
+  return result.data as Class
 }
 
 export async function updateClassAsync(id: string, data: Partial<Omit<Class, 'id' | 'createdAt'>>): Promise<Class | null> {
@@ -290,7 +285,19 @@ export function saveClass(data: Omit<Class, 'id' | 'studentCount' | 'createdAt' 
   saveClassAsync(data).then(serverClass => {
     if (serverClass && serverClass.id) {
       const idx = cache.classes.findIndex(c => c.id === newClass.id)
-      if (idx !== -1) cache.classes[idx] = serverClass
+      if (idx !== -1) {
+        cache.classes[idx] = serverClass
+      }
+      cache.schedules.forEach(s => {
+        if (s.classId === newClass.id) {
+          s.classId = serverClass.id
+          fetch(`/api/data/class-schedules/${s.id}`, {
+            method: 'PUT',
+            headers: authHeaders(),
+            body: JSON.stringify({ classId: serverClass.id }),
+          }).catch(() => {})
+        }
+      })
     }
   }).catch(console.error)
   return newClass
@@ -582,12 +589,7 @@ export async function saveClassScheduleAsync(data: Omit<ClassSchedule, 'id' | 'c
   })
   if (!response.ok) throw new Error('Failed to save schedule')
   const result = await response.json()
-  const newSchedule = result.data as ClassSchedule
-  if (newSchedule && newSchedule.id) {
-    const existing = cache.schedules.find(s => s.id === newSchedule.id)
-    if (!existing) cache.schedules.push(newSchedule)
-  }
-  return newSchedule
+  return result.data as ClassSchedule
 }
 
 export function saveClassSchedule(data: Omit<ClassSchedule, 'id' | 'createdAt' | 'updatedAt'>): ClassSchedule {
@@ -603,7 +605,14 @@ export function saveClassSchedule(data: Omit<ClassSchedule, 'id' | 'createdAt' |
     const classSchedules = getClassSchedules(data.classId)
     cache.classes[classIndex] = { ...cache.classes[classIndex], schedules: classSchedules, updatedAt: new Date() }
   }
-  saveClassScheduleAsync(data).catch(console.error)
+  saveClassScheduleAsync(data).then(serverSchedule => {
+    if (serverSchedule && serverSchedule.id) {
+      const idx = cache.schedules.findIndex(s => s.id === newSchedule.id)
+      if (idx !== -1) {
+        cache.schedules[idx] = serverSchedule
+      }
+    }
+  }).catch(console.error)
   return newSchedule
 }
 

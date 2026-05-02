@@ -57,7 +57,7 @@ export default function ClassesPage() {
   }, [])
 
   const refreshClasses = () => {
-    setClasses(getClasses())
+    setClasses([...getClasses()])
   }
 
   const filteredClasses = classes.filter((c) =>
