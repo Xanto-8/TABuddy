@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import type { ReminderType } from '@/types'
 
 export function NotificationCenter() {
-  const { unreadCount, allNotifications, markRead, dismiss } = useNotification()
+  const { unreadCount, allNotifications, markRead, markAllRead, dismiss } = useNotification()
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'unread' | 'all'>('unread')
   const ref = useRef<HTMLDivElement>(null)
@@ -83,29 +83,39 @@ export function NotificationCenter() {
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <h3 className="text-sm font-semibold text-foreground">通知中心</h3>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setActiveTab('unread')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                    activeTab === 'unread'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
+                  onClick={() => {
+                    markAllRead()
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent"
                 >
-                  未读
+                  清空全部
                 </button>
-                <button
-                  onClick={() => setActiveTab('all')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                    activeTab === 'all'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  全部
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setActiveTab('unread')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                      activeTab === 'unread'
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    未读
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('all')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                      activeTab === 'all'
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    全部
+                  </button>
+                </div>
               </div>
             </div>
 

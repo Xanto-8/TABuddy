@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PageContainer } from '@/components/ui/page-container'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,19 @@ import {
   Search, LayoutDashboard, GitBranch, GraduationCap, FileText,
   ClipboardList, MessageSquare, BookOpen, Settings, ChevronRight,
   Bug, Lightbulb, Paperclip, Send, CheckCircle, X, HelpCircle,
+  Clock, MessageCircle, Eye,
 } from 'lucide-react'
+
+interface MyFeedback {
+  id: string
+  type: string
+  description: string
+  screenshot: string
+  status: string
+  reply: string
+  repliedAt: string | null
+  createdAt: string
+}
 
 type Tab = 'help' | 'feedback'
 
@@ -141,6 +153,10 @@ export default function HelpPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [myFeedbacks, setMyFeedbacks] = useState<MyFeedback[]>([])
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false)
+  const [expandedFeedback, setExpandedFeedback] = useState<string | null>(null)
+  const [feedbackTab, setFeedbackTab] = useState<'submit' | 'history'>('submit')
 
   const filteredModules = HELP_MODULES.map((mod) => ({
     ...mod,
@@ -193,6 +209,7 @@ export default function HelpPage() {
       if (res.ok) {
         setSubmitted(true)
         toast.success('反馈提交成功！预计1-3个工作日内回复')
+        fetchMyFeedbacks()
       } else {
         const result = await res.json()
         toast.error(result.error || '提交失败，请稍后重试')
@@ -203,6 +220,29 @@ export default function HelpPage() {
       setSubmitting(false)
     }
   }
+
+  const fetchMyFeedbacks = useCallback(async () => {
+    setLoadingFeedbacks(true)
+    try {
+      const token = getToken()
+      const res = await fetch('/api/feedback/my', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const result = await res.json()
+        if (result.data) setMyFeedbacks(result.data)
+      }
+    } catch {
+    } finally {
+      setLoadingFeedbacks(false)
+    }
+  }, [getToken])
+
+  useEffect(() => {
+    if (activeTab === 'feedback') {
+      fetchMyFeedbacks()
+    }
+  }, [activeTab, fetchMyFeedbacks])
 
   if (submitted) {
     return (
@@ -405,100 +445,259 @@ export default function HelpPage() {
             transition={{ duration: 0.2 }}
             className="max-w-2xl"
           >
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">提交反馈</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                遇到问题或有好的建议？告诉我们，我们会尽快处理。
-              </p>
-
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">问题类型</label>
-                  <div className="flex gap-3">
-                    {FEEDBACK_TYPE_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setFeedbackType(opt.value)}
-                        className={cn(
-                          'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-colors',
-                          feedbackType === opt.value
-                            ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                        )}
-                      >
-                        <opt.icon className="h-4 w-4" />
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    问题描述 <span className="text-destructive">*</span>
-                  </label>
-                  <textarea
-                    value={feedbackDesc}
-                    onChange={(e) => setFeedbackDesc(e.target.value)}
-                    placeholder="请详细描述您遇到的问题或建议..."
-                    rows={5}
-                    maxLength={1000}
-                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-colors"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1 text-right">{feedbackDesc.length}/1000</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    上传截图 <span className="text-muted-foreground/60 text-xs">（选填，不超过 5MB）</span>
-                  </label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleScreenshotUpload}
-                    className="hidden"
-                  />
-                  {screenshot ? (
-                    <div className="relative inline-block rounded-lg overflow-hidden border border-border">
-                      <img src={screenshot} alt="截图预览" className="max-h-48 rounded-lg" />
-                      <button
-                        onClick={() => setScreenshot(null)}
-                        className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-3 rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors w-full"
-                    >
-                      <Paperclip className="h-4 w-4" />
-                      点击上传截图
-                    </button>
-                  )}
-                </div>
-
-                <Button
-                  onClick={handleSubmitFeedback}
-                  disabled={submitting || !feedbackDesc.trim()}
-                  className="w-full"
-                >
-                  {submitting ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                      提交中...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Send className="h-4 w-4" />
-                      提交反馈
-                    </span>
-                  )}
-                </Button>
-              </div>
+            <div className="flex gap-1 mb-4 border-b border-border">
+              <button
+                onClick={() => setFeedbackTab('submit')}
+                className={cn(
+                  'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+                  feedbackTab === 'submit'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                )}
+              >
+                提交反馈
+              </button>
+              <button
+                onClick={() => setFeedbackTab('history')}
+                className={cn(
+                  'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+                  feedbackTab === 'history'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                )}
+              >
+                我的反馈
+                {myFeedbacks.length > 0 && (
+                  <span className="ml-1.5 text-xs text-muted-foreground">({myFeedbacks.length})</span>
+                )}
+              </button>
             </div>
+
+            {feedbackTab === 'submit' && (
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">提交反馈</h2>
+                <p className="text-sm text-muted-foreground mb-6">
+                  遇到问题或有好的建议？告诉我们，我们会尽快处理。
+                </p>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">问题类型</label>
+                    <div className="flex gap-3">
+                      {FEEDBACK_TYPE_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setFeedbackType(opt.value)}
+                          className={cn(
+                            'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm transition-colors',
+                            feedbackType === opt.value
+                              ? 'border-primary bg-primary/5 text-primary'
+                              : 'border-border text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                          )}
+                        >
+                          <opt.icon className="h-4 w-4" />
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      问题描述 <span className="text-destructive">*</span>
+                    </label>
+                    <textarea
+                      value={feedbackDesc}
+                      onChange={(e) => setFeedbackDesc(e.target.value)}
+                      placeholder="请详细描述您遇到的问题或建议..."
+                      rows={5}
+                      maxLength={1000}
+                      className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-colors"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1 text-right">{feedbackDesc.length}/1000</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      上传截图 <span className="text-muted-foreground/60 text-xs">（选填，不超过 5MB）</span>
+                    </label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleScreenshotUpload}
+                      className="hidden"
+                    />
+                    {screenshot ? (
+                      <div className="relative inline-block rounded-lg overflow-hidden border border-border">
+                        <img src={screenshot} alt="截图预览" className="max-h-48 rounded-lg" />
+                        <button
+                          onClick={() => setScreenshot(null)}
+                          className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-3 rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors w-full"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                        点击上传截图
+                      </button>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={handleSubmitFeedback}
+                    disabled={submitting || !feedbackDesc.trim()}
+                    className="w-full"
+                  >
+                    {submitting ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                        提交中...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Send className="h-4 w-4" />
+                        提交反馈
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {feedbackTab === 'history' && (
+              <div className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">我的反馈</h2>
+                {loadingFeedbacks ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  </div>
+                ) : myFeedbacks.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <MessageCircle className="h-10 w-10 mb-3 opacity-40" />
+                    <p className="text-sm">暂无反馈记录</p>
+                    <p className="text-xs mt-1">提交的反馈会显示在这里</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => setFeedbackTab('submit')}
+                    >
+                      去提交反馈
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myFeedbacks.map((fb) => {
+                      const typeLabel = { bug: 'Bug 反馈', suggestion: '功能建议', other: '其他' }[fb.type] || fb.type
+                      const TypeIcon = { bug: Bug, suggestion: Lightbulb, other: HelpCircle }[fb.type] || HelpCircle
+                      const statusLabel = { pending: '待处理', resolved: '已解决', closed: '已关闭' }[fb.status] || fb.status
+                      const statusColor = {
+                        pending: 'text-amber-500 bg-amber-500/10',
+                        resolved: 'text-green-500 bg-green-500/10',
+                        closed: 'text-muted-foreground bg-muted',
+                      }[fb.status] || 'text-muted-foreground bg-muted'
+
+                      return (
+                        <div
+                          key={fb.id}
+                          className="rounded-lg border border-border overflow-hidden"
+                        >
+                          <button
+                            onClick={() => setExpandedFeedback(expandedFeedback === fb.id ? null : fb.id)}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
+                          >
+                            <div className={cn(
+                              'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+                              fb.type === 'bug' ? 'bg-red-500/10 text-red-500' :
+                              fb.type === 'suggestion' ? 'bg-amber-500/10 text-amber-500' :
+                              'bg-blue-500/10 text-blue-500'
+                            )}>
+                              <TypeIcon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-foreground">{typeLabel}</span>
+                                <span className={cn('text-xs px-1.5 py-0.5 rounded-full', statusColor)}>
+                                  {statusLabel}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{fb.description}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(fb.createdAt).toLocaleDateString('zh-CN')}
+                              </span>
+                              <ChevronRight className={cn(
+                                'h-4 w-4 text-muted-foreground transition-transform',
+                                expandedFeedback === fb.id && 'rotate-90'
+                              )} />
+                            </div>
+                          </button>
+
+                          <AnimatePresence>
+                            {expandedFeedback === fb.id && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.15 }}
+                                className="overflow-hidden border-t border-border"
+                              >
+                                <div className="px-4 py-3 space-y-3">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">反馈内容</p>
+                                    <p className="text-sm text-foreground whitespace-pre-wrap">{fb.description}</p>
+                                  </div>
+
+                                  {fb.screenshot && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-1">截图</p>
+                                      <img
+                                        src={fb.screenshot}
+                                        alt="反馈截图"
+                                        className="max-h-48 rounded-lg border border-border"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {fb.reply && (
+                                    <div className="bg-primary/5 rounded-lg p-3">
+                                      <div className="flex items-center gap-1.5 mb-1.5">
+                                        <MessageCircle className="h-3.5 w-3.5 text-primary" />
+                                        <span className="text-xs font-medium text-primary">管理员回复</span>
+                                        {fb.repliedAt && (
+                                          <span className="text-xs text-muted-foreground ml-auto">
+                                            {new Date(fb.repliedAt).toLocaleDateString('zh-CN')}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-sm text-foreground whitespace-pre-wrap">{fb.reply}</p>
+                                    </div>
+                                  )}
+
+                                  {!fb.reply && fb.status === 'pending' && (
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                      <Clock className="h-3.5 w-3.5" />
+                                      等待管理员回复
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
       </div>

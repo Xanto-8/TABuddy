@@ -20,6 +20,7 @@ interface NotificationContextValue {
   allNotifications: NotificationItem[]
   refresh: () => void
   markRead: (id: string) => void
+  markAllRead: () => void
   markCompleted: (id: string) => void
   dismiss: (id: string) => void
   dismissAll: () => void
@@ -155,6 +156,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [refresh])
 
+  const markAllRead = useCallback(async () => {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY)
+      await fetch('/api/data/notifications/read-all', {
+        method: 'PUT',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      })
+    } catch {}
+    refresh()
+  }, [refresh])
+
   const markRead = useCallback(async (id: string) => {
     markNotificationRead(id)
     try {
@@ -199,6 +211,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         allNotifications,
         refresh,
         markRead,
+        markAllRead,
         markCompleted,
         dismiss,
         dismissAll,
