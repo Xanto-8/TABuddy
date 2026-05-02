@@ -9,6 +9,7 @@ import { useRoleAccess } from '@/lib/use-role-access'
 import { useAuth } from '@/lib/auth-store'
 import { PageContainer } from '@/components/ui/page-container'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 interface ClassInfo {
   id: string
@@ -170,29 +171,30 @@ export default function CampusClassesPage() {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredAllClasses.map((cls, index) => (
-                <motion.div
-                  key={cls.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  className="p-5 rounded-2xl border border-border bg-card hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                        <GraduationCap className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">{cls.name}</p>
-                        <p className="text-xs text-muted-foreground">{cls.adminName}</p>
+                <Link key={cls.id} href={`/campus/classes/${cls.id}`}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    className="p-5 rounded-2xl border border-border bg-card hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                          <GraduationCap className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{cls.name}</p>
+                          <p className="text-xs text-muted-foreground">{cls.adminName}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>{cls.studentCount} 名学生</span>
-                  </div>
-                </motion.div>
+                    <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      <span>{cls.studentCount} 名学生</span>
+                    </div>
+                  </motion.div>
+                </Link>
               ))}
             </div>
             {filteredAllClasses.length === 0 && (
