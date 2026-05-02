@@ -14,12 +14,12 @@ export async function POST(request: NextRequest) {
       return errorResponse('该IP已被封禁，无法注册', 403)
     }
 
-    const body = await getBody<{ username: string; password: string; displayName?: string; teacherCode?: string; registerRole?: string }>(request)
+    const body = await getBody<{ username: string; password: string; displayName?: string; teacherCode?: string }>(request)
     if (!body || !body.username || !body.password) {
       return errorResponse('Username and password are required')
     }
 
-    const { username, password, displayName, teacherCode, registerRole } = body
+    const { username, password, displayName, teacherCode } = body
 
     if (password.length < 6) {
       return errorResponse('Password must be at least 6 characters')
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       if (!validCode) {
         return errorResponse('老师注册码无效或已失效，请检查后重试', 400)
       }
-      role = registerRole === 'campusadmin' ? 'campusadmin' : 'classadmin'
+      role = 'classadmin'
     }
 
     const location = await getLocationFromRequest(request)

@@ -55,11 +55,8 @@ export async function getAllUserData(userId: string) {
   }
 
   const isAssistant = user.role === 'assistant'
-  const isCampusAdmin = user.role === 'campusadmin'
   let teacherIds: string[] = []
   let boundTeachers: { id: string; username: string; displayName: string }[] = []
-  let boundClassAdminIds: string[] = []
-  let boundClassAdmins: { id: string; username: string; displayName: string }[] = []
 
   if (isAssistant) {
     const binds = await prisma.teacherAssistantBind.findMany({
@@ -72,24 +69,11 @@ export async function getAllUserData(userId: string) {
     boundTeachers = binds.map(b => b.teacher)
   }
 
-  if (isCampusAdmin) {
-    const binds = await prisma.campusAdminBind.findMany({
-      where: { campusAdminId: userId, status: 'active' },
-      include: {
-        classAdmin: { select: { id: true, username: true, displayName: true } },
-      },
-    })
-    boundClassAdminIds = binds.map(b => b.classAdminId)
-    boundClassAdmins = binds.map(b => b.classAdmin)
-  }
-
-  const dataUserId = (isAssistant && teacherIds.length > 0) || (isCampusAdmin && boundClassAdminIds.length > 0) ? undefined : userId
+  const dataUserId = isAssistant && teacherIds.length > 0 ? undefined : userId
   const userIdFilter = dataUserId ? { userId: dataUserId } : undefined
 
   const teacherDataFilter = isAssistant && teacherIds.length > 0
     ? { userId: { in: teacherIds } }
-    : isCampusAdmin && boundClassAdminIds.length > 0
-    ? { userId: { in: boundClassAdminIds } }
     : (userIdFilter || { userId })
 
   const [
@@ -159,6 +143,5 @@ export async function getAllUserData(userId: string) {
     reminderConfigs,
     knowledgeEntries,
     ...(isAssistant && boundTeachers.length > 0 ? { boundTeachers } : {}),
-    ...(isCampusAdmin && boundClassAdmins.length > 0 ? { boundClassAdmins } : {}),
   }
 }

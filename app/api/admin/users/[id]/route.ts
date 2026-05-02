@@ -46,7 +46,7 @@ export async function PATCH(
 
     if (role !== undefined) {
       const normalizedRole = String(role).trim().toLowerCase()
-      const VALID_ROLES = ['superadmin', 'classadmin', 'assistant', 'student', 'campusadmin']
+      const VALID_ROLES: string[] = ['superadmin', 'classadmin', 'assistant', 'student']
       if (!VALID_ROLES.includes(normalizedRole)) {
         return NextResponse.json({
           error: `无效的角色类型: "${role}" (${typeof role})`,

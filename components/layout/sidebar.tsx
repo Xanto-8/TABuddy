@@ -92,19 +92,12 @@ const CLASSADMIN_SPECIFIC_ITEMS = [
   { icon: ShieldCheck, label: '老师注册码', href: '/assistant-management/teacher-code' },
 ] as const
 
-const CAMPUSADMIN_ITEMS = [
-  { icon: LayoutDashboard, label: '校区仪表盘', href: '/campus/dashboard' },
-  { icon: GraduationCap, label: '校区班级管理', href: '/campus/classes' },
-  { icon: Users, label: '校区成员管理', href: '/campus/members' },
-  { icon: BookOpen, label: '知识库管理', href: '/campus/knowledge-base' },
-  { icon: ShieldCheck, label: '老师注册码', href: '/campus/teacher-code' },
-  { icon: UserPlus, label: '助教与绑定管理', href: '/campus/assistant-management' },
-] as const
+
 
 function NavArea({ expanded }: { expanded: boolean }) {
   const pathname = usePathname()
   const { user } = useAuth()
-  const { isSuperAdmin, isClassAdmin, isCampusAdmin } = useRoleAccess()
+  const { isSuperAdmin, isClassAdmin } = useRoleAccess()
 
   const mainItems = useMemo(() =>
     MAIN_MENU_ITEMS.map(item => ({
@@ -116,14 +109,6 @@ function NavArea({ expanded }: { expanded: boolean }) {
 
   const classAdminItems = useMemo(() =>
     CLASSADMIN_SPECIFIC_ITEMS.map(item => ({
-      ...item,
-      isActive: pathname === item.href
-    })),
-    [pathname]
-  )
-
-  const campusAdminItems = useMemo(() =>
-    CAMPUSADMIN_ITEMS.map(item => ({
       ...item,
       isActive: pathname === item.href
     })),
@@ -163,14 +148,6 @@ function NavArea({ expanded }: { expanded: boolean }) {
         <>
           <SidebarDivider expanded={expanded} />
           {classAdminItems.map((item) => (
-            <NavItem key={item.href} {...item} expanded={expanded} isSecondary />
-          ))}
-        </>
-      )}
-      {isCampusAdmin && (
-        <>
-          <SidebarDivider expanded={expanded} />
-          {campusAdminItems.map((item) => (
             <NavItem key={item.href} {...item} expanded={expanded} isSecondary />
           ))}
         </>

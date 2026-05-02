@@ -32,7 +32,7 @@ export default function LoginPage() {
   const [regLoading, setRegLoading] = useState(false)
   const [regAvatar, setRegAvatar] = useState<File | null>(null)
   const [regAvatarPreview, setRegAvatarPreview] = useState('')
-  const [regRole, setRegRole] = useState<'assistant' | 'classadmin' | 'campusadmin'>('assistant')
+  const [regRole, setRegRole] = useState<'assistant' | 'classadmin'>('assistant')
   const [regTeacherCode, setRegTeacherCode] = useState('')
   const [regCodeVerifying, setRegCodeVerifying] = useState(false)
   const [regCodeVerified, setRegCodeVerified] = useState<boolean | null>(null)
@@ -96,15 +96,15 @@ export default function LoginPage() {
       return
     }
 
-    if ((regRole === 'classadmin' || regRole === 'campusadmin') && !regTeacherCode.trim()) {
+    if (regRole === 'classadmin' && !regTeacherCode.trim()) {
       setRegError('请填写老师注册码')
       return
     }
 
     setRegLoading(true)
     try {
-      const code = (regRole === 'classadmin' || regRole === 'campusadmin') ? regTeacherCode.trim().toUpperCase() : undefined
-      await register(regUsername, regPassword, code, regRole === 'campusadmin' ? 'campusadmin' : undefined)
+      const code = regRole === 'classadmin' ? regTeacherCode.trim().toUpperCase() : undefined
+      await register(regUsername, regPassword, code)
       toast.success('注册成功，请登录')
       setIsRegistering(false)
       setRegUsername('')
@@ -686,7 +686,7 @@ export default function LoginPage() {
                   <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
                     注册身份
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => { setRegRole('assistant'); setRegCodeVerified(null); setRegCodeError('') }}
@@ -717,29 +717,11 @@ export default function LoginPage() {
                       </span>
                       <span className="text-[10px] text-[#94a3b8] mt-0.5">需老师注册码</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setRegRole('campusadmin')}
-                      className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl transition-all duration-200 cursor-pointer border"
-                      style={{
-                        background: regRole === 'campusadmin' ? 'rgba(20, 184, 166, 0.08)' : 'rgba(248, 250, 252, 0.95)',
-                        borderColor: regRole === 'campusadmin' ? '#14b8a6' : '#d8dee8',
-                      }}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={regRole === 'campusadmin' ? 'text-[#0f766e]' : 'text-[#94a3b8]'}>
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                        <line x1="8" y1="21" x2="16" y2="21" />
-                        <line x1="12" y1="17" x2="12" y2="21" />
-                      </svg>
-                      <span className="text-xs font-semibold mt-1.5" style={{ color: regRole === 'campusadmin' ? '#0f766e' : '#475569' }}>
-                        校区班主任
-                      </span>
-                      <span className="text-[10px] text-[#94a3b8] mt-0.5">需老师注册码</span>
-                    </button>
+
                   </div>
                 </div>
 
-                {(regRole === 'classadmin' || regRole === 'campusadmin') && (
+                {regRole === 'classadmin' && (
                   <div className="mb-3 sm:mb-5">
                     <label className="block text-xs font-semibold text-[#334155] mb-1.5 tracking-wide uppercase">
                       老师注册码
@@ -806,9 +788,7 @@ export default function LoginPage() {
                       )}
                     </div>
                     <p className="text-[10px] text-[#94a3b8] mt-1.5 ml-1">
-                      {regRole === 'campusadmin'
-                        ? '向超级管理员获取老师注册码，通过后自动成为校区班主任，可查看整个校区班级情况'
-                        : '向班级管理员或超级管理员获取老师注册码，通过后自动成为班级管理员'}
+                      向班级管理员或超级管理员获取老师注册码，通过后自动成为班级管理员
                     </p>
                   </div>
                 )}

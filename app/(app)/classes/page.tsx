@@ -43,14 +43,14 @@ function formatScheduleDisplay(schedules?: ClassSchedule[]): string {
 export default function ClassesPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { isAssistant, isClassAdmin, isCampusAdmin } = useRoleAccess()
+  const { isSuperAdmin, isClassAdmin } = useRoleAccess()
   const [classes, setClasses] = useState<Class[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingClass, setEditingClass] = useState<Class | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
 
-  const canEdit = isClassAdmin || isCampusAdmin || user?.role === 'superadmin'
+  const canEdit = isSuperAdmin || isClassAdmin
 
   useEffect(() => {
     setClasses(getClasses())
