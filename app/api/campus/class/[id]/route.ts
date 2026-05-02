@@ -2,25 +2,47 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getTokenUser, unauthorizedResponse, forbiddenResponse } from '@/lib/auth-guard'
 
-function parseScore(score: string): { score: number; total: number } | null {
-  const trimmed = score.trim()
-  const fractionMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/)
-  if (fractionMatch) {
-    const s = parseFloat(fractionMatch[1])
-    const t = parseFloat(fractionMatch[2])
-    if (t > 0) return { score: s, total: t }
-  }
-  const percentMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*%$/)
-  if (percentMatch) {
-    const p = parseFloat(percentMatch[1])
-    return { score: p, total: 100 }
-  }
-  const numberMatch = trimmed.match(/^(\d+(?:\.\d+)?)$/)
-  if (numberMatch) {
-    const n = parseFloat(numberMatch[1])
-    return { score: n, total: 100 }
-  }
+function computeAccuracy(record: {
+  wordScore?: number
+  wordTotal?: number
+  grammarScore?: number
+  grammarTotal?: number
+  grammarAccuracy?: number
+  overallAccuracy?: number
+}): number | null {
+  if (record.overallAccuracy != null) return Math.round(record.overallAccuracy)
+  if (record.grammarAccuracy != null) return Math.round(record.grammarAccuracy)
+  const ws = record.wordScore
+  const wt = record.wordTotal
+  const gs = record.grammarScore
+  const gt = record.grammarTotal
+  let totalScore = 0
+  let totalMax = 0
+  if (ws != null && wt != null && wt > 0) { totalScore += ws; totalMax += wt }
+  if (gs != null && gt != null && gt > 0) { totalScore += gs; totalMax += gt }
+  if (totalMax > 0) return Math.round((totalScore / totalMax) * 100)
   return null
+}
+
+function formatScore(record: {
+  wordScore?: number
+  wordTotal?: number
+  grammarScore?: number
+  grammarTotal?: number
+}): string {
+  const parts: string[] = []
+  if (record.wordScore != null && record.wordTotal != null) {
+    parts.push(`词汇:${record.wordScore}/${record.wordTotal}`)
+  }
+  if (record.grammarScore != null && record.grammarTotal != null) {
+    parts.push(`语法:${record.grammarScore}/${record.grammarTotal}`)
+  }
+  return parts.join(' ') || ''
+}
+
+function toDateStr(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d
+  return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0]
 }
 
 export async function GET(
@@ -56,26 +78,38 @@ export async function GET(
       return forbiddenResponse('您无权查看此班级的数据')
     }
 
-    const quizRecords = await prisma.quizRecord.findMany({
-      where: { userId: classItem.userId },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
+    const studentMap = new Map(classItem.students.map(s => [s.id, s.name]))
+
+    const classAdminStore = await prisma.userStore.findUnique({
+      where: { userId_key: { userId: classItem.userId, key: 'appStore' } },
     })
 
-    const classQuizRecords = quizRecords.filter(r => r.studentName && r.studentName.trim())
+    let storeQuizRecords: any[] = []
+    let storeFeedbackHistory: any[] = []
+    if (classAdminStore && classAdminStore.value) {
+      try {
+        const parsed = JSON.parse(classAdminStore.value)
+        storeQuizRecords = parsed.quizRecords || []
+        storeFeedbackHistory = parsed.feedbackHistory || []
+      } catch {}
+    }
 
-    const quizStats = classQuizRecords.map(r => {
-      const parsed = parseScore(r.score)
+    const filteredQuizRecords = storeQuizRecords
+      .filter((r: any) => r && r.studentId && (r.completion || r.notes))
+      .slice(0, 200)
+
+    const quizStats = filteredQuizRecords.map((r: any) => {
+      const accuracy = computeAccuracy(r)
       return {
         id: r.id,
-        studentName: r.studentName,
-        courseName: r.courseName,
-        score: r.score,
-        accuracy: parsed ? Math.round((parsed.score / parsed.total) * 100) : null,
-        date: r.date,
-        type: r.type,
-        notes: r.notes,
-        createdAt: r.createdAt.toISOString(),
+        studentName: studentMap.get(r.studentId) || r.studentId,
+        courseName: '',
+        score: formatScore(r),
+        accuracy,
+        date: toDateStr(r.assessedAt || r.uploadedAt),
+        type: r.completion || '',
+        notes: r.notes || '',
+        createdAt: typeof r.assessedAt === 'string' ? r.assessedAt : r.assessedAt?.toISOString?.() || new Date().toISOString(),
       }
     })
 
@@ -84,23 +118,19 @@ export async function GET(
       ? Math.round(accuracyValues.reduce((a, b) => a + b, 0) / accuracyValues.length)
       : null
 
-    const feedbackRecords = await prisma.feedbackRecord.findMany({
-      where: { userId: classItem.userId },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    })
+    const filteredFeedbackRecords = storeFeedbackHistory
+      .filter((r: any) => r && r.studentName && r.generatedContent)
+      .slice(0, 200)
 
-    const classFeedbackRecords = feedbackRecords
-      .filter(r => r.studentName && r.studentName.trim())
-      .map(r => ({
-        id: r.id,
-        studentName: r.studentName,
-        courseName: r.courseName,
-        content: r.content,
-        date: r.date,
-        type: r.type,
-        createdAt: r.createdAt.toISOString(),
-      }))
+    const classFeedbackRecords = filteredFeedbackRecords.map((r: any) => ({
+      id: r.id,
+      studentName: r.studentName,
+      courseName: r.lesson || '',
+      content: r.generatedContent,
+      date: toDateStr(r.createdAt),
+      type: r.overallGrade || '',
+      createdAt: typeof r.createdAt === 'string' ? r.createdAt : r.createdAt?.toISOString?.() || new Date().toISOString(),
+    }))
 
     return NextResponse.json({
       data: {
