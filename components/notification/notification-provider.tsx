@@ -54,7 +54,10 @@ function toNotificationItem(sn: ServerNotification): NotificationItem {
 
 async function fetchServerNotifications(): Promise<NotificationItem[]> {
   try {
-    const res = await fetch('/api/data/notifications')
+    const token = localStorage.getItem(TOKEN_KEY)
+    const res = await fetch('/api/data/notifications', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    })
     if (!res.ok) return []
     const result = await res.json()
     if (!result.data || !Array.isArray(result.data)) return []
@@ -155,9 +158,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const markRead = useCallback(async (id: string) => {
     markNotificationRead(id)
     try {
+      const token = localStorage.getItem(TOKEN_KEY)
       await fetch(`/api/data/notifications/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ read: true }),
       })
     } catch {}
