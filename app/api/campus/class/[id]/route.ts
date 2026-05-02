@@ -118,6 +118,22 @@ export async function GET(
       })
       .slice(0, 200)
 
+    const unknownStudentIds = new Set<string>()
+    for (const r of filteredQuizRecords) {
+      if (r.studentId && !studentMap.has(r.studentId)) {
+        unknownStudentIds.add(r.studentId)
+      }
+    }
+    if (unknownStudentIds.size > 0) {
+      const foundStudents = await prisma.student.findMany({
+        where: { id: { in: Array.from(unknownStudentIds) } },
+        select: { id: true, name: true },
+      })
+      for (const s of foundStudents) {
+        studentMap.set(s.id, s.name)
+      }
+    }
+
     const quizStats = filteredQuizRecords.map((r: any) => {
       const accuracy = computeAccuracy(r)
       return {
