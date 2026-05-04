@@ -304,7 +304,7 @@ function ClassTodoCard({
   const pendingWorkflow = item.workflowTodos.filter((t) => !t.completed)
 
   const handleToggleTodo = (todoId: string) => {
-    toggleWorkflowTodo(todoId)
+    toggleWorkflowTodo(todoId, cls.id)
     onRefresh()
   }
 

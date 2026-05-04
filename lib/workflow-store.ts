@@ -211,10 +211,51 @@ export function getWorkflowTodosByClass(classId: string, date: string): Workflow
   return getWorkflowTodos().filter(t => t.classId === classId && t.date === date)
 }
 
+function deduplicateWorkflowTodos(): void {
+  const todos = getWorkflowTodos()
+  const idMap = new Map<string, WorkflowTodo[]>()
+  for (const t of todos) {
+    if (!idMap.has(t.id)) idMap.set(t.id, [])
+    idMap.get(t.id)!.push(t)
+  }
+  let changed = false
+  idMap.forEach((duplicates, id) => {
+    if (duplicates.length <= 1) return
+    const uniqueClasses = new Set(duplicates.map(t => t.classId))
+    if (uniqueClasses.size <= 1) return
+    for (const dup of duplicates) {
+      const newId = `wtodo-${dup.classId}-${dup.date}-${Math.random().toString(36).slice(2, 8)}`
+      if (isCacheLoaded()) {
+        const cacheArr = getCache().workflowTodos
+        const idx = cacheArr.indexOf(dup)
+        if (idx !== -1) {
+          dup.id = newId
+          cacheArr[idx] = dup
+        }
+      } else {
+        const idx = localTodos.indexOf(dup)
+        if (idx !== -1) {
+          dup.id = newId
+          localTodos[idx] = dup
+        }
+      }
+    }
+    changed = true
+  })
+  if (changed && isCacheLoaded()) {
+    triggerSync()
+  } else if (changed) {
+    saveLocalWorkflowTodos(localTodos)
+  }
+}
+
 export function generateWorkflowTodos(classId: string, className: string, classType: string, date: string): WorkflowTodo[] {
   const template = getOrCreateWorkflowTemplate(classType)
   const existingTodos = getWorkflowTodosByClass(classId, date)
-  if (existingTodos.length > 0) return existingTodos
+  if (existingTodos.length > 0) {
+    deduplicateWorkflowTodos()
+    return getWorkflowTodosByClass(classId, date)
+  }
   const todos: WorkflowTodo[] = template.nodes
     .filter(n => n.enabled)
     .sort((a, b) => a.order - b.order)
@@ -259,9 +300,11 @@ export function updateWorkflowTodo(updated: WorkflowTodo): void {
   }
 }
 
-export function toggleWorkflowTodo(todoId: string): WorkflowTodo | undefined {
+export function toggleWorkflowTodo(todoId: string, classId?: string): WorkflowTodo | undefined {
   const todos = getWorkflowTodos()
-  const todo = todos.find(t => t.id === todoId)
+  const todo = classId
+    ? todos.find(t => t.id === todoId && t.classId === classId) || todos.find(t => t.id === todoId)
+    : todos.find(t => t.id === todoId)
   if (!todo) return undefined
   todo.completed = !todo.completed
   todo.completedAt = todo.completed ? new Date().toISOString() : undefined
