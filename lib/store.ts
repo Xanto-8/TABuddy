@@ -68,6 +68,7 @@ interface DataCache {
   absenceRecords: AbsenceRecord[]
   userFeedbacks: UserFeedback[]
   boundTeachers: { id: string; username: string; displayName: string }[]
+  selectedTeacherId: string | null
 }
 
 const cache: DataCache = {
@@ -95,6 +96,7 @@ const cache: DataCache = {
   absenceRecords: [],
   userFeedbacks: [],
   boundTeachers: [],
+  selectedTeacherId: null,
 }
 
 let cacheLoaded = false
@@ -311,6 +313,10 @@ function generateId(): string {
 // ========== 班级 (Classes) ==========
 
 export function getClasses(): Class[] {
+  const selectedId = cache.selectedTeacherId
+  if (selectedId) {
+    return cache.classes.filter(c => c.userId === selectedId)
+  }
   return cache.classes
 }
 
@@ -679,11 +685,28 @@ export function getResourceTypeIcon(type: ResourceType): string {
   return icons[type]
 }
 
-// ========== 班级上课时间 (Schedules) ==========
+// ========== 绑定老师与切换 ==========
 
 export function getBoundTeachers(): { id: string; username: string; displayName: string }[] {
   return cache.boundTeachers
 }
+
+export function getSelectedTeacherId(): string | null {
+  return cache.selectedTeacherId
+}
+
+export function setSelectedTeacherId(teacherId: string | null): void {
+  cache.selectedTeacherId = teacherId
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('classDataChanged'))
+  }
+}
+
+export function getAllClasses(): Class[] {
+  return cache.classes
+}
+
+// ========== 班级上课时间 (Schedules) ==========
 
 export function getClassSchedules(classId: string): ClassSchedule[] {
   return cache.schedules.filter((s) => s.classId === classId)

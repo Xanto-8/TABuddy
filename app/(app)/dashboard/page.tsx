@@ -22,6 +22,7 @@ import { FeatureShortcuts } from '@/components/dashboard/feature-shortcuts'
 import { PageContainer } from '@/components/ui/page-container'
 import { FocusTimer } from '@/components/focus-timer/focus-timer'
 import { BindInviteCodeModal } from '@/components/assistant/bind-invite-code-modal'
+import { TeacherSwitcher } from '@/components/assistant/teacher-switcher'
 import { toast } from 'sonner'
 import { useDashboardData } from '@/components/dashboard/use-dashboard-data'
 import type { DashboardData } from '@/components/dashboard/use-dashboard-data'
@@ -225,27 +226,25 @@ export default function DashboardPage() {
 
         {isAssistant && boundTeachers.length > 0 && (
           <div className="bg-gradient-to-r from-primary/5 to-primary/[0.02] border border-primary/10 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3 min-w-0 shrink-0">
                 <div className="p-2.5 rounded-xl bg-primary/10">
                   <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground text-sm">我绑定的老师</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">你正在协助以下老师管理班级</p>
-                  <div className="mt-3 space-y-2">
-                    {boundTeachers.map((t) => (
-                      <div key={t.id} className="flex items-center gap-2 text-sm">
-                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                          {t.displayName?.charAt(0) || t.username?.charAt(0) || '?'}
-                        </div>
-                        <div>
-                          <span className="font-medium text-foreground">{t.displayName || t.username}</span>
-                          <span className="text-muted-foreground ml-2">({t.username})</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h3 className="font-semibold text-foreground text-sm">班级视图切换</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">选择要查看的老师班级数据</p>
+                </div>
+              </div>
+              <div className="flex-1 flex items-center gap-3">
+                <TeacherSwitcher />
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {boundTeachers.map((t, i) => (
+                    <span key={t.id}>
+                      <span className="font-medium text-foreground">{t.displayName || t.username}</span>
+                      {i < boundTeachers.length - 1 && <span className="mx-1">·</span>}
+                    </span>
+                  ))}
                 </div>
               </div>
               <button

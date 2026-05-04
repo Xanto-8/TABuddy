@@ -9,6 +9,7 @@ import { Class, ClassType, ClassSchedule } from '@/types'
 import { getClasses, deleteClass, getClassTypeLabel, getClassTypeColor, getClassSchedules } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
+import { TeacherSwitcher } from '@/components/assistant/teacher-switcher'
 import { useAuth } from '@/lib/auth-store'
 import { useRoleAccess } from '@/lib/use-role-access'
 
@@ -50,10 +51,13 @@ export default function ClassesPage() {
   const [editingClass, setEditingClass] = useState<Class | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
 
-  const canEdit = isSuperAdmin || isClassAdmin
+  const canEdit = isSuperAdmin || isClassAdmin || isAssistant
 
   useEffect(() => {
     setClasses(getClasses())
+    const handler = () => setClasses([...getClasses()])
+    window.addEventListener('classDataChanged', handler)
+    return () => window.removeEventListener('classDataChanged', handler)
   }, [])
 
   const refreshClasses = () => {
@@ -88,6 +92,7 @@ export default function ClassesPage() {
               <p className="text-muted-foreground mt-1">管理所有班级和学员信息</p>
             </div>
           </div>
+          {isAssistant && <TeacherSwitcher />}
           {canEdit && (
             <button
               onClick={() => {
