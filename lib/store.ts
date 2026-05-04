@@ -178,6 +178,8 @@ export async function loadAllDataFromAPI(): Promise<void> {
     cache.userFeedbacks = (store.userFeedbacks as UserFeedback[]) || []
 
     cacheLoaded = true
+
+    restoreFromLocalBackup()
   } catch (error) {
     console.error('loadAllDataFromAPI failed:', error)
     cacheLoaded = false
@@ -221,16 +223,85 @@ async function syncStoreToAPI(): Promise<void> {
       method: 'PUT',
       headers: authHeaders(),
       body: JSON.stringify({ key: 'appStore', value: storeData }),
+      keepalive: true,
     })
   } catch (error) {
     console.error('syncStoreToAPI failed:', error)
   }
 }
 
+const LOCAL_BACKUP_KEY = 'tabuddy_store_backup'
+
+function saveLocalBackup(): void {
+  try {
+    const backup = {
+      timestamp: Date.now(),
+      data: {
+        records: cache.records,
+        resources: cache.resources,
+        courseTasks: cache.courseTasks,
+        templates: cache.templates,
+        lessonProgress: cache.lessonProgress,
+        homeworkAssessments: cache.homeworkAssessments,
+        quizRecords: cache.quizRecords,
+        accuracyRecords: cache.accuracyRecords,
+        feedbackHistory: cache.feedbackHistory,
+        notifications: cache.notifications,
+        pushLogs: cache.pushLogs,
+        remindersSent: cache.remindersSent,
+        markedDays: cache.markedDays,
+        deletedScheduleDates: cache.deletedScheduleDates,
+        customClassTypes: cache.customClassTypes,
+        knowledgeEntries: cache.knowledgeEntries,
+        workflowTemplates: cache.workflowTemplates,
+        workflowTodos: cache.workflowTodos,
+        absenceRecords: cache.absenceRecords,
+        userFeedbacks: cache.userFeedbacks,
+      },
+    }
+    localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(backup))
+  } catch {
+    // localStorage might be full or unavailable; silently ignore
+  }
+}
+
 let syncTimer: ReturnType<typeof setTimeout> | null = null
 function debouncedSyncStore(): void {
+  saveLocalBackup()
   if (syncTimer) clearTimeout(syncTimer)
   syncTimer = setTimeout(() => { syncStoreToAPI() }, 500)
+}
+
+function restoreFromLocalBackup(): void {
+  try {
+    const raw = localStorage.getItem(LOCAL_BACKUP_KEY)
+    if (!raw) return
+
+    const backup = JSON.parse(raw)
+    if (!backup || !backup.data || typeof backup.timestamp !== 'number') {
+      localStorage.removeItem(LOCAL_BACKUP_KEY)
+      return
+    }
+
+    const saved = backup.data as Record<string, unknown>
+
+    ;(Object.keys(saved) as Array<keyof typeof cache>).forEach((key) => {
+      if (key === 'boundTeachers') return
+      const savedVal = saved[key]
+      if (Array.isArray(savedVal) && savedVal.length > 0 && Array.isArray(cache[key]) && (cache[key] as unknown[]).length === 0) {
+        (cache as unknown as Record<string, unknown>)[key] = savedVal
+      }
+      if (!Array.isArray(savedVal) && typeof savedVal === 'object' && savedVal !== null && Object.keys(savedVal).length > 0
+        && typeof cache[key] === 'object' && cache[key] !== null && Object.keys(cache[key] as unknown as Record<string, unknown>).length === 0) {
+        (cache as unknown as Record<string, unknown>)[key] = savedVal
+      }
+    })
+
+    localStorage.removeItem(LOCAL_BACKUP_KEY)
+    debouncedSyncStore()
+  } catch {
+    localStorage.removeItem(LOCAL_BACKUP_KEY)
+  }
 }
 
 function generateId(): string {
