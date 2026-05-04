@@ -88,12 +88,11 @@ export function WorkflowNode({
           'w-[360px] rounded-xl border-2',
           'bg-gradient-to-br shadow-sm hover:shadow-md',
           'transition-all duration-200',
+          'hover:scale-[1.01] active:scale-[0.99]',
           colors.bg, colors.border,
           !node.enabled && 'opacity-55 grayscale-[0.3]',
           isDragging && 'opacity-50 scale-95 shadow-lg',
         )}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
       >
         {node.isCustom && (
           <div className="absolute -top-2.5 -right-2.5 z-10">
@@ -159,7 +158,7 @@ export function WorkflowNode({
             </button>
 
             <button
-              onClick={() => onToggle(node.id)}
+              onClick={(e) => { e.stopPropagation(); onToggle(node.id) }}
               className={cn(
                 'p-1.5 rounded-lg transition-all duration-200',
                 node.enabled
@@ -172,7 +171,7 @@ export function WorkflowNode({
             </button>
 
             <button
-              onClick={() => onDelete(node.id)}
+              onClick={(e) => { e.stopPropagation(); onDelete(node.id) }}
               className={cn(
                 'p-1.5 rounded-lg transition-all duration-200',
                 'text-gray-400 hover:bg-red-50 hover:text-red-500'
