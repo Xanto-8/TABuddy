@@ -67,6 +67,7 @@ export default function HomeworkPage() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isClassLoading, setIsClassLoading] = useState(false)
   const classSelectRef = useRef<HTMLDivElement>(null)
+  const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
 
   useEffect(() => {
@@ -145,6 +146,32 @@ export default function HomeworkPage() {
       }, 50)
     }, 150)
   }, [selectedStudentId])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showModal) return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+      e.preventDefault()
+      const currentIndex = students.findIndex(s => s.id === selectedStudentId)
+      let nextIndex: number
+      if (currentIndex === -1) {
+        nextIndex = e.key === 'ArrowDown' ? 0 : students.length - 1
+      } else {
+        nextIndex = e.key === 'ArrowDown'
+          ? Math.min(currentIndex + 1, students.length - 1)
+          : Math.max(currentIndex - 1, 0)
+      }
+      if (nextIndex >= 0 && nextIndex < students.length && students[nextIndex]?.id !== selectedStudentId) {
+        handleStudentClick(students[nextIndex].id)
+      }
+    }
+    if (students.length > 0) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [students, selectedStudentId, showModal, handleStudentClick])
 
   const handleClassSwitch = useCallback((classId: string) => {
     if (classId === selectedClassId) {
@@ -620,6 +647,17 @@ function AddAssessmentModal({
   const [saving, setSaving] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
 
+  const accuracyRef = useRef<HTMLInputElement>(null)
+  const feedbackRef = useRef<HTMLTextAreaElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
+
+  const handleEnterKey = (e: React.KeyboardEvent, nextRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement | null>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      nextRef.current?.focus()
+    }
+  }
+
   useEffect(() => {
     setGeneratedFeedback(generateHomeworkFeedback(completion, handwriting, accuracy, feedback, student.name))
   }, [completion, handwriting, accuracy, feedback, student.name])
@@ -744,6 +782,8 @@ function AddAssessmentModal({
                     max="100"
                     value={accuracy}
                     onChange={(e) => setAccuracy(Math.min(100, Math.max(0, Number(e.target.value))))}
+                    ref={accuracyRef}
+                    onKeyDown={(e) => handleEnterKey(e, feedbackRef)}
                     className="w-16 px-2 py-1.5 rounded-lg border border-border bg-background text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   />
                 </div>
@@ -754,6 +794,8 @@ function AddAssessmentModal({
                 <textarea
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
+                  ref={feedbackRef}
+                  onKeyDown={(e) => handleEnterKey(e, submitRef)}
                   placeholder="可补充教师的主观评价或批改意见..."
                   className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm min-h-[60px] resize-none hover:bg-accent/50 cursor-pointer"
                   rows={3}
@@ -804,6 +846,7 @@ function AddAssessmentModal({
                 </button>
                 <button
                   type="submit"
+                  ref={submitRef}
                   disabled={saving}
                   className="inline-flex items-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium"
                 >

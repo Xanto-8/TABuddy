@@ -64,6 +64,7 @@ export default function QuizzesPage() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isClassLoading, setIsClassLoading] = useState(false)
   const classSelectRef = useRef<HTMLDivElement>(null)
+  const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false)
   const exportDropdownRef = useRef<HTMLDivElement>(null)
@@ -172,6 +173,32 @@ export default function QuizzesPage() {
       }, 50)
     }, 150)
   }, [selectedStudentId])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showModal) return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+      e.preventDefault()
+      const currentIndex = students.findIndex(s => s.id === selectedStudentId)
+      let nextIndex: number
+      if (currentIndex === -1) {
+        nextIndex = e.key === 'ArrowDown' ? 0 : students.length - 1
+      } else {
+        nextIndex = e.key === 'ArrowDown'
+          ? Math.min(currentIndex + 1, students.length - 1)
+          : Math.max(currentIndex - 1, 0)
+      }
+      if (nextIndex >= 0 && nextIndex < students.length && students[nextIndex]?.id !== selectedStudentId) {
+        handleStudentClick(students[nextIndex].id)
+      }
+    }
+    if (students.length > 0) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [students, selectedStudentId, showModal, handleStudentClick])
 
   const handleClassSwitch = useCallback((classId: string) => {
     if (classId === selectedClassId) {
@@ -926,6 +953,21 @@ function UploadQuizModal({
   const [completion, setCompletion] = useState<CompletionStatus>(editingRecord?.completion ?? 'completed')
   const [notes, setNotes] = useState(editingRecord?.notes ?? '')
 
+  const wordScoreRef = useRef<HTMLInputElement>(null)
+  const wordTotalRef = useRef<HTMLInputElement>(null)
+  const grammarScoreRef = useRef<HTMLInputElement>(null)
+  const grammarTotalRef = useRef<HTMLInputElement>(null)
+  const completionRef = useRef<HTMLSelectElement>(null)
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
+
+  const handleEnterKey = (e: React.KeyboardEvent, nextRef: React.RefObject<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement | null>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      nextRef.current?.focus()
+    }
+  }
+
   const ws = wordScore ? Number(wordScore) : NaN
   const wt = wordTotal ? Number(wordTotal) : NaN
   const gs = grammarScore ? Number(grammarScore) : NaN
@@ -1025,6 +1067,8 @@ function UploadQuizModal({
                   type="number"
                   value={wordScore}
                   onChange={(e) => setWordScore(e.target.value)}
+                  ref={wordScoreRef}
+                  onKeyDown={(e) => handleEnterKey(e, wordTotalRef)}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
                   placeholder="例如: 8"
                   min={0}
@@ -1036,6 +1080,8 @@ function UploadQuizModal({
                   type="number"
                   value={wordTotal}
                   onChange={(e) => setWordTotal(e.target.value)}
+                  ref={wordTotalRef}
+                  onKeyDown={(e) => handleEnterKey(e, grammarScoreRef)}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
                   placeholder="例如: 10"
                   min={0}
@@ -1060,6 +1106,8 @@ function UploadQuizModal({
                   type="number"
                   value={grammarScore}
                   onChange={(e) => setGrammarScore(e.target.value)}
+                  ref={grammarScoreRef}
+                  onKeyDown={(e) => handleEnterKey(e, grammarTotalRef)}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
                   placeholder="例如: 8"
                   min={0}
@@ -1071,6 +1119,8 @@ function UploadQuizModal({
                   type="number"
                   value={grammarTotal}
                   onChange={(e) => setGrammarTotal(e.target.value)}
+                  ref={grammarTotalRef}
+                  onKeyDown={(e) => handleEnterKey(e, completionRef)}
                   className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
                   placeholder="例如: 10"
                   min={0}
@@ -1091,6 +1141,8 @@ function UploadQuizModal({
             <select
               value={completion}
               onChange={(e) => setCompletion(e.target.value as CompletionStatus)}
+              ref={completionRef}
+              onKeyDown={(e) => handleEnterKey(e, notesRef)}
               className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm"
             >
               <option value="completed">已完成</option>
@@ -1103,6 +1155,8 @@ function UploadQuizModal({
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              ref={notesRef}
+              onKeyDown={(e) => handleEnterKey(e, submitRef)}
               className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm resize-none"
               rows={3}
               placeholder="可选填写备注"
@@ -1118,6 +1172,7 @@ function UploadQuizModal({
             </button>
             <button
               type="submit"
+              ref={submitRef}
               className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-all"
             >
               {editingRecord ? '保存修改' : '保存记录'}

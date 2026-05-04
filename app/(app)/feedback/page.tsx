@@ -36,6 +36,7 @@ export default function FeedbackPage() {
   const [isClassLoading, setIsClassLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const classSelectRef = useRef<HTMLDivElement>(null)
+  const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
 
   const [keywords, setKeywords] = useState('')
@@ -122,6 +123,31 @@ export default function FeedbackPage() {
       }, 50)
     }, 150)
   }, [selectedStudentId])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+      e.preventDefault()
+      const currentIndex = students.findIndex(s => s.id === selectedStudentId)
+      let nextIndex: number
+      if (currentIndex === -1) {
+        nextIndex = e.key === 'ArrowDown' ? 0 : students.length - 1
+      } else {
+        nextIndex = e.key === 'ArrowDown'
+          ? Math.min(currentIndex + 1, students.length - 1)
+          : Math.max(currentIndex - 1, 0)
+      }
+      if (nextIndex >= 0 && nextIndex < students.length && students[nextIndex]?.id !== selectedStudentId) {
+        handleStudentClick(students[nextIndex].id)
+      }
+    }
+    if (students.length > 0) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [students, selectedStudentId, handleStudentClick])
 
   const handleClassSwitch = useCallback((classId: string) => {
     if (classId === selectedClassId) {
