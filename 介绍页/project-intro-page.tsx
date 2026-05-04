@@ -75,7 +75,7 @@ export function ProjectIntroPage() {
                 进入系统
               </button>
               <button
-                onClick={() => window.open('/api/download', '_blank')}
+                onClick={() => window.open('/download', '_blank')}
                 className="flex items-center gap-2 rounded-md border border-white/30 px-6 py-4 text-base font-medium text-white/70 transition-colors hover:border-white hover:text-white hover:bg-white/10"
               >
                 <svg

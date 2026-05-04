@@ -6,7 +6,7 @@ import { PageContainer } from '@/components/ui/page-container'
 import { Button } from '@/components/ui/button'
 import { Download, Monitor, CheckCircle, ChevronRight, ExternalLink, Github } from 'lucide-react'
 
-const DOWNLOAD_URL = '/api/download'
+const DOWNLOAD_URL = 'https://github.com/Xanto-8/TABuddy/releases/latest/download/TABuddy-Setup-1.0.0.exe'
 
 export default function DownloadPage() {
   const [downloaded, setDownloaded] = useState(false)
