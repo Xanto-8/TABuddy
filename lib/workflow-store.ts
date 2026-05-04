@@ -219,7 +219,7 @@ export function generateWorkflowTodos(classId: string, className: string, classT
     .filter(n => n.enabled)
     .sort((a, b) => a.order - b.order)
     .map((node, i) => ({
-      id: `wtodo-${Date.now()}-${i}`,
+      id: `wtodo-${classId}-${date}-${i}`,
       classId,
       className,
       date,
