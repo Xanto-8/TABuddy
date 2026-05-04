@@ -13,6 +13,7 @@ import {
   markNotificationsCompletedByClass,
 } from '@/lib/store'
 import { useReminderScheduler, useCheckInStatusWatcher } from '@/lib/reminder-scheduler'
+import { playNotificationSound } from '@/lib/notification-sound'
 
 interface NotificationContextValue {
   unreadCount: number
@@ -119,6 +120,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         eventSource = es
 
         es.addEventListener('notification', () => {
+          playNotificationSound()
           refresh()
         })
 
