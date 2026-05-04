@@ -6,7 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Camera, Save, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ShortcutSettings } from '@/components/settings/shortcut-settings'
+import { User, Camera, Save, Lock, AlertCircle, CheckCircle2, Eye, EyeOff, Keyboard } from 'lucide-react'
 import { toast } from 'sonner'
 
 function getColor(name?: string) {
@@ -41,8 +43,8 @@ function getRoleLabel(role?: string) {
   }
 }
 
-export default function SettingsPage() {
-  const { user, updateProfile, updateAvatar, getToken } = useAuth()
+function ProfileSettings({ user }: { user: NonNullable<ReturnType<typeof useAuth>['user']> }) {
+  const { updateProfile, updateAvatar } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [username, setUsername] = useState(user?.username || '')
@@ -59,16 +61,6 @@ export default function SettingsPage() {
   const [showNewPwd, setShowNewPwd] = useState(false)
   const [showConfirmPwd, setShowConfirmPwd] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold">请先登录</h2>
-        </div>
-      </div>
-    )
-  }
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
@@ -154,7 +146,7 @@ export default function SettingsPage() {
 
     setChangingPassword(true)
     try {
-      const token = getToken()
+      const token = user ? localStorage.getItem('tabuddy_auth_token') : null
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: {
@@ -187,15 +179,10 @@ export default function SettingsPage() {
     setConfirmPassword('')
   }
 
-  const currentAvatar = avatarPreview || user.avatar || ''
+  const currentAvatar = avatarPreview || user?.avatar || ''
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4 md:space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">个人信息</h1>
-        <p className="text-sm text-muted-foreground mt-1">管理你的个人资料和账号信息</p>
-      </div>
-
+    <div className="space-y-4 md:space-y-6">
       {message && (
         <div
           className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${
@@ -235,8 +222,8 @@ export default function SettingsPage() {
                 />
               </div>
             ) : (
-              <div className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold ring-2 ring-border group-hover:ring-primary transition-all ${getColor(user.displayName || user.username)}`}>
-                {getInitials(user.displayName || user.username)}
+              <div className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold ring-2 ring-border group-hover:ring-primary transition-all ${getColor(user?.displayName || user?.username)}`}>
+                {getInitials(user?.displayName || user?.username)}
               </div>
             )}
             <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -244,8 +231,8 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{user.displayName || user.username}</p>
-            <p className="text-sm text-muted-foreground truncate">@{user.username}</p>
+            <p className="font-medium truncate">{user?.displayName || user?.username}</p>
+            <p className="text-sm text-muted-foreground truncate">@{user?.username}</p>
           </div>
         </CardContent>
       </Card>
@@ -276,7 +263,7 @@ export default function SettingsPage() {
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={user.username}
+              placeholder={user?.username}
             />
             <p className="text-xs text-muted-foreground">显示在系统中的名称</p>
           </div>
@@ -417,27 +404,70 @@ export default function SettingsPage() {
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between py-2 border-b border-border">
               <dt className="text-muted-foreground">用户名</dt>
-              <dd className="font-medium">{user.username}</dd>
+              <dd className="font-medium">{user?.username}</dd>
             </div>
             <div className="flex justify-between py-2 border-b border-border">
               <dt className="text-muted-foreground">显示名称</dt>
-              <dd className="font-medium">{user.displayName || '-'}</dd>
+              <dd className="font-medium">{user?.displayName || '-'}</dd>
             </div>
             <div className="flex justify-between py-2 border-b border-border">
               <dt className="text-muted-foreground">角色</dt>
               <dd>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                  {getRoleLabel(user.role)}
+                  {getRoleLabel(user?.role)}
                 </span>
               </dd>
             </div>
             <div className="flex justify-between py-2">
               <dt className="text-muted-foreground">用户 ID</dt>
-              <dd className="font-mono text-xs text-muted-foreground">{user.id}</dd>
+              <dd className="font-mono text-xs text-muted-foreground">{user?.id}</dd>
             </div>
           </dl>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+export default function SettingsPage() {
+  const { user } = useAuth()
+  const [activeTab, setActiveTab] = useState('profile')
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">请先登录</h2>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight mb-4">设置</h1>
+          <TabsList>
+            <TabsTrigger value="profile" className="gap-2">
+              <User className="w-4 h-4" />
+              个人信息
+            </TabsTrigger>
+            <TabsTrigger value="shortcuts" className="gap-2">
+              <Keyboard className="w-4 h-4" />
+              快捷键设置
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="profile">
+          <ProfileSettings user={user} />
+        </TabsContent>
+
+        <TabsContent value="shortcuts">
+          <ShortcutSettings />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
