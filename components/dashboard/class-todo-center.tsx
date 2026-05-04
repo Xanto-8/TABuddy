@@ -7,6 +7,7 @@ import type { Class, WorkflowTodo, Student } from '@/types'
 import { WORKFLOW_NODE_ICONS } from '@/types'
 import {
   getClasses,
+  getClassSchedules,
   getHomeworkAssessmentsByClass,
   getQuizRecordsByClass,
   getClassTypeLabel,
@@ -112,7 +113,37 @@ function loadAllClassTodos(): ClassTodoData[] {
     }
   })
 
-  list.sort((a, b) => b.totalPending - a.totalPending)
+  const now = new Date()
+  const todayDow = now.getDay()
+  const currentTime = now.getHours() * 60 + now.getMinutes()
+
+  function getEarliestStartMinutes(classId: string): number {
+    const schedules = getClassSchedules(classId).filter(s => s.dayOfWeek === todayDow)
+    if (schedules.length === 0) return Infinity
+    return Math.min(...schedules.map(s => {
+      const [h, m] = s.startTime.split(':').map(Number)
+      return h * 60 + m
+    }))
+  }
+
+  function isCurrentlyInSession(classId: string): boolean {
+    const schedules = getClassSchedules(classId).filter(s => s.dayOfWeek === todayDow)
+    return schedules.some(s => {
+      const [startHour, startMinute] = s.startTime.split(':').map(Number)
+      const [endHour, endMinute] = s.endTime.split(':').map(Number)
+      const start = startHour * 60 + startMinute
+      const end = endHour * 60 + endMinute
+      return currentTime >= start && currentTime <= end
+    })
+  }
+
+  list.sort((a, b) => {
+    const aInSession = isCurrentlyInSession(a.class.id)
+    const bInSession = isCurrentlyInSession(b.class.id)
+    if (aInSession && !bInSession) return -1
+    if (!aInSession && bInSession) return 1
+    return getEarliestStartMinutes(a.class.id) - getEarliestStartMinutes(b.class.id)
+  })
   return list
 }
 

@@ -19,6 +19,7 @@ export interface Class {
   description?: string
   studentCount: number
   gyId?: string
+  createdBy?: string
   schedules?: ClassSchedule[]
   createdAt: Date
   updatedAt: Date

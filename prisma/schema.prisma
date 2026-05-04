@@ -82,6 +82,7 @@ model Class {
   type          String   @default("")
   studentCount  Int      @default(0)
   color         String   @default("")
+  createdBy     String   @default("")
   courseTasks   String   @default("[]")
   taskTemplates String   @default("[]")
   scores        String   @default("[]")

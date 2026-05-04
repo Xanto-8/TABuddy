@@ -69,12 +69,8 @@ export async function getAllUserData(userId: string) {
     boundTeachers = binds.map(b => b.teacher)
   }
 
-  const dataUserId = isAssistant && teacherIds.length > 0 ? undefined : userId
-  const userIdFilter = dataUserId ? { userId: dataUserId } : undefined
-
-  const teacherDataFilter = isAssistant && teacherIds.length > 0
-    ? { userId: { in: teacherIds } }
-    : (userIdFilter || { userId })
+  const userIds = isAssistant ? Array.from(new Set([...teacherIds, userId])) : [userId]
+  const teacherDataFilter = { userId: { in: userIds } }
 
   const [
     classes,

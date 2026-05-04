@@ -43,7 +43,7 @@ function formatScheduleDisplay(schedules?: ClassSchedule[]): string {
 export default function ClassesPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { isSuperAdmin, isClassAdmin } = useRoleAccess()
+  const { isSuperAdmin, isClassAdmin, isAssistant } = useRoleAccess()
   const [classes, setClasses] = useState<Class[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -182,6 +182,13 @@ export default function ClassesPage() {
                   <span>{formatScheduleDisplay(getClassSchedules(cls.id))}</span>
                 </div>
 
+                {cls.createdBy && (
+                  <div className="flex items-center text-sm text-muted-foreground mt-1">
+                    <Users className="h-4 w-4 mr-1.5" />
+                    <span>由 {cls.createdBy} 添加</span>
+                  </div>
+                )}
+
                 {cls.description && (
                   <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
                     {cls.description}
@@ -262,6 +269,8 @@ export default function ClassesPage() {
             setEditingClass(null)
             refreshClasses()
           }}
+          isAssistant={isAssistant}
+          currentUserName={user?.displayName || user?.username || ''}
         />
       )}
         </div>
@@ -274,11 +283,15 @@ function ClassFormModal({
   onClose,
   onSave,
   isOpen,
+  isAssistant,
+  currentUserName,
 }: {
   classData: Class | null
   onClose: () => void
   onSave: () => void
   isOpen: boolean
+  isAssistant?: boolean
+  currentUserName?: string
 }) {
   const [name, setName] = useState(classData?.name || '')
   const [type, setType] = useState<ClassType>(classData?.type || 'OTHER')
@@ -289,6 +302,7 @@ function ClassFormModal({
   const [startTime, setStartTime] = useState<string>('09:00')
   const [endTime, setEndTime] = useState<string>('10:30')
   const [isDaySelectOpen, setIsDaySelectOpen] = useState(false)
+  const [syncToTeacher, setSyncToTeacher] = useState(false)
   const selectRef = useRef<HTMLDivElement>(null)
   const daySelectRef = useRef<HTMLDivElement>(null)
   const modalContentRef = useRef<HTMLDivElement>(null)
@@ -598,7 +612,12 @@ function ClassFormModal({
         }
       } else {
         const { saveClass, saveClassSchedule } = await import('@/lib/store')
-        const newClass = saveClass({ name: name.trim(), type, description: description.trim() || undefined })
+        const newClass = saveClass({
+          name: name.trim(),
+          type,
+          description: description.trim() || undefined,
+          createdBy: currentUserName || undefined,
+        })
         
         // 保存上课时间
         if (newClass && dayOfWeek && startTime && endTime) {
@@ -608,6 +627,21 @@ function ClassFormModal({
             startTime,
             endTime,
           })
+        }
+
+        // 同步至老师
+        if (syncToTeacher && newClass) {
+          const { syncClassToTeachers } = await import('@/lib/store')
+          const syncResult = await syncClassToTeachers({
+            classId: newClass.id,
+            name: name.trim(),
+            type,
+          })
+          if (syncResult && syncResult.syncedTo > 0) {
+            alert(`班级已同步至 ${syncResult.syncedTo} 位老师的班级管理`)
+          } else {
+            alert('同步失败，请稍后重试')
+          }
         }
       }
 
@@ -846,6 +880,21 @@ function ClassFormModal({
             </div>
           </div>
 
+          {isAssistant && !classData && (
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20">
+              <input
+                type="checkbox"
+                id="syncToTeacher"
+                checked={syncToTeacher}
+                onChange={(e) => setSyncToTeacher(e.target.checked)}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
+              />
+              <label htmlFor="syncToTeacher" className="text-sm text-foreground cursor-pointer select-none">
+                同步至老师班级管理
+              </label>
+              <span className="text-xs text-muted-foreground ml-auto">同步后老师将收到通知</span>
+            </div>
+          )}
 
         </div>
 

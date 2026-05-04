@@ -404,6 +404,32 @@ export function deleteClass(id: string): boolean {
   return true
 }
 
+export async function syncClassToTeachers(data: {
+  classId: string
+  name: string
+  type?: string
+  color?: string
+  isArchived?: boolean
+}): Promise<{ syncedTo: number; teachers: { id: string; displayName: string }[]; classIds: string[] } | null> {
+  try {
+    const response = await fetch('/api/data/classes/sync', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Sync failed' }))
+      console.error('syncClassToTeachers failed:', err)
+      return null
+    }
+    const result = await response.json()
+    return result.data
+  } catch (error) {
+    console.error('syncClassToTeachers error:', error)
+    return null
+  }
+}
+
 // ========== 学生 (Students) ==========
 
 export function getStudents(): Student[] {
@@ -776,6 +802,14 @@ export function getTodayClasses(): Class[] {
   return cache.classes.filter((classItem) => {
     const schedules = getClassSchedules(classItem.id)
     return schedules.some((schedule) => schedule.dayOfWeek === today)
+  }).sort((a, b) => {
+    const aSchedules = getClassSchedules(a.id).filter(s => s.dayOfWeek === today)
+    const bSchedules = getClassSchedules(b.id).filter(s => s.dayOfWeek === today)
+    const aEarliest = aSchedules.sort((x, y) => x.startTime.localeCompare(y.startTime))[0]
+    const bEarliest = bSchedules.sort((x, y) => x.startTime.localeCompare(y.startTime))[0]
+    if (!aEarliest) return 1
+    if (!bEarliest) return -1
+    return aEarliest.startTime.localeCompare(bEarliest.startTime)
   })
 }
 

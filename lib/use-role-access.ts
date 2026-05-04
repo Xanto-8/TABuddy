@@ -14,7 +14,7 @@ export function useRoleAccess() {
   const isAssistant = role === 'assistant'
   const isStudent = role === 'student'
   const isAdminOrAbove = isSuperAdmin || isClassAdmin
-  const canEditClasses = isClassAdmin || isSuperAdmin
+  const canEditClasses = isClassAdmin || isSuperAdmin || isAssistant
 
   const roleLabel = isSuperAdmin ? '超级管理员'
     : isClassAdmin ? '班级管理员'
