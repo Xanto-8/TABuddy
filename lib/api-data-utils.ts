@@ -57,6 +57,8 @@ export async function getAllUserData(userId: string) {
   const isAssistant = user.role === 'assistant'
   let teacherIds: string[] = []
   let boundTeachers: { id: string; username: string; displayName: string }[] = []
+  let assistantIds: string[] = []
+  let boundAssistants: { id: string; username: string; displayName: string }[] = []
 
   if (isAssistant) {
     const binds = await prisma.teacherAssistantBind.findMany({
@@ -67,16 +69,29 @@ export async function getAllUserData(userId: string) {
     })
     teacherIds = binds.map(b => b.teacherId)
     boundTeachers = binds.map(b => b.teacher)
+  } else {
+    const binds = await prisma.teacherAssistantBind.findMany({
+      where: { teacherId: userId, status: 'active' },
+      include: {
+        assistant: { select: { id: true, username: true, displayName: true } },
+      },
+    })
+    assistantIds = binds.map(b => b.assistantId).filter((id): id is string => id !== null)
+    boundAssistants = binds.map(b => b.assistant).filter((a): a is { id: string; username: string; displayName: string } => a !== null)
   }
 
-  const userIds = isAssistant ? Array.from(new Set([...teacherIds, userId])) : [userId]
-  const teacherDataFilter = { userId: { in: userIds } }
+  const allUserIds = isAssistant
+    ? Array.from(new Set([...teacherIds, userId]))
+    : Array.from(new Set([...assistantIds, userId]))
 
+  const teacherDataFilter = { userId: { in: allUserIds } }
+
+  // 班级管理员只看自己创建的班级
   // 助教端过滤掉同步给老师的班级副本（userId=老师ID 且 createdBy不为空 = 同步副本）
   // 保留助教自己的班级 和 老师自己创建的原始班级（createdBy为空）
   const classFilter = isAssistant
-    ? { userId: { in: userIds }, OR: [{ userId: userId }, { createdBy: '' }] }
-    : teacherDataFilter
+    ? { userId: { in: allUserIds }, OR: [{ userId: userId }, { createdBy: '' }] }
+    : { userId: { in: [userId] } }
 
   const [
     classes,
@@ -145,5 +160,6 @@ export async function getAllUserData(userId: string) {
     reminderConfigs,
     knowledgeEntries,
     ...(isAssistant && boundTeachers.length > 0 ? { boundTeachers } : {}),
+    ...(!isAssistant && boundAssistants.length > 0 ? { boundAssistants } : {}),
   }
 }
