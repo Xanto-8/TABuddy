@@ -174,10 +174,6 @@ function BottomSection({ expanded, onManualToggle }: { expanded: boolean; onManu
   const isDark = theme === 'dark'
   const isHelpActive = pathname === '/help'
 
-  const handleDownload = () => {
-    window.open('https://www.tabuddy.top/releases', '_blank')
-  }
-
   return (
     <div className="border-t border-border shrink-0">
       <Link href="/help" className="block">
@@ -195,18 +191,24 @@ function BottomSection({ expanded, onManualToggle }: { expanded: boolean; onManu
           {expanded && <span className="truncate">帮助与反馈</span>}
         </div>
       </Link>
-      <button
-        onClick={handleDownload}
-        className={cn(
-          'flex items-center gap-3 w-full h-11 px-4 text-xs transition-colors duration-150',
-          expanded ? 'justify-start' : 'justify-center',
-          'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-        )}
-        title="下载客户端"
-      >
-        <Download size={16} className="shrink-0" />
-        {expanded && <span className="truncate">下载客户端</span>}
-      </button>
+      <Link href="/download" className="block">
+        <div
+          className={cn(
+            'flex items-center gap-3 w-full h-11 px-4 text-xs transition-colors duration-150',
+            expanded ? 'justify-start' : 'justify-center',
+            pathname === '/download'
+              ? 'bg-primary/10 text-primary font-medium'
+              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+          )}
+          title="下载客户端"
+        >
+          <div className="relative shrink-0">
+            <Download size={16} />
+            <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-green-500" />
+          </div>
+          <span className="truncate">下载客户端</span>
+        </div>
+      </Link>
       <div className="flex items-center justify-between h-12 px-4 border-t border-border">
         <button
           onClick={() => {
