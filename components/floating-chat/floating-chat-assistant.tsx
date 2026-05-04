@@ -231,14 +231,90 @@ export function FloatingChatAssistant() {
   const [activeClass, setActiveClass] = useState<ReturnType<typeof getCurrentClassByTime>>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [agentSessionId, setAgentSessionId] = useState<string | null>(null)
+  const [position, setPosition] = useState({ bottom: 24, right: 24 })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatPanelRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const messagesRef = useRef<ChatMessage[]>([])
+  const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, startBottom: 24, startRight: 24, moved: false })
   const { refreshCourseProgress } = useProgress()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+
+  const handleDragStart = (clientX: number, clientY: number) => {
+    dragRef.current = {
+      isDragging: true,
+      startX: clientX,
+      startY: clientY,
+      startBottom: position.bottom,
+      startRight: position.right,
+      moved: false,
+    }
+  }
+
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!dragRef.current.isDragging) return
+    const dx = clientX - dragRef.current.startX
+    const dy = clientY - dragRef.current.startY
+
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      dragRef.current.moved = true
+    }
+
+    if (!dragRef.current.moved) return
+
+    const newRight = Math.max(12, Math.min(window.innerWidth - 80, dragRef.current.startRight - dx))
+    const newBottom = Math.max(12, Math.min(window.innerHeight - 80, dragRef.current.startBottom - dy))
+
+    setPosition({ right: newRight, bottom: newBottom })
+  }
+
+  const handleDragEnd = () => {
+    dragRef.current.isDragging = false
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', handleMouseUp)
+    document.removeEventListener('touchmove', handleTouchMove)
+    document.removeEventListener('touchend', handleTouchEnd)
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    handleDragStart(e.clientX, e.clientY)
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    handleDragMove(e.clientX, e.clientY)
+  }
+
+  const handleMouseUp = () => {
+    handleDragEnd()
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    handleDragStart(e.touches[0].clientX, e.touches[0].clientY)
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', handleTouchEnd)
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    e.preventDefault()
+    handleDragMove(e.touches[0].clientX, e.touches[0].clientY)
+  }
+
+  const handleTouchEnd = () => {
+    handleDragEnd()
+  }
+
+  const handleBubbleClick = () => {
+    if (dragRef.current.moved) {
+      dragRef.current.moved = false
+      return
+    }
+    setIsOpen((prev) => !prev)
+  }
 
   const addMessage = useCallback((msg: ChatMessage) => {
     setMessages((prev) => {
@@ -665,7 +741,7 @@ export function FloatingChatAssistant() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100]" style={{ isolation: 'isolate' }}>
+    <div className="fixed z-[100]" style={{ bottom: position.bottom, right: position.right, isolation: 'isolate' }}>
       {isOpen && (
         <div
           ref={chatPanelRef}
@@ -982,14 +1058,17 @@ export function FloatingChatAssistant() {
       )}
 
       <button
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleBubbleClick}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         className={cn(
           'w-14 h-14 rounded-2xl flex items-center justify-center',
           'bg-gradient-to-br from-primary to-secondary',
           'text-primary-foreground shadow-lg shadow-primary/25',
           'hover:shadow-xl hover:shadow-primary/30 hover:scale-105',
           'active:scale-95 transition-all duration-200',
-          'relative'
+          'relative',
+          'cursor-grab active:cursor-grabbing'
         )}
         aria-label={isOpen ? '关闭助教' : '打开助教'}
       >

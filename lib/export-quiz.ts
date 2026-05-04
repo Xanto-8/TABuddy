@@ -86,7 +86,8 @@ function downloadTxt(lines: string[], fileName: string) {
 
 export async function exportQuizDocx(params: ExportParams): Promise<{ success: boolean; usedFallback?: boolean; fileName?: string }> {
   const { className, studentRecords } = params
-  const fileNameBase = `${className}-小测记录`
+  const dateStr = new Date().toISOString().slice(0, 10)
+  const fileNameBase = `${className}-小测记录-${dateStr}`
   const lines = buildContentLines(className, studentRecords)
 
   try {
