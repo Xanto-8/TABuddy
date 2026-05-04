@@ -55,3 +55,11 @@ server/node_modules/
 .env*.local
 
 /lib/generated/prisma
+
+# Electron
+release/
+electron/node_modules/
+
+# Installer packages (too large for GitHub, use Releases)
+public/releases/*.exe
+*.exe
