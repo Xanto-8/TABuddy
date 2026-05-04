@@ -112,7 +112,7 @@ export async function getAllUserData(userId: string) {
     knowledgeEntries,
   ] = await Promise.all([
     prisma.class.findMany({ where: classFilter, include: { schedules: true } }),
-    prisma.student.findMany({ where: teacherDataFilter }),
+    prisma.student.findMany({ where: teacherDataFilter, orderBy: { createdAt: 'asc' } }),
     prisma.classSchedule.findMany({ where: teacherDataFilter }),
     prisma.courseTask.findMany({ where: teacherDataFilter }),
     prisma.taskTemplate.findMany({ where: teacherDataFilter }),

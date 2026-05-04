@@ -480,11 +480,14 @@ export async function saveStudentAsync(data: Omit<Student, 'id' | 'createdAt' | 
   return newStudent
 }
 
+let _studentCreatedAtSeq = 0
+
 export function saveStudent(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>): Student {
+  _studentCreatedAtSeq++
   const newStudent: Student = {
     ...data,
     id: generateId(),
-    createdAt: new Date(),
+    createdAt: new Date(Date.now() + _studentCreatedAtSeq),
     updatedAt: new Date(),
   }
   cache.students.push(newStudent)
