@@ -96,9 +96,9 @@ const DEFAULT_SHORTCUTS: ShortcutAction[] = [
   },
   {
     id: 'action-copy',
-    label: '复制反馈',
+    label: '一键复制',
     category: 'action',
-    description: '一键复制当前反馈内容',
+    description: '一键复制当前页面的内容（反馈/成绩等）',
     defaultKeys: ['Control', 'Shift', 'c'],
     keys: ['Control', 'Shift', 'c'],
   },

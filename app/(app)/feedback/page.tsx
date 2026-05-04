@@ -24,6 +24,7 @@ import {
 } from '@/lib/store'
 import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
 import { PageContainer } from '@/components/ui/page-container'
+import { useCopyShortcut } from '@/lib/copy-shortcut'
 
 export default function FeedbackPage() {
   const [classes, setClasses] = useState<Class[]>([])
@@ -287,6 +288,17 @@ export default function FeedbackPage() {
       toast.error('复制失败，请手动复制')
     }
   }
+
+  useCopyShortcut('feedback-page', useCallback(() => {
+    const content = editingContent || generatedContent
+    if (content) {
+      handleCopyText(content)
+    } else if (feedbacks.length > 0) {
+      handleCopyText(feedbacks[0].generatedContent)
+    } else {
+      toast.error('当前没有可复制的内容')
+    }
+  }, [editingContent, generatedContent, feedbacks]))
 
   const handleExport = async () => {
     if (!selectedClass) return

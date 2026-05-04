@@ -30,6 +30,7 @@ import {
 import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
 import { isStudentAbsent } from '@/lib/absence-store'
 import { PageContainer } from '@/components/ui/page-container'
+import { useCopyShortcut } from '@/lib/copy-shortcut'
 
 const completionLabels: Record<CompletionStatus, string> = {
   completed: '已完成',
@@ -379,6 +380,10 @@ export default function QuizzesPage() {
       toast.error('复制失败，请重试')
     }
   }, [selectedClassId, getStudentLatestScores])
+
+  useCopyShortcut('quizzes-page', useCallback(() => {
+    copyBothScores()
+  }, [copyBothScores]))
 
   if (classes.length === 0) {
     return (

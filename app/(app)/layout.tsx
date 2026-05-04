@@ -12,6 +12,7 @@ import { DataLoadingScreen } from '@/components/layout/data-loading-screen'
 import { isCacheLoaded } from '@/lib/store'
 import { ShortcutStoreProvider } from '@/lib/shortcut-store'
 import { ShortcutProvider, useRegisterShortcut } from '@/lib/shortcut-context'
+import { CopyShortcutProvider } from '@/lib/copy-shortcut'
 
 function NavigationShortcuts() {
   const router = useRouter()
@@ -89,8 +90,10 @@ export default function AppLayout({
       <GuideGuard>
         <ShortcutStoreProvider>
           <ShortcutProvider>
-            <NavigationShortcuts />
-            <AppContent>{children}</AppContent>
+            <CopyShortcutProvider>
+              <NavigationShortcuts />
+              <AppContent>{children}</AppContent>
+            </CopyShortcutProvider>
           </ShortcutProvider>
         </ShortcutStoreProvider>
       </GuideGuard>

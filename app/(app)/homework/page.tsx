@@ -29,6 +29,7 @@ import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
 import { isStudentAbsent } from '@/lib/absence-store'
 import { generateHomeworkFeedback } from '@/utils'
 import { PageContainer } from '@/components/ui/page-container'
+import { useCopyShortcut } from '@/lib/copy-shortcut'
 
 const completionLabels: Record<CompletionStatus, string> = {
   completed: '已完成',
@@ -675,6 +676,19 @@ function AddAssessmentModal({
       toast.error('复制失败，请手动复制')
     }
   }
+
+  useCopyShortcut('homework-assessment-form', useCallback(() => {
+    if (generatedFeedback) {
+      navigator.clipboard.writeText(generatedFeedback)
+        .then(() => {
+          setCopySuccess(true)
+          setTimeout(() => setCopySuccess(false), 2000)
+        })
+        .catch(() => toast.error('复制失败，请手动复制'))
+    } else {
+      toast.error('当前没有可复制的内容')
+    }
+  }, [generatedFeedback]))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
