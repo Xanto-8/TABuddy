@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       studentCount?: number
       color?: string
       isArchived?: boolean
+      createdBy?: string
     }>(request)
 
     if (!body || !body.name) {
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
         studentCount: body.studentCount ?? 0,
         color: body.color ?? '',
         isArchived: body.isArchived ?? false,
+        createdBy: body.createdBy ?? '',
         userId,
       },
       include: { schedules: true },

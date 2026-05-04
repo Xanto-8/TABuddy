@@ -72,6 +72,12 @@ export async function getAllUserData(userId: string) {
   const userIds = isAssistant ? Array.from(new Set([...teacherIds, userId])) : [userId]
   const teacherDataFilter = { userId: { in: userIds } }
 
+  // 助教端过滤掉同步给老师的班级副本（userId=老师ID 且 createdBy不为空 = 同步副本）
+  // 保留助教自己的班级 和 老师自己创建的原始班级（createdBy为空）
+  const classFilter = isAssistant
+    ? { userId: { in: userIds }, OR: [{ userId: userId }, { createdBy: '' }] }
+    : teacherDataFilter
+
   const [
     classes,
     students,
@@ -90,7 +96,7 @@ export async function getAllUserData(userId: string) {
     reminderConfigs,
     knowledgeEntries,
   ] = await Promise.all([
-    prisma.class.findMany({ where: teacherDataFilter, include: { schedules: true } }),
+    prisma.class.findMany({ where: classFilter, include: { schedules: true } }),
     prisma.student.findMany({ where: teacherDataFilter }),
     prisma.classSchedule.findMany({ where: teacherDataFilter }),
     prisma.courseTask.findMany({ where: teacherDataFilter }),

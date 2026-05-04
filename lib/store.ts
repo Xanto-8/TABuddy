@@ -379,11 +379,23 @@ export function saveClass(data: Omit<Class, 'id' | 'studentCount' | 'createdAt' 
       cache.schedules.forEach(s => {
         if (s.classId === newClass.id) {
           s.classId = serverClass.id
-          fetch(`/api/data/class-schedules/${s.id}`, {
-            method: 'PUT',
-            headers: authHeaders(),
-            body: JSON.stringify({ classId: serverClass.id }),
-          }).catch(() => {})
+          saveClassScheduleAsync({
+            classId: serverClass.id,
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+          }).then(serverSchedule => {
+            if (serverSchedule && serverSchedule.id) {
+              const sIdx = cache.schedules.findIndex(s2 => s2.id === s.id)
+              if (sIdx !== -1) {
+                cache.schedules[sIdx] = serverSchedule
+              }
+              const cIdx = cache.classes.findIndex(c => c.id === serverClass.id)
+              if (cIdx !== -1) {
+                cache.classes[cIdx].schedules = getClassSchedules(serverClass.id)
+              }
+            }
+          }).catch(console.error)
         }
       })
     }
