@@ -17,8 +17,8 @@ export default function ClassDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
-  const { isClassAdmin } = useRoleAccess()
-  const canEdit = isClassAdmin || user?.role === 'superadmin'
+  const { isClassAdmin, isAssistant } = useRoleAccess()
+  const canEdit = isClassAdmin || isAssistant || user?.role === 'superadmin'
   const [cls, setCls] = useState<Class | null>(null)
   const [students, setStudents] = useState<Student[]>([])
   const [searchQuery, setSearchQuery] = useState('')

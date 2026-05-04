@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Search, Users, MoreHorizontal, Pencil, Trash2, BookOpen, Home, Clock, Calendar, X, ChevronDown } from 'lucide-react'
+import { Plus, Search, Users, MoreHorizontal, Pencil, Trash2, BookOpen, Home, Clock, X, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Class, ClassType, ClassSchedule } from '@/types'
@@ -304,8 +304,14 @@ function ClassFormModal({
   const [saving, setSaving] = useState(false)
   const [isSelectOpen, setIsSelectOpen] = useState(false)
   const [dayOfWeek, setDayOfWeek] = useState<number>(1) // 1=周一
-  const [startTime, setStartTime] = useState<string>('09:00')
-  const [endTime, setEndTime] = useState<string>('10:30')
+  const TIME_SLOTS = [
+    { id: 'T1', label: 'T1', startTime: '08:30', endTime: '10:30' },
+    { id: 'T2', label: 'T2', startTime: '10:40', endTime: '12:40' },
+    { id: 'T3', label: 'T3', startTime: '14:20', endTime: '16:20' },
+    { id: 'T4', label: 'T4', startTime: '16:30', endTime: '18:30' },
+    { id: 'T5', label: 'T5', startTime: '19:00', endTime: '21:00' },
+  ]
+  const [selectedSlot, setSelectedSlot] = useState('T1')
   const [isDaySelectOpen, setIsDaySelectOpen] = useState(false)
   const [syncToTeacher, setSyncToTeacher] = useState(false)
   const selectRef = useRef<HTMLDivElement>(null)
@@ -317,12 +323,11 @@ function ClassFormModal({
     if (classData && classData.schedules && classData.schedules.length > 0) {
       const s = classData.schedules[0]
       setDayOfWeek(s.dayOfWeek)
-      setStartTime(s.startTime)
-      setEndTime(s.endTime)
+      const found = TIME_SLOTS.find(slot => slot.startTime === s.startTime && slot.endTime === s.endTime)
+      setSelectedSlot(found ? found.id : 'T1')
     } else {
       setDayOfWeek(1)
-      setStartTime('09:00')
-      setEndTime('10:30')
+      setSelectedSlot('T1')
     }
   }, [classData?.id])
 
@@ -346,204 +351,7 @@ function ClassFormModal({
     { value: 0, label: '周日' },
   ]
 
-  // 时间选择器 - 时/分双列滚轮，5分钟步长，确定/取消模式
-  // 核心设计：滚动永不触发关闭或值更新，只有点击「确定」才回填值
-  const TimePicker = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const panelRef = useRef<HTMLDivElement>(null)
-    const triggerRef = useRef<HTMLButtonElement>(null)
-    const hoursRef = useRef<HTMLDivElement>(null)
-    const minutesRef = useRef<HTMLDivElement>(null)
 
-    // 内部暂存选中值，确定后才回填到父组件
-    const [tempHour, setTempHour] = useState(() => value.split(':')[0] || '00')
-    const [tempMinute, setTempMinute] = useState(() => {
-      const m = parseInt(value.split(':')[1] || '0')
-      return (Math.round(m / 5) * 5).toString().padStart(2, '0')
-    })
-
-    const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
-    const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'))
-    const itemHeight = 36
-
-    // 打开时同步暂存值并滚动到选中项
-    useEffect(() => {
-      if (isOpen) {
-        const h = value.split(':')[0] || '00'
-        const m = parseInt(value.split(':')[1] || '0')
-        const roundedM = (Math.round(m / 5) * 5).toString().padStart(2, '0')
-        setTempHour(h)
-        setTempMinute(roundedM)
-        requestAnimationFrame(() => {
-          if (hoursRef.current) {
-            const idx = hours.indexOf(h)
-            hoursRef.current.scrollTop = Math.max(0, idx) * itemHeight
-          }
-          if (minutesRef.current) {
-            const idx = minutes.indexOf(roundedM)
-            minutesRef.current.scrollTop = Math.max(0, idx) * itemHeight
-          }
-        })
-      }
-    }, [isOpen])
-
-    // 点击外部关闭 - 使用 mousedown 事件，与滚动事件无冲突
-    useEffect(() => {
-      if (!isOpen) return
-      const handleMouseDown = (e: MouseEvent) => {
-        if (
-          panelRef.current &&
-          !panelRef.current.contains(e.target as Node) &&
-          triggerRef.current &&
-          !triggerRef.current.contains(e.target as Node)
-        ) {
-          setIsOpen(false)
-        }
-      }
-      document.addEventListener('mousedown', handleMouseDown)
-      return () => document.removeEventListener('mousedown', handleMouseDown)
-    }, [isOpen])
-
-    // 滚动停止后更新暂存值（仅更新内部状态，不触发父组件 onChange）
-    const handleScrollStop = (container: HTMLDivElement | null, items: string[], setter: (v: string) => void) => {
-      if (!container) return
-      const index = Math.round(container.scrollTop / itemHeight)
-      const clampedIndex = Math.max(0, Math.min(items.length - 1, index))
-      setter(items[clampedIndex])
-    }
-
-    // 使用 ref 存储定时器，避免闭包问题
-    const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const handleScroll = (container: HTMLDivElement | null, items: string[], setter: (v: string) => void) => {
-      if (!container) return
-      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current)
-      scrollTimerRef.current = setTimeout(() => handleScrollStop(container, items, setter), 150)
-    }
-
-    const handleConfirm = () => {
-      onChange(`${tempHour}:${tempMinute}`)
-      setIsOpen(false)
-    }
-
-    const handleCancel = () => {
-      setIsOpen(false)
-    }
-
-    const displayValue = value
-
-    return (
-      <div className="relative">
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-3 py-2 sm:py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50 backdrop-blur-sm font-mono tracking-wider"
-        >
-          <span>{displayValue}</span>
-          <Clock className="h-4 w-4 text-muted-foreground" />
-        </button>
-
-        {isOpen && (
-          <div
-            ref={panelRef}
-            className="absolute bottom-full left-0 right-0 mb-1 z-50"
-          >
-            <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden">
-              {/* 滚轮区域 */}
-              <div className="p-3 pb-2">
-                <div className="flex gap-2">
-                  {/* 小时列 */}
-                  <div className="flex-1">
-                    <div className="text-xs text-muted-foreground text-center mb-1 font-medium">时</div>
-                    <div
-                      ref={hoursRef}
-                      onScroll={() => handleScroll(hoursRef.current, hours, setTempHour)}
-                      className="h-[180px] overflow-y-auto scrollbar-thin select-none [&::-webkit-scrollbar]:w-1"
-                    >
-                      <div className="h-[72px] flex-shrink-0" />
-                      {hours.map((h) => (
-                        <div
-                          key={h}
-                          onClick={() => {
-                            setTempHour(h)
-                            if (hoursRef.current) {
-                              const idx = hours.indexOf(h)
-                              hoursRef.current.scrollTop = idx * itemHeight
-                            }
-                          }}
-                          className={`h-9 flex items-center justify-center text-sm cursor-pointer transition-colors rounded-lg mx-1 ${
-                            tempHour === h
-                              ? 'bg-primary/10 text-primary font-semibold'
-                              : 'text-foreground hover:bg-accent'
-                          }`}
-                        >
-                          {h}
-                        </div>
-                      ))}
-                      <div className="h-[72px] flex-shrink-0" />
-                    </div>
-                  </div>
-
-                  {/* 分隔符 */}
-                  <div className="flex items-center justify-center text-lg text-muted-foreground font-medium pt-5">:</div>
-
-                  {/* 分钟列 */}
-                  <div className="flex-1">
-                    <div className="text-xs text-muted-foreground text-center mb-1 font-medium">分</div>
-                    <div
-                      ref={minutesRef}
-                      onScroll={() => handleScroll(minutesRef.current, minutes, setTempMinute)}
-                      className="h-[180px] overflow-y-auto scrollbar-thin select-none [&::-webkit-scrollbar]:w-1"
-                    >
-                      <div className="h-[72px] flex-shrink-0" />
-                      {minutes.map((m) => (
-                        <div
-                          key={m}
-                          onClick={() => {
-                            setTempMinute(m)
-                            if (minutesRef.current) {
-                              const idx = minutes.indexOf(m)
-                              minutesRef.current.scrollTop = idx * itemHeight
-                            }
-                          }}
-                          className={`h-9 flex items-center justify-center text-sm cursor-pointer transition-colors rounded-lg mx-1 ${
-                            tempMinute === m
-                              ? 'bg-primary/10 text-primary font-semibold'
-                              : 'text-foreground hover:bg-accent'
-                          }`}
-                        >
-                          {m}
-                        </div>
-                      ))}
-                      <div className="h-[72px] flex-shrink-0" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 确定/取消按钮 */}
-              <div className="flex items-center justify-end gap-2 px-3 pb-3">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-4 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-accent"
-                >
-                  取消
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirm}
-                  className="px-4 py-1.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-colors rounded-lg"
-                >
-                  确定
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
 
 
 
@@ -596,13 +404,17 @@ function ClassFormModal({
 
     await new Promise((resolve) => setTimeout(resolve, 300))
 
+    const slot = TIME_SLOTS.find(s => s.id === selectedSlot) || TIME_SLOTS[0]
+    const startTime = slot.startTime
+    const endTime = slot.endTime
+
     try {
       if (classData) {
         const { updateClass, saveClassSchedule, getClassSchedules, updateClassSchedule, deleteClassSchedule } = await import('@/lib/store')
         updateClass(classData.id, { name: name.trim(), type, description: description.trim() || undefined })
         
         // 保存上课时间
-        if (dayOfWeek !== undefined && startTime && endTime) {
+        if (dayOfWeek !== undefined) {
           const existingSchedules = getClassSchedules(classData.id)
           if (existingSchedules.length > 0) {
             // 更新第一个上课时间
@@ -625,7 +437,7 @@ function ClassFormModal({
         })
         
         // 保存上课时间
-        if (newClass && dayOfWeek && startTime && endTime) {
+        if (newClass && dayOfWeek) {
           saveClassSchedule({
             classId: newClass.id,
             dayOfWeek,
@@ -817,69 +629,77 @@ function ClassFormModal({
             </label>
             
             <div className="space-y-3 p-3 sm:p-4 rounded-xl border border-border bg-muted/20 w-full box-border min-h-0">
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                {/* 星期选择 */}
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    星期
-                  </label>
-                  <div className="relative" ref={daySelectRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDaySelectOpen(!isDaySelectOpen)
-                      }}
-                      className="w-full px-3 py-2 sm:py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50 backdrop-blur-sm"
-                    >
-                      <span>{daysOfWeek.find(d => d.value === dayOfWeek)?.label || '选择星期'}</span>
-                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isDaySelectOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {isDaySelectOpen && (
-                      <div className="absolute bottom-full left-0 right-0 mb-1 z-50 max-h-[40vh] overflow-y-auto">
-                        <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden">
-                          <div className="max-h-32 sm:max-h-48 overflow-y-auto">
-                            {daysOfWeek.map((day) => (
-                              <button
-                                key={day.value}
-                                type="button"
-                                onClick={() => {
-                                  setDayOfWeek(day.value)
-                                  setIsDaySelectOpen(false)
-                                }}
-                                className={`w-full px-4 py-3 text-left text-sm transition-all hover:bg-accent/50 ${dayOfWeek === day.value ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}
-                              >
-                                {day.label}
-                              </button>
-                            ))}
-                          </div>
+              {/* 星期选择 */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  星期
+                </label>
+                <div className="relative" ref={daySelectRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDaySelectOpen(!isDaySelectOpen)
+                    }}
+                    className="w-full px-3 py-2 sm:py-2.5 rounded-xl border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50 backdrop-blur-sm"
+                  >
+                    <span>{daysOfWeek.find(d => d.value === dayOfWeek)?.label || '选择星期'}</span>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isDaySelectOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {isDaySelectOpen && (
+                    <div className="absolute bottom-full left-0 right-0 mb-1 z-50 max-h-[40vh] overflow-y-auto">
+                      <div className="rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+                        <div className="max-h-32 sm:max-h-48 overflow-y-auto">
+                          {daysOfWeek.map((day) => (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => {
+                                setDayOfWeek(day.value)
+                                setIsDaySelectOpen(false)
+                              }}
+                              className={`w-full px-4 py-3 text-left text-sm transition-all hover:bg-accent/50 ${dayOfWeek === day.value ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}
+                            >
+                              {day.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-                {/* 开始时间 */}
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    开始时间
-                  </label>
-                  <TimePicker value={startTime} onChange={setStartTime} />
-                </div>
-
-                {/* 结束时间 */}
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    结束时间
-                  </label>
-                  <TimePicker value={endTime} onChange={setEndTime} />
+              {/* 时间段选择 */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  时间段
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {TIME_SLOTS.map((slot) => (
+                    <button
+                      key={slot.id}
+                      type="button"
+                      onClick={() => setSelectedSlot(slot.id)}
+                      className={`py-3 rounded-lg border border-border text-sm transition-all ${
+                        selectedSlot === slot.id
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-background text-foreground hover:bg-accent/50 hover:border-primary/30'
+                      }`}
+                    >
+                      <div className="font-medium">{slot.label}</div>
+                      <div className={`text-[10px] mt-0.5 ${selectedSlot === slot.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                        {slot.startTime}-{slot.endTime}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* 时间预览 */}
               <div className="pt-2 min-w-0">
                 <div className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
-                  上课时间：<span className="font-medium text-foreground">{daysOfWeek.find(d => d.value === dayOfWeek)?.label} {startTime} - {endTime}</span>
+                  上课时间：<span className="font-medium text-foreground">{daysOfWeek.find(d => d.value === dayOfWeek)?.label} {TIME_SLOTS.find(s => s.id === selectedSlot)?.startTime} - {TIME_SLOTS.find(s => s.id === selectedSlot)?.endTime}</span>
                 </div>
               </div>
             </div>
