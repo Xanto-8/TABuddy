@@ -74,14 +74,17 @@ export function WorkflowNode({
 
   return (
     <div className="relative flex flex-col items-center">
+      <div
+        draggable
+        onDragStart={(e: React.DragEvent) => { e.dataTransfer?.setData('text/plain', node.id); onDragStart(node.id) }}
+        onDragOver={(e: React.DragEvent) => onDragOver(e, node.id)}
+        onDragEnd={onDragEnd}
+        className="cursor-grab active:cursor-grabbing"
+      >
       <motion.div
         layout
-        draggable
-        onDragStart={() => onDragStart(node.id)}
-        onDragOver={(e) => onDragOver(e, node.id)}
-        onDragEnd={onDragEnd}
         className={cn(
-          'relative group cursor-grab active:cursor-grabbing',
+          'relative',
           'w-[360px] rounded-xl border-2',
           'bg-gradient-to-br shadow-sm hover:shadow-md',
           'transition-all duration-200',
@@ -181,6 +184,7 @@ export function WorkflowNode({
           </div>
         </div>
       </motion.div>
+      </div>
 
       {index < total - 1 && (
         <div className="flex flex-col items-center py-1">

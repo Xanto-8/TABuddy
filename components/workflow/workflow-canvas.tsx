@@ -523,6 +523,7 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
   const [showNodeLibrary, setShowNodeLibrary] = useState(false)
   const [deleteConfirmNode, setDeleteConfirmNode] = useState<WorkflowNodeType | null>(null)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   useEffect(() => {
     if (templateOverride) {
@@ -654,9 +655,25 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
     setShowResetConfirm(false)
   }, [template])
 
-  const handleOpenNodeLibrary = useCallback(() => {
-    setShowNodeLibrary(true)
-  }, [])
+  const handleClearAll = useCallback(() => {
+    if (!template) return
+    setShowClearConfirm(true)
+  }, [template])
+
+  const handleConfirmClear = useCallback(() => {
+    if (!template) return
+    const updated = saveWorkflowTemplate({
+      ...template,
+      nodes: [],
+    }, template.id)
+    setTemplate(updated)
+    setShowClearConfirm(false)
+    onTemplateChange?.(updated)
+    toast.success('工作流已清空', {
+      description: '所有节点已移除，可通过「添加节点」重新添加',
+      duration: 3000,
+    })
+  }, [template, onTemplateChange])
 
   const handleSelectPreset = useCallback((type: WorkflowNodeTypeEnum) => {
     if (!template) return
@@ -732,7 +749,7 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
         <div className="flex items-center gap-2">
 
           <button
-            onClick={handleOpenNodeLibrary}
+            onClick={() => setShowNodeLibrary(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium
               text-indigo-600 bg-indigo-50 hover:bg-indigo-100
               rounded-xl transition-all duration-200
@@ -740,6 +757,17 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
           >
             <Plus size={15} />
             <span>添加节点</span>
+          </button>
+
+          <button
+            onClick={handleClearAll}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium
+              text-red-500 bg-red-50 hover:bg-red-100
+              rounded-xl transition-all duration-200
+              border border-red-200/50"
+          >
+            <X size={15} />
+            <span>清空</span>
           </button>
 
           <button
@@ -816,7 +844,7 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
             <div className="text-center py-12 text-gray-400">
               <p className="text-sm">暂无工作流节点</p>
               <button
-                onClick={handleOpenNodeLibrary}
+                onClick={() => setShowNodeLibrary(true)}
                 className="mt-2 text-indigo-500 hover:text-indigo-600 text-sm font-medium"
               >
                 点击添加节点
@@ -868,6 +896,20 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
             variant="danger"
             onConfirm={handleConfirmReset}
             onCancel={() => setShowResetConfirm(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showClearConfirm && (
+          <ConfirmDialog
+            title="清空工作流"
+            message="确定要清空所有节点吗？清空后工作流将没有任何节点，可通过「添加节点」重新配置。"
+            confirmText="确认清空"
+            cancelText="取消"
+            variant="danger"
+            onConfirm={handleConfirmClear}
+            onCancel={() => setShowClearConfirm(false)}
           />
         )}
       </AnimatePresence>
