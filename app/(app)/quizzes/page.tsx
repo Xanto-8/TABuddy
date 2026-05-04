@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import {
   Camera, Plus, Pencil, Trash2, ChevronDown, Download,
   BookOpen, Users, Target, Clock, AlertCircle,
-  X, Loader2,
+  X, Loader2, RefreshCw,
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -70,6 +70,7 @@ export default function QuizzesPage() {
   const buttonGroupRef = useRef<HTMLDivElement>(null)
   const portalMenuRef = useRef<HTMLDivElement>(null)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     const loadedClasses = getClasses()
@@ -140,6 +141,16 @@ export default function QuizzesPage() {
     setShowModal(false)
     setEditingRecord(null)
     refreshRecords()
+    setRefreshKey(k => k + 1)
+  }
+
+  const handleRefresh = () => {
+    refreshRecords()
+    if (selectedClassId) {
+      setStudents(getStudentsByClass(selectedClassId))
+    }
+    setRefreshKey(k => k + 1)
+    toast.success('数据已刷新')
   }
 
   const openNewModal = () => {
@@ -192,7 +203,7 @@ export default function QuizzesPage() {
   const classQuizRecords = React.useMemo(() => {
     if (!selectedClassId) return []
     return getQuizRecordsByClass(selectedClassId)
-  }, [selectedClassId])
+  }, [selectedClassId, refreshKey])
 
   const classStats = React.useMemo(() => {
     const data = classQuizRecords
@@ -466,7 +477,7 @@ export default function QuizzesPage() {
 
         {selectedClassId && (
             <div className="overflow-x-auto">
-              <div className="flex items-center shrink-0">
+              <div className="flex items-center shrink-0 gap-2">
                 <div ref={buttonGroupRef} className={cn(
                   'inline-flex items-center rounded-lg border border-border transition-all duration-200',
                   classQuizRecords.length === 0
@@ -520,6 +531,14 @@ export default function QuizzesPage() {
                     </button>
                   </div>
                 </div>
+                <button
+                  onClick={handleRefresh}
+                  title="刷新数据"
+                  className="inline-flex items-center px-3 py-3 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-accent/50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1.5" />
+                  刷新
+                </button>
               </div>
             </div>
           )}
