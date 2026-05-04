@@ -6,7 +6,7 @@ import { PageContainer } from '@/components/ui/page-container'
 import { Button } from '@/components/ui/button'
 import { Download, Monitor, CheckCircle, ChevronRight, ExternalLink, Github } from 'lucide-react'
 
-const DOWNLOAD_URL = 'https://share.feijipan.com/s/B64lr1zG'
+const DOWNLOAD_URL = '/api/download'
 
 export default function DownloadPage() {
   const [downloaded, setDownloaded] = useState(false)
