@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   LayoutDashboard, BookOpen, ClipboardList, GraduationCap, FileText,
   MessageSquare, Settings,
-  HelpCircle, X, GitBranch, Sun, Moon, Shield, ShieldCheck, Users, Activity, UserPlus, KeyRound,
+  HelpCircle, X, GitBranch, Sun, Moon, Shield, ShieldCheck, Users, Activity, UserPlus, KeyRound, Download,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSidebar } from '@/components/providers/sidebar-provider'
@@ -174,6 +174,10 @@ function BottomSection({ expanded, onManualToggle }: { expanded: boolean; onManu
   const isDark = theme === 'dark'
   const isHelpActive = pathname === '/help'
 
+  const handleDownload = () => {
+    window.open('https://www.tabuddy.top/releases', '_blank')
+  }
+
   return (
     <div className="border-t border-border shrink-0">
       <Link href="/help" className="block">
@@ -191,6 +195,18 @@ function BottomSection({ expanded, onManualToggle }: { expanded: boolean; onManu
           {expanded && <span className="truncate">帮助与反馈</span>}
         </div>
       </Link>
+      <button
+        onClick={handleDownload}
+        className={cn(
+          'flex items-center gap-3 w-full h-11 px-4 text-xs transition-colors duration-150',
+          expanded ? 'justify-start' : 'justify-center',
+          'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+        )}
+        title="下载客户端"
+      >
+        <Download size={16} className="shrink-0" />
+        {expanded && <span className="truncate">下载客户端</span>}
+      </button>
       <div className="flex items-center justify-between h-12 px-4 border-t border-border">
         <button
           onClick={() => {
