@@ -657,19 +657,16 @@ function AddScheduleModal({
   onSaved: () => void
 }) {
   const [dayOfWeek, setDayOfWeek] = useState(1)
-  const [startTime, setStartTime] = useState('09:00')
-  const [endTime, setEndTime] = useState('10:30')
+  const [selectedSlot, setSelectedSlot] = useState('T1')
   const [saving, setSaving] = useState(false)
-  const [isDaySelectOpen, setIsDaySelectOpen] = useState(false)
-  const [isStartHourOpen, setIsStartHourOpen] = useState(false)
-  const [isStartMinuteOpen, setIsStartMinuteOpen] = useState(false)
-  const [isEndHourOpen, setIsEndHourOpen] = useState(false)
-  const [isEndMinuteOpen, setIsEndMinuteOpen] = useState(false)
-  const daySelectRef = useRef<HTMLDivElement>(null)
-  const startHourRef = useRef<HTMLDivElement>(null)
-  const startMinuteRef = useRef<HTMLDivElement>(null)
-  const endHourRef = useRef<HTMLDivElement>(null)
-  const endMinuteRef = useRef<HTMLDivElement>(null)
+
+  const TIME_SLOTS = [
+    { id: 'T1', label: 'T1', startTime: '08:30', endTime: '10:30' },
+    { id: 'T2', label: 'T2', startTime: '10:40', endTime: '12:40' },
+    { id: 'T3', label: 'T3', startTime: '14:20', endTime: '16:20' },
+    { id: 'T4', label: 'T4', startTime: '16:30', endTime: '18:30' },
+    { id: 'T5', label: 'T5', startTime: '19:00', endTime: '21:00' },
+  ]
 
   const daysOfWeek = [
     { value: 0, label: '周日' },
@@ -681,31 +678,15 @@ function AddScheduleModal({
     { value: 6, label: '周六' },
   ]
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (daySelectRef.current && !daySelectRef.current.contains(event.target as Node)) setIsDaySelectOpen(false)
-      if (startHourRef.current && !startHourRef.current.contains(event.target as Node)) setIsStartHourOpen(false)
-      if (startMinuteRef.current && !startMinuteRef.current.contains(event.target as Node)) setIsStartMinuteOpen(false)
-      if (endHourRef.current && !endHourRef.current.contains(event.target as Node)) setIsEndHourOpen(false)
-      if (endMinuteRef.current && !endMinuteRef.current.contains(event.target as Node)) setIsEndMinuteOpen(false)
-    }
-    if (isDaySelectOpen || isStartHourOpen || isStartMinuteOpen || isEndHourOpen || isEndMinuteOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => { document.removeEventListener('mousedown', handleClickOutside) }
-  }, [isDaySelectOpen, isStartHourOpen, isStartMinuteOpen, isEndHourOpen, isEndMinuteOpen])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     await new Promise((resolve) => setTimeout(resolve, 300))
-    saveClassSchedule({ classId, dayOfWeek, startTime, endTime })
+    const slot = TIME_SLOTS.find(s => s.id === selectedSlot) || TIME_SLOTS[0]
+    saveClassSchedule({ classId, dayOfWeek, startTime: slot.startTime, endTime: slot.endTime })
     setSaving(false)
     onSaved()
   }
-
-  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
-  const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -735,126 +716,28 @@ function AddScheduleModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                上课时间 <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center space-x-1">
-                <div className="relative flex-1" ref={startHourRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDaySelectOpen(false); setIsStartMinuteOpen(false); setIsEndHourOpen(false); setIsEndMinuteOpen(false); setIsStartHourOpen(!isStartHourOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{startTime.split(':')[0]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isStartHourOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isStartHourOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {hours.map((hour) => (
-                            <button key={hour} type="button" onClick={() => { setStartTime(`${hour}:${startTime.split(':')[1]}`); setIsStartHourOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${startTime.split(':')[0] === hour ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {hour}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <span className="text-muted-foreground font-medium">:</span>
-                <div className="relative flex-1" ref={startMinuteRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDaySelectOpen(false); setIsStartHourOpen(false); setIsEndHourOpen(false); setIsEndMinuteOpen(false); setIsStartMinuteOpen(!isStartMinuteOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{startTime.split(':')[1]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isStartMinuteOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isStartMinuteOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {minutes.map((minute) => (
-                            <button key={minute} type="button" onClick={() => { setStartTime(`${startTime.split(':')[0]}:${minute}`); setIsStartMinuteOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${startTime.split(':')[1] === minute ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {minute}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                下课时间 <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center space-x-1">
-                <div className="relative flex-1" ref={endHourRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDaySelectOpen(false); setIsStartHourOpen(false); setIsStartMinuteOpen(false); setIsEndMinuteOpen(false); setIsEndHourOpen(!isEndHourOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{endTime.split(':')[0]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isEndHourOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isEndHourOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {hours.map((hour) => (
-                            <button key={hour} type="button" onClick={() => { setEndTime(`${hour}:${endTime.split(':')[1]}`); setIsEndHourOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${endTime.split(':')[0] === hour ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {hour}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <span className="text-muted-foreground font-medium">:</span>
-                <div className="relative flex-1" ref={endMinuteRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDaySelectOpen(false); setIsStartHourOpen(false); setIsStartMinuteOpen(false); setIsEndHourOpen(false); setIsEndMinuteOpen(!isEndMinuteOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{endTime.split(':')[1]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isEndMinuteOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isEndMinuteOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {minutes.map((minute) => (
-                            <button key={minute} type="button" onClick={() => { setEndTime(`${endTime.split(':')[0]}:${minute}`); setIsEndMinuteOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${endTime.split(':')[1] === minute ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {minute}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              上课时间 <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {TIME_SLOTS.map((slot) => (
+                <button
+                  key={slot.id}
+                  type="button"
+                  onClick={() => setSelectedSlot(slot.id)}
+                  className={`py-3 rounded-lg border border-border text-sm transition-all ${
+                    selectedSlot === slot.id
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-background text-foreground hover:bg-accent/50 hover:border-primary/30'
+                  }`}
+                >
+                  <div className="font-medium">{slot.label}</div>
+                  <div className={`text-[10px] mt-0.5 ${selectedSlot === slot.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                    {slot.startTime}-{slot.endTime}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -879,18 +762,19 @@ function EditScheduleModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const TIME_SLOTS = [
+    { id: 'T1', label: 'T1', startTime: '08:30', endTime: '10:30' },
+    { id: 'T2', label: 'T2', startTime: '10:40', endTime: '12:40' },
+    { id: 'T3', label: 'T3', startTime: '14:20', endTime: '16:20' },
+    { id: 'T4', label: 'T4', startTime: '16:30', endTime: '18:30' },
+    { id: 'T5', label: 'T5', startTime: '19:00', endTime: '21:00' },
+  ]
   const [dayOfWeek, setDayOfWeek] = useState(schedule.dayOfWeek)
-  const [startTime, setStartTime] = useState(schedule.startTime)
-  const [endTime, setEndTime] = useState(schedule.endTime)
+  const [selectedSlot, setSelectedSlot] = useState(() => {
+    const found = TIME_SLOTS.find(s => s.startTime === schedule.startTime && s.endTime === schedule.endTime)
+    return found ? found.id : 'T1'
+  })
   const [saving, setSaving] = useState(false)
-  const [isStartHourOpen, setIsStartHourOpen] = useState(false)
-  const [isStartMinuteOpen, setIsStartMinuteOpen] = useState(false)
-  const [isEndHourOpen, setIsEndHourOpen] = useState(false)
-  const [isEndMinuteOpen, setIsEndMinuteOpen] = useState(false)
-  const startHourRef = useRef<HTMLDivElement>(null)
-  const startMinuteRef = useRef<HTMLDivElement>(null)
-  const endHourRef = useRef<HTMLDivElement>(null)
-  const endMinuteRef = useRef<HTMLDivElement>(null)
 
   const daysOfWeek = [
     { value: 0, label: '周日' },
@@ -902,30 +786,15 @@ function EditScheduleModal({
     { value: 6, label: '周六' },
   ]
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (startHourRef.current && !startHourRef.current.contains(event.target as Node)) setIsStartHourOpen(false)
-      if (startMinuteRef.current && !startMinuteRef.current.contains(event.target as Node)) setIsStartMinuteOpen(false)
-      if (endHourRef.current && !endHourRef.current.contains(event.target as Node)) setIsEndHourOpen(false)
-      if (endMinuteRef.current && !endMinuteRef.current.contains(event.target as Node)) setIsEndMinuteOpen(false)
-    }
-    if (isStartHourOpen || isStartMinuteOpen || isEndHourOpen || isEndMinuteOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => { document.removeEventListener('mousedown', handleClickOutside) }
-  }, [isStartHourOpen, isStartMinuteOpen, isEndHourOpen, isEndMinuteOpen])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     await new Promise((resolve) => setTimeout(resolve, 300))
-    updateClassSchedule(schedule.id, { dayOfWeek, startTime, endTime })
+    const slot = TIME_SLOTS.find(s => s.id === selectedSlot) || TIME_SLOTS[0]
+    updateClassSchedule(schedule.id, { dayOfWeek, startTime: slot.startTime, endTime: slot.endTime })
     setSaving(false)
     onSaved()
   }
-
-  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))
-  const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -955,126 +824,28 @@ function EditScheduleModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                上课时间 <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center space-x-1">
-                <div className="relative flex-1" ref={startHourRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsStartMinuteOpen(false); setIsEndHourOpen(false); setIsEndMinuteOpen(false); setIsStartHourOpen(!isStartHourOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{startTime.split(':')[0]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isStartHourOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isStartHourOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {hours.map((hour) => (
-                            <button key={hour} type="button" onClick={() => { setStartTime(`${hour}:${startTime.split(':')[1]}`); setIsStartHourOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${startTime.split(':')[0] === hour ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {hour}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <span className="text-muted-foreground font-medium">:</span>
-                <div className="relative flex-1" ref={startMinuteRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsStartHourOpen(false); setIsEndHourOpen(false); setIsEndMinuteOpen(false); setIsStartMinuteOpen(!isStartMinuteOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{startTime.split(':')[1]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isStartMinuteOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isStartMinuteOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {minutes.map((minute) => (
-                            <button key={minute} type="button" onClick={() => { setStartTime(`${startTime.split(':')[0]}:${minute}`); setIsStartMinuteOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${startTime.split(':')[1] === minute ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {minute}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                下课时间 <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center space-x-1">
-                <div className="relative flex-1" ref={endHourRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsStartHourOpen(false); setIsStartMinuteOpen(false); setIsEndMinuteOpen(false); setIsEndHourOpen(!isEndHourOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{endTime.split(':')[0]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isEndHourOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isEndHourOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {hours.map((hour) => (
-                            <button key={hour} type="button" onClick={() => { setEndTime(`${hour}:${endTime.split(':')[1]}`); setIsEndHourOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${endTime.split(':')[0] === hour ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {hour}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <span className="text-muted-foreground font-medium">:</span>
-                <div className="relative flex-1" ref={endMinuteRef}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsStartHourOpen(false); setIsStartMinuteOpen(false); setIsEndHourOpen(false); setIsEndMinuteOpen(!isEndMinuteOpen)
-                    }}
-                    className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm flex items-center justify-between cursor-pointer hover:bg-accent/50"
-                  >
-                    <span>{endTime.split(':')[1]}</span>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isEndMinuteOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {isEndMinuteOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                      <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                        <div className="max-h-48 overflow-y-auto">
-                          {minutes.map((minute) => (
-                            <button key={minute} type="button" onClick={() => { setEndTime(`${endTime.split(':')[0]}:${minute}`); setIsEndMinuteOpen(false) }}
-                              className={`w-full px-4 py-2 text-left text-sm transition-all hover:bg-accent ${endTime.split(':')[1] === minute ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}>
-                              {minute}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              上课时间 <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {TIME_SLOTS.map((slot) => (
+                <button
+                  key={slot.id}
+                  type="button"
+                  onClick={() => setSelectedSlot(slot.id)}
+                  className={`py-3 rounded-lg border border-border text-sm transition-all ${
+                    selectedSlot === slot.id
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-background text-foreground hover:bg-accent/50 hover:border-primary/30'
+                  }`}
+                >
+                  <div className="font-medium">{slot.label}</div>
+                  <div className={`text-[10px] mt-0.5 ${selectedSlot === slot.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                    {slot.startTime}-{slot.endTime}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
