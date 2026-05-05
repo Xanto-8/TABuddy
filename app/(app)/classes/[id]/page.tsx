@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Plus, Users, BookOpen, Trash2, Pencil, Search, UserPlus, GraduationCap, ClipboardList, BarChart3, Archive, ExternalLink, Link as LinkIcon, Clock, Calendar, Upload, ChevronDown, Download } from 'lucide-react'
@@ -28,6 +28,7 @@ export default function ClassDetailPage() {
   const [showImportStudentsModal, setShowImportStudentsModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'students' | 'records' | 'resources' | 'schedule'>('students')
   const [, forceUpdate] = useState(0)
+  const [dragTargetId, setDragTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     const classId = params.id as string
@@ -259,7 +260,13 @@ export default function ClassDetailPage() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.2, delay: index * 0.03 }}
-                          className="hover:bg-muted/30 transition-colors"
+                          className={cn(
+                            'transition-colors',
+                            dragTargetId === student.id ? 'opacity-40' : 'hover:bg-muted/30',
+                          )}
+                          draggable={canEdit}
+                          onDragStart={() => setDragTargetId(student.id)}
+                          onDragEnd={() => setDragTargetId(null)}
                         >
                           <td className="px-4 py-3">
                             <div className="flex items-center space-x-3">
@@ -310,6 +317,32 @@ export default function ClassDetailPage() {
                   </div>
                 </motion.div>
               )}
+
+              <AnimatePresence>
+                {dragTargetId && canEdit && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.6, y: 30 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.6, y: 30 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                    className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100]"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      const target = dragTargetId
+                      setDragTargetId(null)
+                      if (target && confirm(`确定将学生从班级中移除？`)) {
+                        deleteStudent(target)
+                        refreshStudents()
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3 px-6 py-4 rounded-2xl border-2 border-dashed border-red-300 bg-red-50/90 dark:bg-red-950/40 dark:border-red-700 backdrop-blur-lg shadow-2xl">
+                      <Trash2 className="h-6 w-6 text-red-500 animate-bounce" />
+                      <span className="text-sm font-medium text-red-600 dark:text-red-400">拖放到此删除学生</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {showAddStudentModal && (
                 <AddStudentModal

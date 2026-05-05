@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { ArrowUpDown, ChevronDown, GripVertical, Check, X } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { ArrowUpDown, ChevronDown, GripVertical, Check, X, Trash2 } from 'lucide-react'
 import { getStudentSortBy, setStudentSortBy, getStudentCustomOrder, setStudentCustomOrder } from '@/lib/store'
 import type { StudentSortBy } from '@/lib/store'
 import type { Student } from '@/types'
@@ -9,8 +9,6 @@ import { cn } from '@/lib/utils'
 
 const sortOptions: { value: StudentSortBy; label: string }[] = [
   { value: 'createdAt', label: '导入顺序' },
-  { value: 'name_asc', label: '姓名 A-Z' },
-  { value: 'name_desc', label: '姓名 Z-A' },
   { value: 'custom', label: '自定义排序' },
 ]
 

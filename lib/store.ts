@@ -453,6 +453,11 @@ export async function syncClassToTeachers(data: {
 export type StudentSortBy = 'createdAt' | 'name_asc' | 'name_desc' | 'custom'
 let _studentSortBy: StudentSortBy = 'createdAt'
 
+if (typeof window !== 'undefined') {
+  const saved = localStorage.getItem('tabuddy_student_sort_by') as StudentSortBy | null
+  if (saved) _studentSortBy = saved
+}
+
 export function getStudentSortBy(): StudentSortBy {
   return _studentSortBy
 }
@@ -460,6 +465,7 @@ export function getStudentSortBy(): StudentSortBy {
 export function setStudentSortBy(sortBy: StudentSortBy): void {
   _studentSortBy = sortBy
   if (typeof window !== 'undefined') {
+    localStorage.setItem('tabuddy_student_sort_by', sortBy)
     window.dispatchEvent(new Event('studentSortChanged'))
   }
 }
