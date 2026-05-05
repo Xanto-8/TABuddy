@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Eye, EyeOff, Shield, Bug, ChevronDown, ChevronRight, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Eye, EyeOff, Shield, Bug, ChevronDown, ChevronRight, CheckCircle2, XCircle, RefreshCw, FolderOpen, ChevronLeft, Globe, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
+import Folder from '@/app/动效/文件夹'
 import {
   PublicKnowledgeEntry,
   getPublicKnowledgeBase,
@@ -19,6 +20,15 @@ import {
 import { useAuth } from '@/lib/auth-store'
 import { toast } from 'sonner'
 import { getLastSyncError, clearSyncError } from '@/lib/public-knowledge-store'
+import {
+  KnowledgeFolder,
+  getKnowledgeFolders,
+  createKnowledgeFolder,
+  updateKnowledgeFolder,
+  deleteKnowledgeFolder,
+} from '@/lib/knowledge-folder-store'
+
+type ViewType = 'folders' | 'folder-detail'
 
 const TYPE_CONFIG: Record<PublicKnowledgeEntry['type'], { label: string; icon: React.ReactNode; color: string }> = {
   link: {
@@ -55,10 +65,22 @@ const emptyForm: Omit<PublicKnowledgeEntry, 'id'> = {
   enabled: true,
 }
 
+function FolderColorDot({ color }: { color: string }) {
+  return (
+    <span
+      className="inline-block w-3 h-3 rounded-full shrink-0 ring-1 ring-black/5"
+      style={{ backgroundColor: color }}
+    />
+  )
+}
+
 export default function AdminKnowledgeBasePage() {
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
   const [entries, setEntries] = useState<PublicKnowledgeEntry[]>([])
+  const [folders, setFolders] = useState<KnowledgeFolder[]>([])
+  const [view, setView] = useState<ViewType>('folders')
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showEditor, setShowEditor] = useState(false)
   const [editingEntry, setEditingEntry] = useState<PublicKnowledgeEntry | null>(null)
@@ -70,6 +92,9 @@ export default function AdminKnowledgeBasePage() {
   const [diagSyncError, setDiagSyncError] = useState<string | null>(null)
   const [diagRedis, setDiagRedis] = useState<string>('未检测')
   const [diagChecking, setDiagChecking] = useState(false)
+  const [showFolderModal, setShowFolderModal] = useState(false)
+  const [editingFolder, setEditingFolder] = useState<KnowledgeFolder | null>(null)
+  const [folderNameInput, setFolderNameInput] = useState('')
 
   const runDiagnostics = useCallback(async () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_auth_token') : null
@@ -108,28 +133,65 @@ export default function AdminKnowledgeBasePage() {
 
   const loadEntries = useCallback(() => {
     setEntries([...getPublicKnowledgeBase()])
+    setFolders(getKnowledgeFolders())
   }, [])
 
   useEffect(() => {
     loadPublicKnowledgeBase().then(loadEntries)
     const handleChange = () => loadEntries()
     window.addEventListener('publicKnowledgeBaseChanged', handleChange)
-    return () => window.removeEventListener('publicKnowledgeBaseChanged', handleChange)
+    window.addEventListener('knowledgeFoldersChanged', handleChange)
+    return () => {
+      window.removeEventListener('publicKnowledgeBaseChanged', handleChange)
+      window.removeEventListener('knowledgeFoldersChanged', handleChange)
+    }
   }, [loadEntries])
 
-  const filtered = entries.filter(e => {
-    if (!searchQuery) return true
+  const activeFolder = useMemo(() => {
+    if (!activeFolderId) return null
+    return folders.find(f => f.id === activeFolderId) || null
+  }, [activeFolderId, folders])
+
+  const folderlessEntries = useMemo(() => {
+    return entries.filter(e => !e.folderId)
+  }, [entries])
+
+  const folderEntriesMap = useMemo(() => {
+    const map = new Map<string, PublicKnowledgeEntry[]>()
+    for (const f of folders) {
+      map.set(f.id, entries.filter(e => e.folderId === f.id))
+    }
+    return map
+  }, [entries, folders])
+
+  const filteredEntries = useMemo(() => {
+    const source = activeFolderId
+      ? folderEntriesMap.get(activeFolderId) || []
+      : folderlessEntries
+    if (!searchQuery) return source
     const q = searchQuery.toLowerCase()
-    return (
+    return source.filter(e =>
       e.title.toLowerCase().includes(q) ||
       e.content.toLowerCase().includes(q) ||
       e.keywords.some(k => k.toLowerCase().includes(q))
     )
-  })
+  }, [activeFolderId, folderEntriesMap, folderlessEntries, searchQuery])
+
+  const filteredAll = useMemo(() => {
+    return entries.filter(e => {
+      if (!searchQuery) return true
+      const q = searchQuery.toLowerCase()
+      return (
+        e.title.toLowerCase().includes(q) ||
+        e.content.toLowerCase().includes(q) ||
+        e.keywords.some(k => k.toLowerCase().includes(q))
+      )
+    })
+  }, [entries, searchQuery])
 
   const openCreate = () => {
     setEditingEntry(null)
-    setForm({ ...emptyForm })
+    setForm({ ...emptyForm, folderId: activeFolderId || undefined })
     setKeywordsText('')
     setShowEditor(true)
   }
@@ -144,6 +206,7 @@ export default function AdminKnowledgeBasePage() {
       url: entry.url || '',
       priority: entry.priority,
       enabled: entry.enabled,
+      folderId: entry.folderId,
     })
     setKeywordsText(entry.keywords.join('、'))
     setShowEditor(true)
@@ -151,10 +214,13 @@ export default function AdminKnowledgeBasePage() {
 
   const handleSave = async () => {
     if (!form.title.trim()) return
+    const selectedFolder = form.folderId ? folders.find(f => f.id === form.folderId) : null
     const data = {
       ...form,
       keywords: keywordsText.split(/[,，、\s]+/).filter(Boolean),
       url: form.url || undefined,
+      folderName: selectedFolder?.name,
+      folderColor: selectedFolder?.color,
     }
     try {
       if (editingEntry) {
@@ -209,6 +275,67 @@ export default function AdminKnowledgeBasePage() {
     loadEntries()
   }
 
+  const openCreateFolder = () => {
+    setEditingFolder(null)
+    setFolderNameInput('')
+    setShowFolderModal(true)
+  }
+
+  const openRenameFolder = (folder: KnowledgeFolder) => {
+    setEditingFolder(folder)
+    setFolderNameInput(folder.name)
+    setShowFolderModal(true)
+  }
+
+  const handleSaveFolder = () => {
+    const name = folderNameInput.trim()
+    if (!name) return
+    if (editingFolder) {
+      updateKnowledgeFolder(editingFolder.id, { name })
+      for (const entry of entries) {
+        if (entry.folderId === editingFolder.id) {
+          savePublicEntry({ ...entry, folderName: name })
+        }
+      }
+    } else {
+      createKnowledgeFolder(name)
+    }
+    setShowFolderModal(false)
+    loadEntries()
+  }
+
+  const handleDeleteFolder = (folderId: string) => {
+    const count = folderEntriesMap.get(folderId)?.length || 0
+    const msg = count > 0
+      ? `文件夹内有 ${count} 个知识条目。删除文件夹后，这些条目将变为「未分类」。确定删除吗？`
+      : '确定要删除该文件夹吗？'
+    if (window.confirm(msg)) {
+      for (const entry of entries) {
+        if (entry.folderId === folderId) {
+          savePublicEntry({ ...entry, folderId: undefined })
+        }
+      }
+      deleteKnowledgeFolder(folderId)
+      if (activeFolderId === folderId) {
+        setView('folders')
+        setActiveFolderId(null)
+      }
+      loadEntries()
+    }
+  }
+
+  const enterFolder = (folderId: string) => {
+    setActiveFolderId(folderId)
+    setView('folder-detail')
+    setSearchQuery('')
+  }
+
+  const leaveFolder = () => {
+    setActiveFolderId(null)
+    setView('folders')
+    setSearchQuery('')
+  }
+
   if (user?.role !== 'superadmin' && user?.role !== 'classadmin') {
     return null
   }
@@ -218,34 +345,83 @@ export default function AdminKnowledgeBasePage() {
       <div className="space-y-6">
         <div className="flex items-center flex-wrap gap-3 justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground">公共知识库管理</h1>
-              <span className={cn(
-                'px-2 py-0.5 text-[10px] font-medium rounded-full border',
-                user?.role === 'superadmin'
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-              )}>
-                <Shield className="w-3 h-3 inline mr-0.5" />
-                {user?.role === 'superadmin' ? '超级管理员' : '班级管理员'}
-              </span>
-            </div>
-            <p className="text-muted-foreground mt-1">管理全局公共知识库内容，对所有用户可见，修改后实时生效</p>
+            {view === 'folder-detail' && activeFolder ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={leaveFolder}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <FolderColorDot color={activeFolder.color} />
+                    <h1 className="text-2xl font-bold text-foreground">{activeFolder.name}</h1>
+                    <button
+                      onClick={() => openRenameFolder(activeFolder)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs text-muted-foreground bg-accent px-2 py-0.5 rounded-full">
+                      {filteredEntries.length} 个条目
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground mt-1">管理文件夹内的公共知识条目</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-foreground">公共知识库管理</h1>
+                  <span className={cn(
+                    'px-2 py-0.5 text-[10px] font-medium rounded-full border',
+                    user?.role === 'superadmin'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                  )}>
+                    <Shield className="w-3 h-3 inline mr-0.5" />
+                    {user?.role === 'superadmin' ? '超级管理员' : '班级管理员'}
+                  </span>
+                </div>
+                <p className="text-muted-foreground mt-1">使用文件夹分类管理公共知识条目，对所有用户可见</p>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            {view === 'folders' && (
+              <button
+                onClick={openCreateFolder}
+                className="inline-flex items-center px-3 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-all text-sm"
+              >
+                <FolderOpen className="w-4 h-4 mr-1.5" />
+                创建文件夹
+              </button>
+            )}
+            {view === 'folder-detail' && (
+              <button
+                onClick={openCreate}
+                className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all text-sm font-medium"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                添加公共条目
+              </button>
+            )}
+            {view === 'folders' && (
+              <button
+                onClick={openCreate}
+                className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all text-sm font-medium"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                添加公共条目
+              </button>
+            )}
             <button
               onClick={handleReset}
               className="inline-flex items-center px-3 py-2 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-sm"
             >
               <RotateCcw className="w-4 h-4 mr-1.5" />
               恢复默认
-            </button>
-            <button
-              onClick={openCreate}
-              className="inline-flex items-center px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all text-sm font-medium"
-            >
-              <Plus className="w-4 h-4 mr-1.5" />
-              添加公共条目
             </button>
           </div>
         </div>
@@ -256,7 +432,7 @@ export default function AdminKnowledgeBasePage() {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="搜索公共知识库条目..."
+            placeholder={view === 'folders' ? '搜索文件夹...' : '搜索条目...'}
             className="w-full h-10 pl-10 pr-4 text-sm rounded-xl border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
@@ -304,93 +480,380 @@ export default function AdminKnowledgeBasePage() {
           )}
         </div>
 
-        <div className="grid gap-3">
-          {filtered.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
-              <p className="text-sm">{searchQuery ? '没有匹配的知识条目' : '公共知识库为空，点击上方按钮添加条目'}</p>
-            </div>
-          ) : (
-            filtered.map((entry, i) => {
-              const typeCfg = TYPE_CONFIG[entry.type]
-              return (
-                <motion.div
-                  key={entry.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  className={cn(
-                    'group flex items-start gap-4 p-4 rounded-xl border transition-colors',
-                    entry.enabled
-                      ? 'border-border bg-card hover:bg-accent/30'
-                      : 'border-dashed border-muted bg-muted/30 hover:bg-muted/50 opacity-60'
+        {view === 'folders' && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="folder-grid"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-8"
+            >
+              {folders.length === 0 && folderlessEntries.length === 0 && filteredAll.length > 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">没有匹配的条目</p>
+                </div>
+              ) : folders.length === 0 && folderlessEntries.length === 0 && filteredAll.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">公共知识库为空，点击上方按钮创建文件夹或添加条目</p>
+                </div>
+              ) : (
+                <>
+                  {folders.length > 0 && (
+                    <div>
+                      <h2 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4" />
+                        文件夹
+                      </h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {folders.map((folder) => {
+                          const folderEntries = folderEntriesMap.get(folder.id) || []
+                          return (
+                            <motion.div
+                              key={folder.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="flex flex-col items-center gap-2 group cursor-pointer"
+                              onClick={() => enterFolder(folder.id)}
+                            >
+                              <div className="relative">
+                                <Folder
+                                  color={folder.color}
+                                  size={1.1}
+                                  items={folderEntries.slice(0, 3).map(e => (
+                                    <div
+                                      key={e.id}
+                                      className="w-full h-full flex items-center justify-center"
+                                    >
+                                      <span className="text-[6px] text-gray-400 font-medium truncate px-0.5 leading-tight text-center">
+                                        {e.title}
+                                      </span>
+                                    </div>
+                                  ))}
+                                />
+                                <div className="absolute -top-1 -right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); openRenameFolder(folder) }}
+                                    className="w-6 h-6 rounded-full bg-background border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id) }}
+                                    className="w-6 h-6 rounded-full bg-background border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-sm font-medium text-foreground truncate max-w-[120px]">
+                                  {folder.name}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {folderEntries.length} 个条目
+                                </p>
+                              </div>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )}
-                >
-                  <div className={cn('shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
-                    {typeCfg.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-medium text-foreground truncate">{entry.title}</h3>
-                      <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', typeCfg.color)}>
-                        {typeCfg.label}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground shrink-0">优先级 {entry.priority}</span>
-                      {!entry.enabled && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 flex items-center gap-0.5">
-                          <EyeOff className="w-2.5 h-2.5" />
-                          已隐藏
-                        </span>
-                      )}
+
+                  {folderlessEntries.length > 0 && (
+                    <div>
+                      <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" />
+                        未分类
+                      </h2>
+                      <div className="grid gap-2">
+                        {folderlessEntries.map((entry, i) => {
+                          const typeCfg = TYPE_CONFIG[entry.type]
+                          return (
+                            <motion.div
+                              key={entry.id}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.02 }}
+                              className={cn(
+                                'group flex items-start gap-3 p-3 rounded-xl border transition-colors',
+                                entry.enabled
+                                  ? 'border-border bg-card hover:bg-accent/30'
+                                  : 'border-dashed border-muted bg-muted/30 hover:bg-muted/50 opacity-60'
+                              )}
+                            >
+                              <div className={cn('shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
+                                {typeCfg.icon}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <h3 className="text-sm font-medium text-foreground truncate">{entry.title}</h3>
+                                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', typeCfg.color)}>
+                                    {typeCfg.label}
+                                  </span>
+                                  {!entry.enabled && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 flex items-center gap-0.5">
+                                      <EyeOff className="w-2.5 h-2.5" />
+                                      已隐藏
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{entry.content}</p>
+                              </div>
+                              <div className="shrink-0 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => handleToggle(entry.id)}
+                                  className={cn(
+                                    'w-7 h-7 rounded-lg flex items-center justify-center transition-all',
+                                    togglingIds.has(entry.id) ? 'scale-110 text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                                  )}
+                                  title={entry.enabled ? '隐藏' : '取消隐藏'}
+                                >
+                                  {entry.enabled
+                                    ? <EyeOff className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                                    : <Eye className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                                  }
+                                </button>
+                                <button onClick={() => openEdit(entry)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => handleDelete(entry.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{entry.content}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {entry.keywords.map(kw => (
-                        <span key={kw} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground">
-                          {kw}
-                        </span>
-                      ))}
+                  )}
+
+                  {folders.length === 0 && folderlessEntries.length === 0 && searchQuery && filteredAll.length > 0 && (
+                    <div>
+                      <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        所有条目
+                      </h2>
+                      <div className="grid gap-2">
+                        {filteredAll.map((entry, i) => {
+                          const typeCfg = TYPE_CONFIG[entry.type]
+                          return (
+                            <motion.div
+                              key={entry.id}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.02 }}
+                              className={cn(
+                                'group flex items-start gap-3 p-3 rounded-xl border transition-colors',
+                                entry.enabled
+                                  ? 'border-border bg-card hover:bg-accent/30'
+                                  : 'border-dashed border-muted bg-muted/30 hover:bg-muted/50 opacity-60'
+                              )}
+                            >
+                              <div className={cn('shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
+                                {typeCfg.icon}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <h3 className="text-sm font-medium text-foreground truncate">{entry.title}</h3>
+                                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', typeCfg.color)}>
+                                    {typeCfg.label}
+                                  </span>
+                                  {!entry.enabled && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 flex items-center gap-0.5">
+                                      <EyeOff className="w-2.5 h-2.5" />
+                                      已隐藏
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{entry.content}</p>
+                              </div>
+                              <div className="shrink-0 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => handleToggle(entry.id)}
+                                  className={cn(
+                                    'w-7 h-7 rounded-lg flex items-center justify-center transition-all',
+                                    togglingIds.has(entry.id) ? 'scale-110 text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                                  )}
+                                  title={entry.enabled ? '隐藏' : '取消隐藏'}
+                                >
+                                  {entry.enabled
+                                    ? <EyeOff className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                                    : <Eye className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                                  }
+                                </button>
+                                <button onClick={() => openEdit(entry)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => handleDelete(entry.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
                     </div>
-                    {entry.url && (
-                      <a href={entry.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors">
-                        <LinkIcon className="w-3 h-3" />
-                        {entry.url}
-                      </a>
-                    )}
-                  </div>
-                  <div className="shrink-0 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleToggle(entry.id)}
-                      className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-                        togglingIds.has(entry.id) ? 'scale-110 text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                      )}
-                      title={entry.enabled ? '隐藏' : '取消隐藏'}
-                    >
-                      {entry.enabled
-                        ? <EyeOff className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
-                        : <Eye className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
-                      }
-                    </button>
-                    <button
-                      onClick={() => openEdit(entry)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(entry.id)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </motion.div>
-              )
-            })
-          )}
-        </div>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        )}
+
+        {view === 'folder-detail' && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`folder-${activeFolderId}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              {filteredEntries.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">
+                    {searchQuery ? '没有匹配的知识条目' : '此文件夹为空，点击上方按钮添加条目'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {filteredEntries.map((entry, i) => {
+                    const typeCfg = TYPE_CONFIG[entry.type]
+                    return (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className={cn(
+                          'group flex items-start gap-4 p-4 rounded-xl border transition-colors',
+                          entry.enabled
+                            ? 'border-border bg-card hover:bg-accent/30'
+                            : 'border-dashed border-muted bg-muted/30 hover:bg-muted/50 opacity-60'
+                        )}
+                      >
+                        <div className={cn('shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
+                          {typeCfg.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-sm font-medium text-foreground truncate">{entry.title}</h3>
+                            <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', typeCfg.color)}>
+                              {typeCfg.label}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground shrink-0">优先级 {entry.priority}</span>
+                            {!entry.enabled && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0 flex items-center gap-0.5">
+                                <EyeOff className="w-2.5 h-2.5" />
+                                已隐藏
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{entry.content}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {entry.keywords.map(kw => (
+                              <span key={kw} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground">
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
+                          {entry.url && (
+                            <a href={entry.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors">
+                              <LinkIcon className="w-3 h-3" />
+                              {entry.url}
+                            </a>
+                          )}
+                        </div>
+                        <div className="shrink-0 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleToggle(entry.id)}
+                            className={cn(
+                              'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+                              togglingIds.has(entry.id) ? 'scale-110 text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                            )}
+                            title={entry.enabled ? '隐藏' : '取消隐藏'}
+                          >
+                            {entry.enabled
+                              ? <EyeOff className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                              : <Eye className={cn('w-3.5 h-3.5', togglingIds.has(entry.id) && 'animate-in zoom-in duration-200')} />
+                            }
+                          </button>
+                          <button
+                            onClick={() => openEdit(entry)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(entry.id)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        )}
       </div>
+
+      <AnimatePresence>
+        {showFolderModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm" onClick={() => setShowFolderModal(false)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm mx-4 rounded-2xl border border-border bg-card shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <h2 className="text-base font-semibold text-foreground">
+                  {editingFolder ? '重命名文件夹' : '创建文件夹'}
+                </h2>
+                <button onClick={() => setShowFolderModal(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="px-6 py-4">
+                <label className="block text-xs font-medium text-foreground mb-1.5">文件夹名称</label>
+                <input
+                  type="text"
+                  value={folderNameInput}
+                  onChange={e => setFolderNameInput(e.target.value)}
+                  placeholder="输入文件夹名称"
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveFolder() }}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
+                <button
+                  onClick={() => setShowFolderModal(false)}
+                  className="px-4 py-2 text-sm rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSaveFolder}
+                  disabled={!folderNameInput.trim()}
+                  className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-40"
+                >
+                  {editingFolder ? '保存' : '创建'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {showEditor && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-background/60 backdrop-blur-sm" onClick={() => setShowEditor(false)}>
@@ -409,6 +872,19 @@ export default function AdminKnowledgeBasePage() {
               </button>
             </div>
             <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1.5">所属文件夹（选填）</label>
+                <select
+                  value={form.folderId || ''}
+                  onChange={e => setForm({ ...form, folderId: e.target.value || undefined })}
+                  className="w-full h-10 px-3 text-sm rounded-lg border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none"
+                >
+                  <option value="">未分类</option>
+                  {folders.map(f => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1.5">标题</label>
                 <input

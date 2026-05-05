@@ -4,6 +4,8 @@ import type { KnowledgeEntry } from './knowledge-base-store'
 
 export interface PublicKnowledgeEntry extends KnowledgeEntry {
   enabled: boolean
+  folderName?: string
+  folderColor?: string
 }
 
 const DEFAULTS: PublicKnowledgeEntry[] = [

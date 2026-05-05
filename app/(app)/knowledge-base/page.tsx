@@ -153,17 +153,50 @@ export default function KnowledgeBasePage() {
     )
   }, [activeFolderId, folderEntriesMap, folderlessEntries, searchQuery])
 
-  const filteredPublic = publicEntries
-    .filter(e => e.enabled !== false)
-    .filter(e => {
-      if (!searchQuery) return true
-      const q = searchQuery.toLowerCase()
-      return (
-        e.title.toLowerCase().includes(q) ||
-        e.content.toLowerCase().includes(q) ||
-        e.keywords.some(k => k.toLowerCase().includes(q))
-      )
-    })
+  const publicView = view as ViewType
+  const publicActiveFolderId = activeFolderId
+  const setPublicView = setView
+  const setPublicActiveFolderId = setActiveFolderId
+
+  const filteredPublic = useMemo(() => {
+    const enabled = publicEntries.filter(e => e.enabled !== false)
+    if (!searchQuery) return enabled
+    const q = searchQuery.toLowerCase()
+    return enabled.filter(e =>
+      e.title.toLowerCase().includes(q) ||
+      e.content.toLowerCase().includes(q) ||
+      e.keywords.some(k => k.toLowerCase().includes(q))
+    )
+  }, [publicEntries, searchQuery])
+
+  const publicFolderMap = useMemo(() => {
+    const map = new Map<string, { name: string; color: string; entries: PublicKnowledgeEntry[] }>()
+    const folderOrder: string[] = []
+    for (const entry of filteredPublic) {
+      const fid = entry.folderId
+      if (fid && entry.folderName) {
+        if (!map.has(fid)) {
+          map.set(fid, { name: entry.folderName, color: entry.folderColor || '#5227FF', entries: [] })
+          folderOrder.push(fid)
+        }
+        map.get(fid)!.entries.push(entry)
+      }
+    }
+    const sorted = new Map<string, { name: string; color: string; entries: PublicKnowledgeEntry[] }>()
+    for (const fid of folderOrder) {
+      sorted.set(fid, map.get(fid)!)
+    }
+    return sorted
+  }, [filteredPublic])
+
+  const publicFolderless = useMemo(() => {
+    return filteredPublic.filter(e => !e.folderId || !e.folderName)
+  }, [filteredPublic])
+
+  const publicFilteredEntries = useMemo(() => {
+    if (!activeFolderId) return publicFolderless
+    return publicFolderMap.get(activeFolderId)?.entries || []
+  }, [activeFolderId, publicFolderMap, publicFolderless])
 
   const openCreate = () => {
     setEditingEntry(null)
@@ -592,61 +625,190 @@ export default function KnowledgeBasePage() {
           </AnimatePresence>
         )}
 
-        {activeTab === 'public' && (
-          <div className="grid gap-3">
-            {filteredPublic.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">
-                <Globe className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">{searchQuery ? '没有匹配的知识条目' : '公共知识库暂无内容'}</p>
-              </div>
-            ) : (
-              filteredPublic.map((entry, i) => {
-                const typeCfg = TYPE_CONFIG[entry.type]
-                return (
-                  <motion.div
-                    key={entry.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="flex items-start gap-4 p-4 rounded-xl border border-border bg-card transition-colors"
-                  >
-                    <div className={cn('shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
-                      {typeCfg.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-medium text-foreground truncate">{entry.title}</h3>
-                        <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', typeCfg.color)}>
-                          {typeCfg.label}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">优先级 {entry.priority}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{entry.content}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {entry.keywords.map(kw => (
-                          <span key={kw} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground">
-                            {kw}
-                          </span>
+        {activeTab === 'public' && view === 'folders' && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="public-folder-grid"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-8"
+            >
+              {publicFolderMap.size === 0 && publicFolderless.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <Globe className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">{searchQuery ? '没有匹配的知识条目' : '公共知识库暂无内容'}</p>
+                </div>
+              ) : (
+                <>
+                  {publicFolderMap.size > 0 && (
+                    <div>
+                      <h2 className="text-sm font-medium text-muted-foreground mb-4 flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4" />
+                        文件夹
+                      </h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {Array.from(publicFolderMap.entries()).map(([fid, folder]) => (
+                          <motion.div
+                            key={fid}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex flex-col items-center gap-2 group cursor-pointer"
+                            onClick={() => { setActiveFolderId(fid); setView('folder-detail') }}
+                          >
+                            <Folder
+                              color={folder.color}
+                              size={1.1}
+                              items={folder.entries.slice(0, 3).map(e => (
+                                <div
+                                  key={e.id}
+                                  className="w-full h-full flex items-center justify-center"
+                                >
+                                  <span className="text-[6px] text-gray-400 font-medium truncate px-0.5 leading-tight text-center">
+                                    {e.title}
+                                  </span>
+                                </div>
+                              ))}
+                            />
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-foreground truncate max-w-[120px]">
+                                {folder.name}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {folder.entries.length} 个条目
+                              </p>
+                            </div>
+                          </motion.div>
                         ))}
                       </div>
-                      {entry.url && (
-                        <a href={entry.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors">
-                          <LinkIcon className="w-3 h-3" />
-                          {entry.url}
-                        </a>
-                      )}
                     </div>
-                    <div className="shrink-0 w-16 text-center">
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 justify-center">
-                        <Globe className="w-3 h-3" />
-                        公共
-                      </span>
+                  )}
+
+                  {publicFolderless.length > 0 && (
+                    <div>
+                      <h2 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" />
+                        未分类
+                      </h2>
+                      <div className="grid gap-2">
+                        {publicFolderless.map((entry, i) => {
+                          const typeCfg = TYPE_CONFIG[entry.type]
+                          return (
+                            <motion.div
+                              key={entry.id}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.02 }}
+                              className="flex items-start gap-3 p-3 rounded-xl border border-border bg-card transition-colors"
+                            >
+                              <div className={cn('shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
+                                {typeCfg.icon}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <h3 className="text-sm font-medium text-foreground truncate">{entry.title}</h3>
+                                  <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', typeCfg.color)}>
+                                    {typeCfg.label}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{entry.content}</p>
+                              </div>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
                     </div>
-                  </motion.div>
-                )
-              })
-            )}
-          </div>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        )}
+
+        {activeTab === 'public' && view === 'folder-detail' && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`public-folder-${activeFolderId}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => { setActiveFolderId(null); setView('folders') }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {activeFolderId && publicFolderMap.has(activeFolderId) && (
+                  <div className="flex items-center gap-2">
+                    <FolderColorDot color={publicFolderMap.get(activeFolderId)!.color} />
+                    <h2 className="text-lg font-bold text-foreground">
+                      {publicFolderMap.get(activeFolderId)!.name}
+                    </h2>
+                    <span className="text-xs text-muted-foreground bg-accent px-2 py-0.5 rounded-full">
+                      {publicFilteredEntries.length} 个条目
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="grid gap-3">
+                {publicFilteredEntries.length === 0 ? (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <Globe className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm">{searchQuery ? '没有匹配的知识条目' : '此文件夹为空'}</p>
+                  </div>
+                ) : (
+                  publicFilteredEntries.map((entry, i) => {
+                    const typeCfg = TYPE_CONFIG[entry.type]
+                    return (
+                      <motion.div
+                        key={entry.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        className="flex items-start gap-4 p-4 rounded-xl border border-border bg-card transition-colors"
+                      >
+                        <div className={cn('shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
+                          {typeCfg.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-sm font-medium text-foreground truncate">{entry.title}</h3>
+                            <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', typeCfg.color)}>
+                              {typeCfg.label}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground shrink-0">优先级 {entry.priority}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{entry.content}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {entry.keywords.map(kw => (
+                              <span key={kw} className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground">
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
+                          {entry.url && (
+                            <a href={entry.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors">
+                              <LinkIcon className="w-3 h-3" />
+                              {entry.url}
+                            </a>
+                          )}
+                        </div>
+                        <div className="shrink-0 w-16 text-center">
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 justify-center">
+                            <Globe className="w-3 h-3" />
+                            公共
+                          </span>
+                        </div>
+                      </motion.div>
+                    )
+                  })
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
         )}
       </div>
 
