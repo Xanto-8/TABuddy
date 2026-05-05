@@ -51,19 +51,19 @@
   /* 深色模式卡片 - 磨砂玻璃效果 */
   .dark .bg-card,
   .dark [class*="bg-card"] {
-    background: hsl(220 15% 18% / 0.6);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid hsl(220 15% 28% / 0.4);
+    background: hsl(220 15% 18% / 0.25);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsl(220 15% 28% / 0.3);
   }
 
   /* 深色模式弹出层 */
   .dark .bg-popover,
   .dark [class*="bg-popover"] {
-    background: hsl(220 15% 16% / 0.85);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid hsl(220 15% 28% / 0.5);
+    background: hsl(220 15% 16% / 0.5);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid hsl(220 15% 28% / 0.4);
   }
 
   /* 深色模式边框 */
