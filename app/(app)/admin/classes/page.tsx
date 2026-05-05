@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-store'
@@ -149,7 +149,7 @@ export default function AdminClassesPage() {
       </div>
 
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-red-100 text-red-800 dark:bg-orange-900/30 dark:text-orange-300'}`}>
           {message.type === 'success' ? <Check className="w-4 h-4 inline mr-1" /> : <X className="w-4 h-4 inline mr-1" />}
           {message.text}
         </div>

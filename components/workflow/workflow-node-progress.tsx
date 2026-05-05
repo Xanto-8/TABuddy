@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Play, Circle, CheckCircle, Clock, ChevronRight, GitBranch } from 'lucide-react'
@@ -204,7 +204,7 @@ export function WorkflowNodeProgress() {
               className={cn(
                 'shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200',
                 selectedCourse?.id === course.id
-                  ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-950/30 dark:border-green-700/50 dark:text-green-400'
+                  ? 'bg-green-50 border-green-200 text-green-700 dark:bg-orange-900/30 dark:border-orange-700/50 dark:text-orange-300'
                   : 'bg-card border-border text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground'
               )}
             >
@@ -247,7 +247,7 @@ export function WorkflowNodeProgress() {
                 return (
                   <div
                     key={node.id}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-green-200 bg-white shadow-sm mb-1.5 dark:border-green-700/30 dark:bg-green-950/20"
+                    className="flex items-center gap-3 p-3 rounded-xl border border-green-200 bg-white shadow-sm mb-1.5 dark:border-orange-700/30 dark:bg-orange-900/20"
                   >
                     <div className={cn('shrink-0 w-5 flex items-center justify-center', isCompleted && 'opacity-50')}>
                       <button
@@ -268,7 +268,7 @@ export function WorkflowNodeProgress() {
                         'text-sm font-medium flex items-center gap-1.5',
                         isCompleted
                           ? 'text-muted-foreground/60'
-                          : 'text-green-700 dark:text-green-300'
+                          : 'text-green-700 dark:text-orange-300'
                       )}>
                         <span className={cn('text-base', isCompleted && 'opacity-40')}>
                           {WORKFLOW_NODE_ICONS[node.type]}

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -277,9 +277,9 @@ export default function AssistantManagementPage() {
               </button>
 
               {inviteCodeData && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
-                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-orange-900/10 border border-amber-200 dark:border-orange-800/30">
+                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-orange-300 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 dark:text-orange-300">
                     重新生成后，之前的邀请码将立即失效，已绑定的助教不受影响。
                   </p>
                 </div>

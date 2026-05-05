@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -35,22 +35,22 @@ const TYPE_CONFIG: Record<KnowledgeEntry['type'], { label: string; icon: React.R
   link: {
     label: '链接',
     icon: <LinkIcon className="w-3.5 h-3.5" />,
-    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    color: 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
   template: {
     label: '模板',
     icon: <FileText className="w-3.5 h-3.5" />,
-    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    color: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
   document: {
     label: '文档',
     icon: <BookOpen className="w-3.5 h-3.5" />,
-    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    color: 'bg-purple-100 text-purple-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
   info: {
     label: '信息',
     icon: <Info className="w-3.5 h-3.5" />,
-    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    color: 'bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
 }
 

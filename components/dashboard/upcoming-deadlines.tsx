@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React from 'react'
 import Link from 'next/link'
@@ -31,17 +31,17 @@ export function UpcomingDeadlines({ data }: Props) {
   }
 
   const getDeadlineStatus = (daysUntilDue: number) => {
-    if (daysUntilDue <= 0) return { label: '已截止', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', icon: AlertCircle }
-    if (daysUntilDue <= 1) return { label: '紧急', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', icon: AlertTriangle }
-    if (daysUntilDue <= 3) return { label: '即将截止', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800', icon: Clock }
-    return { label: '进行中', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', icon: Calendar }
+    if (daysUntilDue <= 0) return { label: '已截止', color: 'text-red-600', bg: 'bg-red-50 dark:bg-orange-900/20', border: 'border-red-200 dark:border-orange-800', icon: AlertCircle }
+    if (daysUntilDue <= 1) return { label: '紧急', color: 'text-red-600', bg: 'bg-red-50 dark:bg-orange-900/20', border: 'border-red-200 dark:border-orange-800', icon: AlertTriangle }
+    if (daysUntilDue <= 3) return { label: '即将截止', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-orange-900/20', border: 'border-amber-200 dark:border-orange-800', icon: Clock }
+    return { label: '进行中', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-orange-900/20', border: 'border-blue-200 dark:border-orange-800', icon: Calendar }
   }
 
   return (
     <div className="rounded-xl border border-border bg-card p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/20">
+          <div className="p-2 rounded-lg bg-red-100 dark:bg-orange-900/20">
             <AlertTriangle className="h-5 w-5 text-red-600" />
           </div>
           <div>
@@ -83,7 +83,7 @@ export function UpcomingDeadlines({ data }: Props) {
                   'group relative overflow-hidden rounded-lg border p-4 transition-all duration-300',
                   'hover:shadow-md',
                   status.border,
-                  isUrgent && 'bg-red-50/50 dark:bg-red-950/20'
+                  isUrgent && 'bg-red-50/50 dark:bg-orange-900/20'
                 )}
               >
                 {isUrgent && (
@@ -98,7 +98,7 @@ export function UpcomingDeadlines({ data }: Props) {
                       <status.icon className={cn('h-4 w-4 shrink-0', status.color)} />
                       <p className={cn(
                         'text-sm font-medium truncate',
-                        isUrgent && 'text-red-700 dark:text-red-300'
+                        isUrgent && 'text-red-700 dark:text-orange-300'
                       )}>
                         {task.title}
                       </p>

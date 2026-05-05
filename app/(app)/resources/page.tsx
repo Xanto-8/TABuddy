@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import {
@@ -31,30 +31,30 @@ const CARDS = [
     title: '班级仓库汇总',
     description: '查看并管理所有班级的资源仓库，支持预览与下载',
     icon: Archive,
-    gradient: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30',
-    border: 'border-blue-200 dark:border-blue-800',
-    iconBg: 'bg-blue-100 dark:bg-blue-900/50',
-    iconColor: 'text-blue-600 dark:text-blue-400',
+    gradient: 'from-blue-50 to-indigo-50 dark:from-orange-950/30 dark:to-orange-950/30',
+    border: 'border-blue-200 dark:border-orange-800',
+    iconBg: 'bg-blue-100 dark:bg-orange-900/40',
+    iconColor: 'text-blue-600 dark:text-orange-300',
   },
   {
     id: 'answers' as const,
     title: '加油站批改答案',
     description: '内嵌批改答案网页，支持全屏/小窗口切换，快速查看答案',
     icon: CheckSquare,
-    gradient: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30',
-    border: 'border-green-200 dark:border-green-800',
-    iconBg: 'bg-green-100 dark:bg-green-900/50',
-    iconColor: 'text-green-600 dark:text-green-400',
+    gradient: 'from-green-50 to-emerald-50 dark:from-orange-950/30 dark:to-orange-950/30',
+    border: 'border-green-200 dark:border-orange-800',
+    iconBg: 'bg-green-100 dark:bg-orange-900/50',
+    iconColor: 'text-green-600 dark:text-orange-300',
   },
   {
     id: 'feedback' as const,
     title: '学情反馈中心',
     description: '快速查看学生学情数据与反馈记录，一站式掌握学习动态',
     icon: BarChart3,
-    gradient: 'from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-800',
-    iconBg: 'bg-amber-100 dark:bg-amber-900/50',
-    iconColor: 'text-amber-600 dark:text-amber-400',
+    gradient: 'from-amber-50 to-orange-50 dark:from-orange-950/30 dark:to-orange-950/30',
+    border: 'border-amber-200 dark:border-orange-800',
+    iconBg: 'bg-amber-100 dark:bg-orange-900/50',
+    iconColor: 'text-amber-600 dark:text-orange-300',
   },
 ]
 
@@ -294,8 +294,8 @@ export default function ResourcesPage() {
     >
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/50">
-            <Archive className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-orange-900/40">
+            <Archive className="h-5 w-5 text-blue-600 dark:text-orange-300" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">班级仓库汇总</h2>
@@ -316,7 +316,7 @@ export default function ResourcesPage() {
             <span>
               {selectedClass?.name || '选择班级'}
               {selectedClass && isTeachingClass(selectedClass.id) && (
-                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
+                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
               )}
             </span>
             <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', isClassSelectOpen && 'rotate-180')} />
@@ -346,7 +346,7 @@ export default function ResourcesPage() {
                         <span>
                           {cls.name}
                           {isTeachingClass(cls.id) && (
-                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
                           )}
                         </span>
                       </button>
@@ -457,13 +457,13 @@ export default function ResourcesPage() {
             <div className={cn(
               'p-1.5 rounded-lg',
               type === 'answers'
-                ? 'bg-green-100 dark:bg-green-900/50'
-                : 'bg-amber-100 dark:bg-amber-900/50'
+                ? 'bg-green-100 dark:bg-orange-900/50'
+                : 'bg-amber-100 dark:bg-orange-900/50'
             )}>
               {type === 'answers' ? (
-                <CheckSquare className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <CheckSquare className="h-4 w-4 text-green-600 dark:text-orange-300" />
               ) : (
-                <BarChart3 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <BarChart3 className="h-4 w-4 text-amber-600 dark:text-orange-300" />
               )}
             </div>
             <span className="text-sm font-medium text-foreground">

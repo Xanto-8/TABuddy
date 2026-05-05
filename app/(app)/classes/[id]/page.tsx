@@ -336,9 +336,9 @@ export default function ClassDetailPage() {
                       }
                     }}
                   >
-                    <div className="flex items-center gap-3 px-6 py-4 rounded-2xl border-2 border-dashed border-red-300 bg-red-50/90 dark:bg-red-950/40 dark:border-red-700 backdrop-blur-lg shadow-2xl">
+                    <div className="flex items-center gap-3 px-6 py-4 rounded-2xl border-2 border-dashed border-red-300 bg-red-50/90 dark:bg-orange-900/40 dark:border-orange-700 backdrop-blur-lg shadow-2xl">
                       <Trash2 className="h-6 w-6 text-red-500 animate-bounce" />
-                      <span className="text-sm font-medium text-red-600 dark:text-red-400">拖放到此删除学生</span>
+                      <span className="text-sm font-medium text-red-600 dark:text-orange-300">拖放到此删除学生</span>
                     </div>
                   </motion.div>
                 )}

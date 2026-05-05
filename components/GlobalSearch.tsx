@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-store'
@@ -13,9 +13,9 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 const ROLE_STYLES: Record<string, string> = {
-  superadmin: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  classadmin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  assistant: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  superadmin: 'bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300',
+  classadmin: 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300',
+  assistant: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300',
   student: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
 }
 

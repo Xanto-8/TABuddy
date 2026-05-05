@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { X, Loader2, KeyRound, CheckCircle } from 'lucide-react'
@@ -131,8 +131,8 @@ export function BindInviteCodeModal({ onClose, onSuccess }: BindInviteCodeModalP
 
         {step === 'success' && (
           <div className="px-6 py-8 flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-orange-900/30 flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-green-600 dark:text-orange-300" />
             </div>
             <div className="text-center">
               <p className="text-lg font-semibold text-foreground">绑定成功！</p>

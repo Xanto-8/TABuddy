@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -270,21 +270,21 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
         'flex items-center gap-3 p-3 rounded-xl border transition-all',
         'cursor-context-menu',
         isEnded && 'bg-muted/30 border-border/50 opacity-60',
-        isInProgress && 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 shadow-sm',
+        isInProgress && 'bg-green-50 dark:bg-orange-900/20 border-green-200 dark:border-orange-700 shadow-sm',
         !isEnded && !isInProgress && 'bg-card border-border hover:border-muted-foreground/20'
       )}
     >
       <div className={cn(
         'shrink-0 w-10 h-10 rounded-xl flex items-center justify-center',
         isEnded && 'bg-muted/50',
-        isInProgress && 'bg-green-100 dark:bg-green-800/30',
-        !isEnded && !isInProgress && 'bg-indigo-100 dark:bg-indigo-900/20'
+        isInProgress && 'bg-green-100 dark:bg-orange-800/30',
+        !isEnded && !isInProgress && 'bg-indigo-100 dark:bg-orange-900/20'
       )}>
         <span className={cn(
           'text-sm font-bold',
           isEnded && 'text-muted-foreground',
-          isInProgress && 'text-green-700 dark:text-green-300',
-          !isEnded && !isInProgress && 'text-indigo-600 dark:text-indigo-400'
+          isInProgress && 'text-green-700 dark:text-orange-300',
+          !isEnded && !isInProgress && 'text-indigo-600 dark:text-orange-300'
         )}>
           {course.startTime.split(':')[0]}
         </span>
@@ -299,12 +299,12 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); onClassNameClick?.() }}
-            className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer"
+            className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-orange-900/30 text-indigo-600 dark:text-orange-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer"
           >
             {course.classTypeLabel}
           </button>
           {isInProgress && (
-            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 animate-pulse">
+            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-200 dark:bg-orange-800/30 text-green-800 dark:text-orange-200 animate-pulse">
               进行中
             </span>
           )}
@@ -314,7 +314,7 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
             </span>
           )}
           {!isEnded && !isInProgress && (
-            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-orange-900/20 text-blue-600 dark:text-orange-300">
               课程暂未开始
             </span>
           )}
@@ -328,7 +328,7 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
             {course.startTime} - {course.endTime}
           </span>
           {isInProgress && remainingTime && (
-            <span className="text-[10px] font-mono font-bold text-green-600 dark:text-green-400 tabular-nums">
+            <span className="text-[10px] font-mono font-bold text-green-600 dark:text-orange-300 tabular-nums">
               剩余 {remainingTime}
             </span>
           )}
@@ -339,7 +339,7 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
           ? <CheckCircle2 className={cn('h-5 w-5 text-emerald-500 shrink-0', isEnded && 'opacity-50')} />
           : <button
               onClick={(e) => { e.stopPropagation(); onCheckIn?.() }}
-              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shrink-0 cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-red-50 dark:bg-orange-900/20 text-red-600 dark:text-orange-300 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shrink-0 cursor-pointer"
               title="标记已打卡"
             >
               <Circle className="h-3 w-3" />
@@ -512,7 +512,7 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
       <div className="p-5">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/20">
+          <div className="p-2 rounded-lg bg-indigo-100 dark:bg-orange-900/20">
             <CalendarDays className="h-5 w-5 text-indigo-600" />
           </div>
           <h3 className="font-semibold text-foreground">我的课表</h3>
@@ -630,7 +630,7 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                             {formatDate(date)} 周{getDayOfWeek(date)}
                           </span>
                           {date === todayStr && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-orange-900/20 text-blue-600 dark:text-orange-300">
                               今天
                             </span>
                           )}
@@ -651,13 +651,13 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                                   'w-2 h-2 rounded-full shrink-0',
                                   checkedIn ? 'bg-emerald-500' : 'bg-red-500'
                                 )} />
-                                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center shrink-0">
-                                  <Clock className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-orange-900/20 flex items-center justify-center shrink-0">
+                                  <Clock className="h-3.5 w-3.5 text-indigo-600 dark:text-orange-300" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-xs font-semibold text-foreground">{course.courseName}</span>
-                                    <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                                    <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-indigo-50 dark:bg-orange-900/30 text-indigo-600 dark:text-orange-300">
                                       {course.className}
                                     </span>
                                   </div>
@@ -732,7 +732,7 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                         ? 'border-primary bg-primary/5 shadow-sm'
                         : 'border-border',
                       cell.courses.length > 0
-                        ? 'bg-gradient-to-b from-transparent to-indigo-50/40 dark:to-indigo-950/20'
+                        ? 'bg-gradient-to-b from-transparent to-indigo-50/40 dark:to-orange-950/20'
                         : 'bg-muted/30'
                     )}
                   >
@@ -761,8 +761,8 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                               className={cn(
                                 'flex items-center gap-0.5 text-[8px] leading-tight rounded-sm px-0.5 cursor-context-menu',
                                 checkedIn
-                                  ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                  : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                  ? 'bg-emerald-50 dark:bg-orange-900/30 text-emerald-700 dark:text-orange-300'
+                                  : 'bg-red-50 dark:bg-orange-900/30 text-red-600 dark:text-orange-300'
                               )}
                             >
                               <span className={cn(

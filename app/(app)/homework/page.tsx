@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
@@ -47,9 +47,9 @@ const completionLabels: Record<CompletionStatus, string> = {
 }
 
 const completionColors: Record<CompletionStatus, string> = {
-  completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  completed: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300',
   partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  not_done: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  not_done: 'bg-red-100 text-red-700 dark:bg-orange-900/30 dark:text-orange-300',
 }
 
 const handwritingLabels: Record<HandwritingQuality, string> = {
@@ -60,8 +60,8 @@ const handwritingLabels: Record<HandwritingQuality, string> = {
 }
 
 const handwritingColors: Record<HandwritingQuality, string> = {
-  excellent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  good: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  excellent: 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300',
+  good: 'bg-indigo-100 text-indigo-700 dark:bg-orange-900/30 dark:text-orange-300',
   fair: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
   poor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
 }
@@ -270,7 +270,7 @@ export default function HomeworkPage() {
           <span>
             {selectedClass ? selectedClass.name : '选择班级'}
             {selectedClass && isTeachingClass(selectedClass.id) && (
-              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
+              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
             )}
           </span>
           <ChevronDown className={`h-4 w-4 ml-2 text-muted-foreground transition-transform ${isClassSelectOpen ? 'rotate-180' : ''}`} />
@@ -299,7 +299,7 @@ export default function HomeworkPage() {
                       <span>
                         {cls.name}
                         {isTeachingClass(cls.id) && (
-                          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
+                          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
                         )}
                       </span>
                       {selectedClassId === cls.id && (
@@ -471,8 +471,8 @@ export default function HomeworkPage() {
                             {assessments.length > 0 ? `${avgAccuracy}%` : '-'}
                           </p>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-green-100 dark:bg-green-900/30">
-                          <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        <div className="p-2.5 rounded-lg bg-green-100 dark:bg-orange-900/30">
+                          <Target className="h-5 w-5 text-green-600 dark:text-orange-300" />
                         </div>
                       </div>
                     </div>
@@ -876,7 +876,7 @@ function AddAssessmentModal({
                       onClick={handleCopy}
                       className={cn(
                         'inline-flex items-center text-xs transition-colors',
-                        copySuccess ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground hover:text-primary'
+                        copySuccess ? 'text-green-600 dark:text-orange-300' : 'text-muted-foreground hover:text-primary'
                       )}
                     >
                       <Copy className="h-3.5 w-3.5 mr-1" />

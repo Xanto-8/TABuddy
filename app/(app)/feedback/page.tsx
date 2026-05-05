@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
@@ -533,7 +533,7 @@ export default function FeedbackPage() {
                 <span>
                   {selectedClass ? selectedClass.name : '选择班级'}
                   {selectedClass && isTeachingClass(selectedClass.id) && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
                   )}
                 </span>
                 <ChevronDown className={`h-4 w-4 ml-2 text-muted-foreground transition-transform ${isClassSelectOpen ? 'rotate-180' : ''}`} />
@@ -562,7 +562,7 @@ export default function FeedbackPage() {
                             <span>
                               {cls.name}
                               {isTeachingClass(cls.id) && (
-                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
+                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
                               )}
                             </span>
                             {selectedClassId === cls.id && (
@@ -590,8 +590,8 @@ export default function FeedbackPage() {
                   </div>
                 </div>
                 <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 shrink-0">
-                    <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-orange-900/20 shrink-0">
+                    <GraduationCap className="h-5 w-5 text-blue-600 dark:text-orange-300" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground leading-tight">反馈总数</p>
@@ -687,11 +687,11 @@ export default function FeedbackPage() {
                     className="w-full px-4 py-3.5 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none min-h-[120px] leading-relaxed"
                     rows={5}
                   />
-                  <div className="mt-4 flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
+                  <div className="mt-4 flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-orange-900/20 border border-amber-200/50 dark:border-orange-800/30">
                     <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">填写后效果更佳</p>
-                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                      <p className="text-sm font-medium text-amber-800 dark:text-orange-300">填写后效果更佳</p>
+                      <p className="text-xs text-amber-600 dark:text-orange-300 mt-0.5">
                         填写课堂内容后，AI 能结合本节课实际教学情况生成更精准、更丰富的学情反馈。您也可以随时返回填写。
                       </p>
                     </div>
@@ -801,7 +801,7 @@ export default function FeedbackPage() {
                           </div>
                           <div className="flex items-center gap-1.5">
                             {hasScore && !isAbsent && (
-                              <span className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-2 py-0.5 rounded-full font-medium">
+                              <span className="text-xs text-green-600 dark:text-orange-300 bg-green-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full font-medium">
                                 {ed.score}/{ed.total}
                               </span>
                             )}
@@ -1046,7 +1046,7 @@ export default function FeedbackPage() {
                               {usedAI ? (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-normal">AI</span>
                               ) : (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-normal">本地</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300 font-normal">本地</span>
                               )}
                             </h4>
                             <div className="flex items-center gap-2">

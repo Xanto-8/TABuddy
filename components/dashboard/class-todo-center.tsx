@@ -241,7 +241,7 @@ function LeaveModal({
                   className={cn(
                     'flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer',
                     selectedIds.includes(student.id)
-                      ? 'border-indigo-200 bg-indigo-50/60 dark:border-indigo-500/30 dark:bg-indigo-950/30'
+                      ? 'border-indigo-200 bg-indigo-50/60 dark:border-orange-500/30 dark:bg-orange-900/30'
                       : 'border-border hover:border-muted-foreground/30 hover:bg-accent/50'
                   )}
                 >
@@ -364,12 +364,12 @@ function ClassTodoCard({
           </div>
           <div className="shrink-0">
             {allComplete ? (
-              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50">
+              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-orange-900/30 border border-emerald-200 dark:border-orange-900/50">
                 <span className="text-xs">✅</span>
                 <span className="text-xs font-medium text-emerald-600">已全部完成</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 border border-amber-200 dark:border-amber-900/50 shadow-sm">
+              <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-orange-950/40 dark:to-orange-950/40 border border-amber-200 dark:border-orange-900/50 shadow-sm">
                 <Clock size={14} className="text-amber-500" />
                 <span className="text-lg font-bold text-amber-600">{item.totalPending}</span>
                 <span className="text-xs text-amber-500 font-medium">待处理</span>
@@ -384,7 +384,7 @@ function ClassTodoCard({
           'grid grid-cols-3 gap-2',
           allComplete && 'opacity-40'
         )}>
-          <div className="text-center p-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50">
+          <div className="text-center p-2 rounded-lg bg-blue-50/50 dark:bg-orange-900/30 border border-blue-100 dark:border-orange-900/50">
             <p className={cn(
               'text-sm font-bold',
               item.core.homeworkPending > 0 ? 'text-blue-600' : 'text-gray-400'
@@ -393,7 +393,7 @@ function ClassTodoCard({
             </p>
             <p className="text-[10px] text-muted-foreground leading-tight">作业反馈</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-purple-50/50 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/50">
+          <div className="text-center p-2 rounded-lg bg-purple-50/50 dark:bg-orange-900/30 border border-purple-100 dark:border-orange-900/50">
             <p className={cn(
               'text-sm font-bold',
               item.core.quizPending > 0 ? 'text-purple-600' : 'text-gray-400'
@@ -402,7 +402,7 @@ function ClassTodoCard({
             </p>
             <p className="text-[10px] text-muted-foreground leading-tight">小测反馈</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
+          <div className="text-center p-2 rounded-lg bg-emerald-50/50 dark:bg-orange-900/30 border border-emerald-100 dark:border-orange-900/50">
             <p className={cn(
               'text-sm font-bold',
               item.core.taskPending > 0 ? 'text-emerald-600' : 'text-gray-400'

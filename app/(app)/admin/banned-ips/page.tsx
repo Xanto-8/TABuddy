@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-store'
@@ -107,7 +107,7 @@ export default function BannedIPsPage() {
             <RefreshCw className="w-3.5 h-3.5" />
             刷新
           </button>
-          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300 border border-amber-200 dark:border-orange-800">
             <Shield className="w-3 h-3 inline mr-0.5" />
             超级管理员
           </span>
@@ -141,7 +141,7 @@ export default function BannedIPsPage() {
             <div key={item.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
                     <Ban className="w-4 h-4 text-red-500" />
                   </div>
                   <div className="min-w-0">
@@ -175,7 +175,7 @@ export default function BannedIPsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(null)}>
           <div className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
                 <Unlock className="w-5 h-5 text-green-500" />
               </div>
               <div>
@@ -184,7 +184,7 @@ export default function BannedIPsPage() {
               </div>
             </div>
 
-            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg p-3 text-sm space-y-1">
+            <div className="bg-green-50 dark:bg-orange-900/30 border border-green-200 dark:border-orange-900 rounded-lg p-3 text-sm space-y-1">
               {(() => {
                 const item = bannedIPs.find(b => b.id === showConfirm)
                 return item ? (

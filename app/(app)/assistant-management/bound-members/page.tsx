@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-store'
@@ -28,12 +28,12 @@ interface BoundMember {
 function getRoleStyle(role: string) {
   switch (role) {
     case 'superadmin':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+      return 'bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300 border-amber-200 dark:border-orange-800'
     case 'classadmin':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+      return 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300 border-blue-200 dark:border-orange-800'
     case 'assistant':
     case 'student':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800'
+      return 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300 border-green-200 dark:border-orange-800'
     default:
       return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800'
   }
@@ -50,8 +50,8 @@ function getRoleLabel(role: string) {
 
 function getIpVersion(ip: string): { label: string; color: string } | null {
   if (!ip || ip === '暂无' || ip === 'unknown' || ip === '') return null
-  if (ip.includes(':')) return { label: 'IPv6', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800' }
-  return { label: 'IPv4', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' }
+  if (ip.includes(':')) return { label: 'IPv6', color: 'bg-purple-100 text-purple-700 dark:bg-orange-900/30 dark:text-orange-300 border-purple-200 dark:border-orange-800' }
+  return { label: 'IPv4', color: 'bg-cyan-100 text-cyan-700 dark:bg-orange-900/30 dark:text-orange-300 border-cyan-200 dark:border-orange-800' }
 }
 
 function timeAgo(dateStr: string | null): string {
@@ -287,7 +287,7 @@ export default function BoundMembersPage() {
   function onlineText(lastActiveAt: string | null): { label: string; color: string; dot: string } {
     const online = isOnline(lastActiveAt)
     if (online) {
-      return { label: '在线', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800', dot: 'bg-green-500' }
+      return { label: '在线', color: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300 border-green-200 dark:border-orange-800', dot: 'bg-green-500' }
     }
     if (!lastActiveAt) {
       return { label: '从未上线', color: 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800', dot: 'bg-gray-300' }
@@ -306,7 +306,7 @@ export default function BoundMembersPage() {
           <p className="text-sm text-muted-foreground mt-1">查看已绑定助教的详细信息，管理密码等账户数据</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300 border border-blue-200 dark:border-orange-800">
             <Shield className="w-3 h-3 inline mr-0.5" />
             班级管理员
           </span>
@@ -339,7 +339,7 @@ export default function BoundMembersPage() {
             <Ban className="w-4 h-4" />
             IP 封禁管理
             {bannedCount > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-100 text-red-700 dark:bg-orange-900/30 dark:text-orange-300">
                 {bannedCount}
               </span>
             )}
@@ -348,7 +348,7 @@ export default function BoundMembersPage() {
       </div>
 
       {message && (
-        <div className={`animate-slide-in p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+        <div className={`animate-slide-in p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-red-100 text-red-800 dark:bg-orange-900/30 dark:text-orange-300'}`}>
           <button className="float-right" onClick={() => setMessage(null)}>
             <X className="w-4 h-4" />
           </button>
@@ -437,7 +437,7 @@ export default function BoundMembersPage() {
                       </button>
                       <button
                         onClick={() => setDeletingMember(m)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-red-100 text-red-700 hover:bg-red-200 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-red-900/50 transition-colors"
                       >
                         <Trash2 className="w-3 h-3" />
                         注销账号
@@ -467,7 +467,7 @@ export default function BoundMembersPage() {
                           <span className="text-muted-foreground shrink-0">最后活跃:</span>
                           <span className="text-xs">{a.lastActiveAt ? timeAgo(a.lastActiveAt) : '从未'}</span>
                           {a.lastActiveAt && (
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${isOnline(a.lastActiveAt) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400'}`}>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${isOnline(a.lastActiveAt) ? 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400'}`}>
                               {isOnline(a.lastActiveAt) ? '在线' : '离线'}
                             </span>
                           )}
@@ -536,8 +536,8 @@ export default function BoundMembersPage() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
-                        <Ban className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                        <Ban className="w-4 h-4 text-red-600 dark:text-orange-300" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium">{item.ip}</p>
@@ -572,7 +572,7 @@ export default function BoundMembersPage() {
                       ) : (
                         <button
                           onClick={() => setShowUnbanConfirm(item.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors"
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-green-900/50 transition-colors"
                         >
                           <Unlock className="w-3 h-3" />
                           解封
@@ -639,8 +639,8 @@ export default function BoundMembersPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => !deleting && setDeletingMember(null)}>
           <div className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-orange-300" />
               </div>
               <div>
                 <h3 className="font-semibold text-base">注销账号</h3>

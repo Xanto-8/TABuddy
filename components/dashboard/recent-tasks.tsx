@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState } from 'react'
 import Link from 'next/link'
@@ -40,10 +40,10 @@ export function RecentTasks({ data }: Props) {
   const getLessonColor = (lesson?: string) => {
     if (!lesson) return 'text-gray-500 bg-gray-50 dark:bg-gray-900/20'
     const colors = [
-      'text-blue-500 bg-blue-50 dark:bg-blue-900/20',
-      'text-green-500 bg-green-50 dark:bg-green-900/20',
-      'text-purple-500 bg-purple-50 dark:bg-purple-900/20',
-      'text-amber-500 bg-amber-50 dark:bg-amber-900/20',
+      'text-blue-500 bg-blue-50 dark:bg-orange-900/20',
+      'text-green-500 bg-green-50 dark:bg-orange-900/20',
+      'text-purple-500 bg-purple-50 dark:bg-orange-900/20',
+      'text-amber-500 bg-amber-50 dark:bg-orange-900/20',
     ]
     const hash = lesson.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
     return colors[hash % colors.length]
@@ -53,7 +53,7 @@ export function RecentTasks({ data }: Props) {
     <div className="rounded-xl border border-border bg-card p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/20">
+          <div className="p-2 rounded-lg bg-blue-100 dark:bg-orange-900/20">
             <ListTodo className="h-5 w-5 text-blue-600" />
           </div>
           <div>

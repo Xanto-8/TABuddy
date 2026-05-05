@@ -27,31 +27,31 @@
   }
 
   .dark {
-    --background: 224 18% 8%;
-    --foreground: 220 16% 90%;
-    --card: 224 16% 12%;
-    --card-foreground: 220 16% 90%;
-    --popover: 224 16% 12%;
-    --popover-foreground: 220 16% 90%;
-    --primary: 220 40% 62%;
-    --primary-foreground: 224 18% 8%;
-    --secondary: 28 70% 58%;
-    --secondary-foreground: 224 18% 8%;
-    --muted: 224 12% 15%;
-    --muted-foreground: 220 10% 58%;
-    --accent: 224 12% 17%;
-    --accent-foreground: 220 16% 90%;
-    --destructive: 0 50% 52%;
-    --destructive-foreground: 220 16% 90%;
-    --border: 224 10% 18%;
-    --input: 224 10% 18%;
-    --ring: 220 40% 58%;
+    --background: 0 0% 21%;
+    --foreground: 36 100% 94%;
+    --card: 0 0% 25%;
+    --card-foreground: 36 100% 94%;
+    --popover: 0 0% 25%;
+    --popover-foreground: 36 100% 94%;
+    --primary: 33 100% 50%;
+    --primary-foreground: 0 0% 21%;
+    --secondary: 33 90% 55%;
+    --secondary-foreground: 0 0% 21%;
+    --muted: 0 0% 28%;
+    --muted-foreground: 36 30% 65%;
+    --accent: 0 0% 30%;
+    --accent-foreground: 36 100% 94%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 36 100% 94%;
+    --border: 0 0% 32%;
+    --input: 0 0% 32%;
+    --ring: 33 100% 50%;
   }
 
   /* 深色模式卡片玻璃拟态效果 */
   .dark .bg-card,
   .dark [class*="bg-card"] {
-    background: hsl(224 16% 12% / 0.55);
+    background: hsl(0 0% 25% / 0.55);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
@@ -59,19 +59,19 @@
   /* 深色模式弹出层玻璃效果 */
   .dark .bg-popover,
   .dark [class*="bg-popover"] {
-    background: hsl(224 16% 12% / 0.7);
+    background: hsl(0 0% 25% / 0.7);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
 
   /* 深色模式微妙的上边框高光 */
   .dark .border-border {
-    border-color: hsl(224 10% 18% / 0.5);
+    border-color: hsl(0 0% 32% / 0.5);
   }
 
   /* 深色模式侧边栏 */
   .dark .bg-background {
-    background: hsl(224 18% 8%);
+    background: hsl(0 0% 21%);
   }
 }
 
