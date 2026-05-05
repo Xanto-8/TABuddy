@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   ClipboardCheck, Plus, Pencil, Trash2, ChevronDown,
   BookOpen, Users, Target, FileText, Clock, AlertCircle,
-  Sparkles, RefreshCw, Copy, Loader2,
+  Sparkles, RefreshCw, Copy, Loader2, UserCheck, UserX,
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -27,10 +27,18 @@ import {
   deleteHomeworkAssessment,
 } from '@/lib/store'
 import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
-import { isStudentAbsent } from '@/lib/absence-store'
+import { getAbsentStudentIds, setAbsentStudents, isStudentAbsent } from '@/lib/absence-store'
 import { generateHomeworkFeedback } from '@/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import { useCopyShortcut } from '@/lib/copy-shortcut'
+
+function getLocalDateString(d?: Date): string {
+  const date = d ?? new Date()
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
 
 const completionLabels: Record<CompletionStatus, string> = {
   completed: '已完成',
@@ -68,6 +76,7 @@ export default function HomeworkPage() {
   const [isClassSelectOpen, setIsClassSelectOpen] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isClassLoading, setIsClassLoading] = useState(false)
+  const [absentIds, setAbsentIds] = useState<string[]>([])
   const classSelectRef = useRef<HTMLDivElement>(null)
   const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
@@ -98,10 +107,12 @@ export default function HomeworkPage() {
   useEffect(() => {
     if (selectedClassId) {
       setStudents(getStudentsByClass(selectedClassId))
+      setAbsentIds(getAbsentStudentIds(selectedClassId, getLocalDateString()))
       setSelectedStudentId('')
       setAssessments([])
     } else {
       setStudents([])
+      setAbsentIds([])
       setSelectedStudentId('')
       setAssessments([])
     }
@@ -359,14 +370,22 @@ export default function HomeworkPage() {
                           selectedStudentId === student.id ? 'bg-primary/5 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
                         )}
                       >
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-medium text-primary">{student.name.charAt(0)}</span>
+                        <div className={cn(
+                          'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+                          absentIds.includes(student.id)
+                            ? 'bg-orange-100 dark:bg-orange-900/20'
+                            : 'bg-primary/10'
+                        )}>
+                          <span className={cn(
+                            'text-xs font-medium',
+                            absentIds.includes(student.id) ? 'text-orange-500' : 'text-primary'
+                          )}>{student.name.charAt(0)}</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-foreground truncate">{student.name}</p>
-                            {isStudentAbsent(student.id) && (
-                              <span className="text-[10px] leading-none px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium shrink-0">
+                            {absentIds.includes(student.id) && (
+                              <span className="text-[10px] leading-none px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 font-medium shrink-0">
                                 已请假
                               </span>
                             )}
@@ -473,10 +492,35 @@ export default function HomeworkPage() {
                   </div>
 
                   <div className="flex items-center justify-between shrink-0 flex-wrap gap-3">
-                    <div>
+                    <div className="flex items-center gap-3">
                       <h3 className="text-base font-medium text-foreground">
                         {selectedStudent?.name} 的评估记录
                       </h3>
+                      {selectedStudent && (
+                        <button
+                          onClick={() => {
+                            const newAbsent = !absentIds.includes(selectedStudent.id)
+                            const today = getLocalDateString()
+                            const updatedIds = newAbsent
+                              ? Array.from(new Set([...absentIds, selectedStudent.id]))
+                              : absentIds.filter(id => id !== selectedStudent.id)
+                            setAbsentStudents(selectedClassId, today, updatedIds)
+                            setAbsentIds(updatedIds)
+                          }}
+                          className={cn(
+                            'inline-flex items-center px-3 py-1.5 rounded-lg border transition-all text-xs font-medium',
+                            absentIds.includes(selectedStudent.id)
+                              ? 'border-orange-300 bg-orange-50 text-orange-600 dark:border-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
+                              : 'border-border text-muted-foreground hover:bg-accent/50'
+                          )}
+                        >
+                          {absentIds.includes(selectedStudent.id) ? (
+                            <><UserX className="h-3.5 w-3.5 mr-1.5" />已请假</>
+                          ) : (
+                            <><UserCheck className="h-3.5 w-3.5 mr-1.5" />标记请假</>
+                          )}
+                        </button>
+                      )}
                     </div>
                     <button
                       onClick={() => setShowModal(true)}

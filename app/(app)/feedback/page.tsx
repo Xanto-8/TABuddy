@@ -18,6 +18,11 @@ import {
   Class,
 } from '@/types'
 import {
+  getAbsentStudentIds,
+  setAbsentStudents,
+  isStudentAbsent,
+} from '@/lib/absence-store'
+import {
   getClasses,
   getStudentsByClass,
   getFeedbackHistoryByStudent,
@@ -29,12 +34,28 @@ import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
 import { PageContainer } from '@/components/ui/page-container'
 import { useCopyShortcut } from '@/lib/copy-shortcut'
 
+function getLocalDateString(d?: Date): string {
+  const date = d ?? new Date()
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 const EMPTY_EXERCISE = { score: '', total: '', brief: '', isAbsent: false }
 
 function loadExerciseData(classId: string): Record<string, { score: string; total: string; brief: string; isAbsent: boolean }> {
   try {
     const raw = sessionStorage.getItem(`tabuddy_exercise_${classId}`)
-    return raw ? JSON.parse(raw) : {}
+    const data: Record<string, { score: string; total: string; brief: string; isAbsent: boolean }> = raw ? JSON.parse(raw) : {}
+    const absentIds = getAbsentStudentIds(classId, getLocalDateString())
+    if (absentIds.length > 0) {
+      for (const id of absentIds) {
+        if (!data[id]) data[id] = { ...EMPTY_EXERCISE }
+        data[id].isAbsent = true
+      }
+    }
+    return data
   } catch {
     return {}
   }
@@ -856,7 +877,16 @@ export default function FeedbackPage() {
                         <button
                           onClick={() => {
                             const ed = exerciseData[selectedStudent.id]
-                            updateExerciseField(selectedStudent.id, 'isAbsent', !ed?.isAbsent)
+                            const newAbsent = !ed?.isAbsent
+                            updateExerciseField(selectedStudent.id, 'isAbsent', newAbsent)
+                            if (selectedClassId) {
+                              const today = getLocalDateString()
+                              const currentIds = getAbsentStudentIds(selectedClassId, today)
+                              const updatedIds = newAbsent
+                                ? Array.from(new Set([...currentIds, selectedStudent.id]))
+                                : currentIds.filter(id => id !== selectedStudent.id)
+                              setAbsentStudents(selectedClassId, today, updatedIds)
+                            }
                           }}
                           className={cn(
                             'inline-flex items-center px-3 py-1.5 rounded-lg border transition-all text-xs font-medium',
