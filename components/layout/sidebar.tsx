@@ -64,9 +64,7 @@ function Logo({ expanded }: { expanded: boolean }) {
       'flex items-center h-16 px-4 border-b border-border shrink-0',
       expanded ? 'justify-start gap-3' : 'justify-center'
     )}>
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-sm shrink-0">
-        T
-      </div>
+      <img src="/app-icon.png" alt="TABuddy" className="w-8 h-8 rounded-lg shadow-sm shrink-0 object-contain" />
       {expanded && (
         <div className="leading-tight">
           <p className="text-sm font-bold text-foreground">TABuddy</p>
