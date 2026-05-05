@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Globe, Lock, FolderOpen, ChevronLeft, Edit3 } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Globe, Lock, FolderOpen, ChevronLeft, ChevronDown, ChevronRight, Edit3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import Folder from '@/app/动效/文件夹'
@@ -89,6 +89,8 @@ export default function KnowledgeBasePage() {
   const [showFolderModal, setShowFolderModal] = useState(false)
   const [editingFolder, setEditingFolder] = useState<KnowledgeFolder | null>(null)
   const [folderNameInput, setFolderNameInput] = useState('')
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
+  const [showUncategorizedPicker, setShowUncategorizedPicker] = useState(false)
 
   const loadEntries = useCallback(() => {
     setEntries([...getKnowledgeBase()])
@@ -306,6 +308,34 @@ export default function KnowledgeBasePage() {
     setSearchQuery('')
   }
 
+  const handleDragStart = (e: React.DragEvent, entryId: string) => {
+    e.dataTransfer.setData('text/kb-entry-id', entryId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverFolderId(folderId)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverFolderId(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault()
+    const entryId = e.dataTransfer.getData('text/kb-entry-id')
+    if (entryId) {
+      const entry = entries.find(ent => ent.id === entryId)
+      if (entry && entry.folderId !== folderId) {
+        saveKnowledgeEntry({ ...entry, folderId })
+        loadEntries()
+      }
+    }
+    setDragOverFolderId(null)
+  }
+
   const tabs: { key: TabType; label: string; icon: React.ReactNode }[] = [
     { key: 'private', label: '私有知识库', icon: <Lock className="w-4 h-4" /> },
     { key: 'public', label: '公共知识库', icon: <Globe className="w-4 h-4" /> },
@@ -447,15 +477,25 @@ export default function KnowledgeBasePage() {
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                         {folders.map((folder) => {
                           const folderEntries = folderEntriesMap.get(folder.id) || []
+                          const isDragOver = dragOverFolderId === folder.id
                           return (
                             <motion.div
                               key={folder.id}
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="flex flex-col items-center gap-2 group cursor-pointer"
+                              className={cn(
+                                'flex flex-col items-center gap-2 group cursor-pointer transition-all',
+                                isDragOver && 'scale-110'
+                              )}
                               onClick={() => enterFolder(folder.id)}
+                              onDragOver={e => handleDragOver(e, folder.id)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={e => handleDrop(e, folder.id)}
                             >
-                              <div className="relative">
+                              <div className={cn(
+                                'relative rounded-2xl transition-all',
+                                isDragOver && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                              )}>
                                 <Folder
                                   color={folder.color}
                                   size={1.1}
@@ -515,7 +555,9 @@ export default function KnowledgeBasePage() {
                               initial={{ opacity: 0, y: 8 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: i * 0.02 }}
-                              className="group flex items-start gap-3 p-3 rounded-xl border border-border bg-card hover:bg-accent/30 transition-colors"
+                              draggable
+                              onDragStart={(e: any) => handleDragStart(e, entry.id)}
+                              className="group flex items-start gap-3 p-3 rounded-xl border border-border bg-card hover:bg-accent/30 transition-colors cursor-grab active:cursor-grabbing"
                             >
                               <div className={cn('shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-medium', typeCfg.color)}>
                                 {typeCfg.icon}
@@ -619,6 +661,50 @@ export default function KnowledgeBasePage() {
                       </motion.div>
                     )
                   })}
+                </div>
+              )}
+              {activeFolderId && folderlessEntries.length > 0 && (
+                <div className="border border-dashed border-border rounded-xl">
+                  <button
+                    onClick={() => setShowUncategorizedPicker(!showUncategorizedPicker)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors rounded-xl"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      从「未分类」添加条目到此文件夹（{folderlessEntries.length} 个可用）
+                    </span>
+                    {showUncategorizedPicker ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  </button>
+                  {showUncategorizedPicker && (
+                    <div className="px-4 pb-3 space-y-2 border-t border-border pt-3">
+                      {folderlessEntries.map(entry => {
+                        const typeCfg = TYPE_CONFIG[entry.type]
+                        return (
+                          <div
+                            key={entry.id}
+                            className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div className={cn('shrink-0 w-6 h-6 rounded flex items-center justify-center text-[10px]', typeCfg.color)}>
+                                {typeCfg.icon}
+                              </div>
+                              <span className="text-xs text-foreground truncate">{entry.title}</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                saveKnowledgeEntry({ ...entry, folderId: activeFolderId! })
+                                loadEntries()
+                                setShowUncategorizedPicker(false)
+                              }}
+                              className="shrink-0 px-2.5 py-1 text-[11px] rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+                            >
+                              添加到此处
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>

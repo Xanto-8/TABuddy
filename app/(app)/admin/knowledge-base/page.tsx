@@ -95,6 +95,8 @@ export default function AdminKnowledgeBasePage() {
   const [showFolderModal, setShowFolderModal] = useState(false)
   const [editingFolder, setEditingFolder] = useState<KnowledgeFolder | null>(null)
   const [folderNameInput, setFolderNameInput] = useState('')
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
+  const [showUncategorizedPicker, setShowUncategorizedPicker] = useState(false)
 
   const runDiagnostics = useCallback(async () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('tabuddy_auth_token') : null
@@ -336,6 +338,34 @@ export default function AdminKnowledgeBasePage() {
     setSearchQuery('')
   }
 
+  const handleDragStart = (e: React.DragEvent, entryId: string) => {
+    e.dataTransfer.setData('text/kb-entry-id', entryId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverFolderId(folderId)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverFolderId(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault()
+    const entryId = e.dataTransfer.getData('text/kb-entry-id')
+    if (entryId) {
+      const entry = entries.find(ent => ent.id === entryId)
+      if (entry && entry.folderId !== folderId) {
+        savePublicEntry({ ...entry, folderId })
+        loadEntries()
+      }
+    }
+    setDragOverFolderId(null)
+  }
+
   if (user?.role !== 'superadmin' && user?.role !== 'classadmin') {
     return null
   }
@@ -510,15 +540,22 @@ export default function AdminKnowledgeBasePage() {
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                         {folders.map((folder) => {
                           const folderEntries = folderEntriesMap.get(folder.id) || []
+                          const isDragOver = dragOverFolderId === folder.id
                           return (
                             <motion.div
                               key={folder.id}
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="flex flex-col items-center gap-2 group cursor-pointer"
+                              className={cn(
+                                'flex flex-col items-center gap-2 group cursor-pointer transition-all',
+                                isDragOver && 'scale-110'
+                              )}
                               onClick={() => enterFolder(folder.id)}
+                              onDragOver={e => handleDragOver(e, folder.id)}
+                              onDragLeave={handleDragLeave}
+                              onDrop={e => handleDrop(e, folder.id)}
                             >
-                              <div className="relative">
+                              <div className={cn('relative', isDragOver && 'ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl')}>
                                 <Folder
                                   color={folder.color}
                                   size={1.1}
@@ -578,8 +615,10 @@ export default function AdminKnowledgeBasePage() {
                               initial={{ opacity: 0, y: 8 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: i * 0.02 }}
+                              draggable
+                              onDragStart={(e: any) => handleDragStart(e, entry.id)}
                               className={cn(
-                                'group flex items-start gap-3 p-3 rounded-xl border transition-colors',
+                                'group flex items-start gap-3 p-3 rounded-xl border transition-colors cursor-grab active:cursor-grabbing',
                                 entry.enabled
                                   ? 'border-border bg-card hover:bg-accent/30'
                                   : 'border-dashed border-muted bg-muted/30 hover:bg-muted/50 opacity-60'
@@ -798,6 +837,48 @@ export default function AdminKnowledgeBasePage() {
                       </motion.div>
                     )
                   })}
+                </div>
+              )}
+
+              {activeFolderId && folderlessEntries.length > 0 && (
+                <div className="border border-dashed border-border rounded-xl mt-6">
+                  <button
+                    onClick={() => setShowUncategorizedPicker(!showUncategorizedPicker)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors rounded-xl"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      从「未分类」添加条目到此文件夹（{folderlessEntries.length} 个可用）
+                    </span>
+                    {showUncategorizedPicker ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  </button>
+                  {showUncategorizedPicker && (
+                    <div className="px-4 pb-3 space-y-2 border-t border-border pt-3">
+                      {folderlessEntries.map(entry => {
+                        const typeCfg = TYPE_CONFIG[entry.type]
+                        return (
+                          <div key={entry.id} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div className={cn('shrink-0 w-6 h-6 rounded flex items-center justify-center text-[10px]', typeCfg.color)}>
+                                {typeCfg.icon}
+                              </div>
+                              <span className="text-xs text-foreground truncate">{entry.title}</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                savePublicEntry({ ...entry, folderId: activeFolderId! })
+                                loadEntries()
+                                setShowUncategorizedPicker(false)
+                              }}
+                              className="shrink-0 px-2.5 py-1 text-[11px] rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+                            >
+                              添加到此处
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
