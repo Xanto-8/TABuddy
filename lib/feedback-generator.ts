@@ -102,7 +102,8 @@ function generateLocalFeedback(keywords: string, studentName: string): string {
 
   let feedback = pickRandom(templates)
 
-  const targetLength = getRandomInt(190, 210)
+  const saved = localStorage.getItem('tabuddy_feedback_word_count')
+  const targetLength = saved ? parseInt(saved, 10) : getRandomInt(190, 210)
   if (feedback.length > targetLength + 30) {
     feedback = feedback.slice(0, targetLength + 10) + '。'
   } else if (feedback.length < targetLength - 30) {
@@ -172,7 +173,11 @@ export async function generateFeedback(params: GenerateFeedbackParams): Promise<
       ? `\n本节课课堂内容：\n${classContent.trim()}\n`
       : ''
 
-    const prompt = `你是少儿英语课程的老师，请根据学生课堂关键词，生成一段190-210字的课后反馈。${classContext ? '\n注意：必须结合本节课实际课堂内容进行反馈，让反馈贴合当天上课实际情况。' : ''}
+    const savedWordCount = localStorage.getItem('tabuddy_feedback_word_count')
+    const wordCount = savedWordCount ? parseInt(savedWordCount, 10) : 200
+    const wordRange = `${Math.max(50, wordCount - 20)}-${wordCount + 20}`
+
+    const prompt = `你是少儿英语课程的老师，请根据学生课堂关键词，生成一段${wordRange}字的课后反馈。${classContext ? '\n注意：必须结合本节课实际课堂内容进行反馈，让反馈贴合当天上课实际情况。' : ''}
 
 要求：
 1. 完全模仿下面这段文字的语气、结构、正式度、温柔专业的老师口吻，不要AI感、不要生硬、不要模板化。

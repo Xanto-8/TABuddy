@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ShortcutSettings } from '@/components/settings/shortcut-settings'
-import { User, Camera, Save, Lock, AlertCircle, CheckCircle2, Eye, EyeOff, Keyboard } from 'lucide-react'
+import { User, Camera, Save, Lock, AlertCircle, CheckCircle2, Eye, EyeOff, Keyboard, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 function getColor(name?: string) {
@@ -61,6 +61,18 @@ function ProfileSettings({ user }: { user: NonNullable<ReturnType<typeof useAuth
   const [showNewPwd, setShowNewPwd] = useState(false)
   const [showConfirmPwd, setShowConfirmPwd] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
+
+  const [feedbackWordCount, setFeedbackWordCount] = useState(() => {
+    const saved = localStorage.getItem('tabuddy_feedback_word_count')
+    return saved ? parseInt(saved, 10) : 200
+  })
+
+  // 保存反馈字数设置
+  const handleFeedbackWordCountChange = (value: number) => {
+    setFeedbackWordCount(value)
+    localStorage.setItem('tabuddy_feedback_word_count', String(value))
+    toast.success(`反馈字数已设置为 ${value} 字`)
+  }
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
@@ -423,6 +435,40 @@ function ProfileSettings({ user }: { user: NonNullable<ReturnType<typeof useAuth
               <dd className="font-mono text-xs text-muted-foreground">{user?.id}</dd>
             </div>
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            AI 反馈设置
+          </CardTitle>
+          <CardDescription>调整 AI 生成课后反馈的字数</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>反馈字数</Label>
+              <span className="text-sm font-medium text-primary">{feedbackWordCount} 字</span>
+            </div>
+            <input
+              type="range"
+              min={50}
+              max={500}
+              step={10}
+              value={feedbackWordCount}
+              onChange={(e) => handleFeedbackWordCountChange(Number(e.target.value))}
+              className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>50 字（简短）</span>
+              <span>500 字（详细）</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            此设置同时影响 AI 生成和本地模板生成的反馈字数。修改后立即生效。
+          </p>
         </CardContent>
       </Card>
     </div>
