@@ -102,6 +102,16 @@ export default function QuizzesPage() {
   }, [selectedClassId])
 
   useEffect(() => {
+    const handleSortChange = () => {
+      if (selectedClassId) {
+        setStudents(getStudentsByClass(selectedClassId))
+      }
+    }
+    window.addEventListener('studentSortChanged', handleSortChange)
+    return () => window.removeEventListener('studentSortChanged', handleSortChange)
+  }, [selectedClassId])
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (classSelectRef.current && !classSelectRef.current.contains(event.target as Node)) {
         setIsClassSelectOpen(false)
