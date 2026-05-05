@@ -41,6 +41,7 @@ interface KnowledgeEntry {
   type: 'link' | 'template' | 'document' | 'info'
   url?: string
   priority: number
+  folderId?: string
 }
 
 interface DataCache {

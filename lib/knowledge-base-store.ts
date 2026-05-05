@@ -8,6 +8,7 @@ export interface KnowledgeEntry {
   type: 'link' | 'template' | 'document' | 'info'
   url?: string
   priority: number
+  folderId?: string
 }
 
 const STORAGE_KEY = 'tabuddy_knowledge_base'
