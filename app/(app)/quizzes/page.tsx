@@ -298,7 +298,12 @@ export default function QuizzesPage() {
         studentRecordsMap.get(r.studentId)!.records.push(r)
       }
       const { exportQuizDocx } = await import('@/lib/export-quiz')
-      const result = await exportQuizDocx({ className: selectedClass.name, studentRecords: studentRecordsMap })
+      const result = await exportQuizDocx({
+        className: selectedClass.name,
+        studentRecords: studentRecordsMap,
+        allStudents: classStudents.map(s => ({ id: s.id, name: s.name })),
+        absentIds,
+      })
       toast.dismiss(toastId)
       if (result.usedFallback) {
         toast.success(

@@ -1,9 +1,12 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx'
 import { saveAs } from 'file-saver'
+import type { QuizRecord } from '@/types'
 
 interface ExportParams {
   className: string
   studentRecords: Map<string, { name: string; records: any[] }>
+  allStudents: { id: string; name: string }[]
+  absentIds: string[]
 }
 
 function calcAcc(score: number | undefined, total: number | undefined): number | null {
@@ -13,7 +16,7 @@ function calcAcc(score: number | undefined, total: number | undefined): number |
   return null
 }
 
-function buildContentLines(className: string, studentRecords: Map<string, { name: string; records: any[] }>) {
+function buildContentLines(className: string, studentRecords: Map<string, { name: string; records: any[] }>, allStudents: { id: string; name: string }[], absentIds: string[]) {
   const lines: string[] = []
   const sep = '----------------'
 
@@ -24,45 +27,54 @@ function buildContentLines(className: string, studentRecords: Map<string, { name
   const wordAccList: number[] = []
   const grammarAccList: number[] = []
 
-  studentRecords.forEach((data) => {
-    lines.push(`学生：${data.name}`)
+  for (const student of allStudents) {
+    lines.push(`学生：${student.name}`)
 
-    for (const r of data.records) {
-      totalTestCount++
-
-      const ws = r.wordScore
-      const wt = r.wordTotal
-      const gs = r.grammarScore
-      const gt = r.grammarTotal
-      const ga = r.grammarAccuracy
-
-      const wa = calcAcc(ws, wt)
-      if (wa != null) wordAccList.push(wa)
-
-      let gAcc = calcAcc(gs, gt)
-      if (gAcc != null) {
-        grammarAccList.push(gAcc)
-      } else if (ga != null) {
-        gAcc = ga
-        grammarAccList.push(ga)
-      }
-
-      const wordStr = ws != null && wt != null
-        ? `- 单词：${ws}/${wt}${wa != null ? `（正确率${wa}%）` : ''}`
-        : '- 单词：-'
-      lines.push(wordStr)
-
-      if (gs != null && gt != null) {
-        lines.push(`- 语法：${gs}/${gt}${gAcc != null ? `（正确率${gAcc}%）` : ''}`)
-      } else if (ga != null) {
-        lines.push(`- 语法：正确率${ga}%`)
+    if (absentIds.includes(student.id)) {
+      lines.push('- 状态：已请假')
+    } else {
+      const data = studentRecords.get(student.id)
+      if (!data || data.records.length === 0) {
+        lines.push('- 暂无小测记录')
       } else {
-        lines.push('- 语法：-')
+        for (const r of data.records) {
+          totalTestCount++
+
+          const ws = r.wordScore
+          const wt = r.wordTotal
+          const gs = r.grammarScore
+          const gt = r.grammarTotal
+          const ga = r.grammarAccuracy
+
+          const wa = calcAcc(ws, wt)
+          if (wa != null) wordAccList.push(wa)
+
+          let gAcc = calcAcc(gs, gt)
+          if (gAcc != null) {
+            grammarAccList.push(gAcc)
+          } else if (ga != null) {
+            gAcc = ga
+            grammarAccList.push(ga)
+          }
+
+          const wordStr = ws != null && wt != null
+            ? `- 单词：${ws}/${wt}${wa != null ? `（正确率${wa}%）` : ''}`
+            : '- 单词：-'
+          lines.push(wordStr)
+
+          if (gs != null && gt != null) {
+            lines.push(`- 语法：${gs}/${gt}${gAcc != null ? `（正确率${gAcc}%）` : ''}`)
+          } else if (ga != null) {
+            lines.push(`- 语法：正确率${ga}%`)
+          } else {
+            lines.push('- 语法：-')
+          }
+        }
       }
     }
 
     lines.push(sep)
-  })
+  }
 
   const avgWord = wordAccList.length > 0
     ? Math.round((wordAccList.reduce((a, b) => a + b, 0) / wordAccList.length) * 10) / 10
@@ -85,10 +97,10 @@ function downloadTxt(lines: string[], fileName: string) {
 }
 
 export async function exportQuizDocx(params: ExportParams): Promise<{ success: boolean; usedFallback?: boolean; fileName?: string }> {
-  const { className, studentRecords } = params
+  const { className, studentRecords, allStudents, absentIds } = params
   const dateStr = new Date().toISOString().slice(0, 10)
   const fileNameBase = `${className}-小测记录-${dateStr}`
-  const lines = buildContentLines(className, studentRecords)
+  const lines = buildContentLines(className, studentRecords, allStudents, absentIds)
 
   try {
     const children = lines.map((line) => {
