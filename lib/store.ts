@@ -455,7 +455,9 @@ export function getStudents(): Student[] {
 }
 
 export function getStudentsByClass(classId: string): Student[] {
-  return cache.students.filter((s) => s.classId === classId)
+  return cache.students
+    .filter((s) => s.classId === classId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 }
 
 export async function saveStudentAsync(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>): Promise<Student> {
