@@ -8,6 +8,7 @@ import ResourcesTab from '@/components/lms/resources-tab'
 import Link from 'next/link'
 import { Class, Student, ClassType, ClassSchedule } from '@/types'
 import { getClasses, getStudentsByClass, deleteStudent, getClassTypeLabel, getClassTypeColor, getStudents, getClassSchedules, saveClassSchedule, updateClassSchedule, deleteClassSchedule } from '@/lib/store'
+import StudentSortDropdown from '@/components/student-sort-dropdown'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import { useAuth } from '@/lib/auth-store'
@@ -26,6 +27,7 @@ export default function ClassDetailPage() {
   const [showCreateStudentModal, setShowCreateStudentModal] = useState(false)
   const [showImportStudentsModal, setShowImportStudentsModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'students' | 'records' | 'resources' | 'schedule'>('students')
+  const [, forceUpdate] = useState(0)
 
   useEffect(() => {
     const classId = params.id as string
@@ -36,6 +38,15 @@ export default function ClassDetailPage() {
       setStudents(getStudentsByClass(classId))
     }
   }, [params.id])
+
+  useEffect(() => {
+    const handler = () => {
+      forceUpdate(n => n + 1)
+      refreshStudents()
+    }
+    window.addEventListener('studentSortChanged', handler)
+    return () => window.removeEventListener('studentSortChanged', handler)
+  }, [])
 
   const refreshStudents = () => {
     const classId = params.id as string
@@ -163,7 +174,7 @@ export default function ClassDetailPage() {
         >
           {activeTab === 'students' ? (
             <>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
@@ -175,6 +186,7 @@ export default function ClassDetailPage() {
                   />
                 </div>
                 <div className="flex items-center flex-wrap gap-2">
+                  <StudentSortDropdown />
                   {canEdit && (
                     <button
                       onClick={() => setShowImportStudentsModal(true)}

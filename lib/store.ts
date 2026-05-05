@@ -450,14 +450,47 @@ export async function syncClassToTeachers(data: {
 
 // ========== 学生 (Students) ==========
 
+export type StudentSortBy = 'createdAt' | 'name_asc' | 'name_desc'
+let _studentSortBy: StudentSortBy = 'createdAt'
+
+export function getStudentSortBy(): StudentSortBy {
+  return _studentSortBy
+}
+
+export function setStudentSortBy(sortBy: StudentSortBy): void {
+  _studentSortBy = sortBy
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('studentSortChanged'))
+  }
+}
+
+function sortStudentsList(students: Student[], sortBy: StudentSortBy): Student[] {
+  const sorted = [...students]
+  switch (sortBy) {
+    case 'createdAt':
+      return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    case 'name_asc':
+      return sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+    case 'name_desc':
+      return sorted.sort((a, b) => b.name.localeCompare(a.name, 'zh-CN'))
+    default:
+      return sorted
+  }
+}
+
+export function sortStudents(students: Student[], sortBy?: StudentSortBy): Student[] {
+  return sortStudentsList(students, sortBy ?? _studentSortBy)
+}
+
 export function getStudents(): Student[] {
-  return cache.students
+  return sortStudentsList(cache.students, _studentSortBy)
 }
 
 export function getStudentsByClass(classId: string): Student[] {
-  return cache.students
-    .filter((s) => s.classId === classId)
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  return sortStudentsList(
+    cache.students.filter((s) => s.classId === classId),
+    _studentSortBy
+  )
 }
 
 export async function saveStudentAsync(data: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>): Promise<Student> {

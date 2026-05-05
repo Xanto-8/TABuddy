@@ -56,8 +56,16 @@ function getAvatarColor(id: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
 
+function getLocalDateString(d?: Date): string {
+  const date = d ?? new Date()
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function loadAllClassTodos(): ClassTodoData[] {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateString()
   // 主筛选：当天有排课的班级
   const scheduledClasses = getClasses().filter(
     (cls) => isScheduleDayForClass(cls.id, today)
@@ -95,7 +103,7 @@ function loadAllClassTodos(): ClassTodoData[] {
     const courseFeedbackCompletedCount = students.filter((s) => {
       const feedbacks = getFeedbackHistoryByStudent(s.id)
       return feedbacks.some((f) => {
-        const fDate = new Date(f.createdAt).toISOString().split('T')[0]
+        const fDate = getLocalDateString(new Date(f.createdAt))
         return fDate === today
       })
     }).length
@@ -166,7 +174,7 @@ function LeaveModal({
   className: string
   onConfirm: () => void
 }) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateString()
   const [students, setStudents] = useState<Student[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 

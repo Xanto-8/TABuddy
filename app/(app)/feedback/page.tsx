@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import { cn, formatFileSize } from '@/lib/utils'
 import { toast } from 'sonner'
+import StudentSortDropdown from '@/components/student-sort-dropdown'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FeedbackRecord,
@@ -519,11 +520,14 @@ export default function FeedbackPage() {
           <div className="lg:col-span-2 flex flex-col min-h-0">
             <div className="rounded-xl border border-border bg-card flex flex-col flex-1 min-h-0 overflow-hidden shadow-sm">
               <div className="px-4 py-3 border-b border-border bg-muted/30 shrink-0">
-                <h3 className="text-sm font-medium text-foreground flex items-center">
-                  <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                  学生列表
-                  <span className="ml-2 text-xs text-muted-foreground">({students.length})</span>
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-foreground flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                    学生列表
+                    <span className="ml-2 text-xs text-muted-foreground">({students.length})</span>
+                  </h3>
+                  <StudentSortDropdown />
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto max-h-[560px]">
                 {students.length === 0 ? (
