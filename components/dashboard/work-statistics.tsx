@@ -27,9 +27,9 @@ interface Props {
 }
 
 const statItems = [
-  { key: 'completedTasks' as const, label: '完成任务', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-orange-900/20' },
-  { key: 'gradedHomework' as const, label: '批改作业', icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-orange-900/20' },
-  { key: 'processedFeedback' as const, label: '处理反馈', icon: MessageSquare, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-orange-900/20' },
+  { key: 'completedTasks' as const, label: '完成任务', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-stone-100 dark:bg-orange-900/20' },
+  { key: 'gradedHomework' as const, label: '批改作业', icon: FileText, color: 'text-blue-500', bg: 'bg-slate-100 dark:bg-orange-900/20' },
+  { key: 'processedFeedback' as const, label: '处理反馈', icon: MessageSquare, color: 'text-purple-500', bg: 'bg-gray-100 dark:bg-orange-900/20' },
 ]
 
 export function WorkStatistics({ workStats, onRefresh }: Props) {

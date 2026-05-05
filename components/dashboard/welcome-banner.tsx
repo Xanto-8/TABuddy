@@ -106,15 +106,15 @@ export function WelcomeBanner({ data }: Props) {
               )}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm text-muted-foreground">今日课程</p>
-                  <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-indigo-600" />
+                  <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-slate-600" />
                   </div>
                 </div>
                 {todayCourseCount > 0 ? (
                   <>
                     <p className="text-xl font-bold text-foreground">今日共 {todayCourseCount} 节课</p>
                     {currentTeachingClass && (
-                      <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600">
+                      <div className="mt-2 flex items-center gap-1.5 text-xs text-stone-600">
                         <Clock className="h-3.5 w-3.5 shrink-0" />
                         <span>正在上课：{currentTeachingClass.name}（{remainingClassTime}）</span>
                       </div>
@@ -134,8 +134,8 @@ export function WelcomeBanner({ data }: Props) {
               )}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm text-muted-foreground">今日待收尾班级</p>
-                  <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <ListTodo className="h-5 w-5 text-emerald-600" />
+                  <div className="h-10 w-10 rounded-full bg-stone-100 flex items-center justify-center">
+                    <ListTodo className="h-5 w-5 text-stone-600" />
                   </div>
                 </div>
                 {pendingClassCount > 0 ? (
@@ -157,8 +157,8 @@ export function WelcomeBanner({ data }: Props) {
               )}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm text-muted-foreground">今日重点提醒</p>
-                  <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center">
-                    <Bell className="h-5 w-5 text-rose-600" />
+                  <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <Bell className="h-5 w-5 text-red-600" />
                   </div>
                 </div>
                 {currentTeachingClass ? (
@@ -224,7 +224,7 @@ export function WelcomeBanner({ data }: Props) {
                       className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-600 text-xs font-medium flex items-center justify-center shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 text-xs font-medium flex items-center justify-center shrink-0">
                           {i + 1}
                         </span>
                         <span className="text-sm font-medium text-foreground">{s.name}</span>

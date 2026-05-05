@@ -30,12 +30,12 @@ interface UserInfo {
 function getRoleStyle(role: string) {
   switch (role) {
     case 'superadmin':
-      return 'bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300 border-amber-200 dark:border-orange-800'
+      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-amber-200 dark:border-orange-800'
     case 'classadmin':
-      return 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300 border-blue-200 dark:border-orange-800'
+      return 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300 border-blue-200 dark:border-orange-800'
     case 'assistant':
     case 'student':
-      return 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300 border-green-200 dark:border-orange-800'
+      return 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300 border-green-200 dark:border-orange-800'
     default:
       return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800'
   }
@@ -52,8 +52,8 @@ function getRoleLabel(role: string) {
 
 function getIpVersion(ip: string): { label: string; color: string } | null {
   if (!ip || ip === '暂无' || ip === 'unknown') return null
-  if (ip.includes(':')) return { label: 'IPv6', color: 'bg-purple-100 text-purple-700 dark:bg-orange-900/30 dark:text-orange-300 border-purple-200 dark:border-orange-800' }
-  return { label: 'IPv4', color: 'bg-cyan-100 text-cyan-700 dark:bg-orange-900/30 dark:text-orange-300 border-cyan-200 dark:border-orange-800' }
+  if (ip.includes(':')) return { label: 'IPv6', color: 'bg-gray-100 text-gray-700 dark:bg-orange-900/30 dark:text-orange-300 border-purple-200 dark:border-orange-800' }
+  return { label: 'IPv4', color: 'bg-slate-100 text-cyan-700 dark:bg-orange-900/30 dark:text-orange-300 border-cyan-200 dark:border-orange-800' }
 }
 
 function timeAgo(dateStr: string | null): string {
@@ -229,7 +229,7 @@ export default function AdminUsersPage() {
   function onlineText(lastActiveAt: string | null): { label: string; color: string; dot: string } {
     const online = isOnline(lastActiveAt)
     if (online) {
-      return { label: '在线', color: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300 border-green-200 dark:border-orange-800', dot: 'bg-green-500' }
+      return { label: '在线', color: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300 border-green-200 dark:border-orange-800', dot: 'bg-stone-1000' }
     }
     if (!lastActiveAt) {
       return { label: '从未上线', color: 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400 border-gray-200 dark:border-gray-800', dot: 'bg-gray-300' }
@@ -255,7 +255,7 @@ export default function AdminUsersPage() {
             <Ban className="w-3.5 h-3.5" />
             封禁IP管理
           </Link>
-          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300 border border-amber-200 dark:border-orange-800">
+          <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-amber-200 dark:border-orange-800">
             <Shield className="w-3 h-3 inline mr-0.5" />
             超级管理员
           </span>
@@ -263,7 +263,7 @@ export default function AdminUsersPage() {
       </div>
 
       {message && (
-        <div className={`animate-slide-in p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-red-100 text-red-800 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+        <div className={`animate-slide-in p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-stone-100 text-green-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-red-100 text-red-800 dark:bg-orange-900/30 dark:text-orange-300'}`}>
           {message.type === 'success' ? <Check className="w-4 h-4 inline mr-1" /> : <X className="w-4 h-4 inline mr-1" />}
           {message.text}
         </div>
@@ -345,7 +345,7 @@ export default function AdminUsersPage() {
                     <span className="text-muted-foreground shrink-0">最后活跃:</span>
                     <span className="text-xs">{u.lastActiveAt ? timeAgo(u.lastActiveAt) : '从未'}</span>
                     {u.lastActiveAt && (
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${isOnline(u.lastActiveAt) ? 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400'}`}>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${isOnline(u.lastActiveAt) ? 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-900/30 dark:text-gray-400'}`}>
                         {isOnline(u.lastActiveAt) ? '在线' : '离线'}
                       </span>
                     )}

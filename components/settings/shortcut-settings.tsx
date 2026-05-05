@@ -148,11 +148,11 @@ function RecordingOverlay({
         </div>
 
         {conflict && (
-          <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-50 dark:bg-orange-900/20 border border-amber-200 dark:border-orange-800">
-            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-orange-300 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-amber-200 dark:border-orange-800">
+            <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-orange-300">检测到浏览器默认快捷键冲突</p>
-              <p className="text-xs text-amber-700 dark:text-orange-300 mt-0.5">
+              <p className="text-sm font-medium text-orange-800 dark:text-orange-300">检测到浏览器默认快捷键冲突</p>
+              <p className="text-xs text-orange-700 dark:text-orange-300 mt-0.5">
                 {conflict.label} 是浏览器的默认快捷键，强制覆盖可能导致功能冲突。
               </p>
             </div>

@@ -355,7 +355,7 @@ export function FocusTimer({ defaultMinutes = 25, className }: FocusTimerProps) 
               'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium',
               'transition-all duration-200 active:scale-95 hover:scale-[1.03]',
               isRunning
-                ? 'bg-amber-500/20 text-amber-600 dark:text-orange-300 border border-amber-500/30 hover:bg-amber-500/30'
+                ? 'bg-orange-500/20 text-orange-600 dark:text-orange-300 border border-amber-500/30 hover:bg-orange-500/30'
                 : 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30'
             )}
           >

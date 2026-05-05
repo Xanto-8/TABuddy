@@ -21,7 +21,7 @@ const defaultActions = [
     title: '新建任务',
     description: '添加待办事项',
     icon: Plus,
-    color: 'bg-blue-500',
+    color: 'bg-slate-1000',
     href: '/tasks',
   },
   {
@@ -29,7 +29,7 @@ const defaultActions = [
     title: '批改作业',
     description: '评估学生作业',
     icon: FileText,
-    color: 'bg-green-500',
+    color: 'bg-stone-1000',
     href: '/homework',
   },
   {
@@ -37,7 +37,7 @@ const defaultActions = [
     title: '上传小测',
     description: '批量处理照片',
     icon: Camera,
-    color: 'bg-purple-500',
+    color: 'bg-gray-1000',
     href: '/quizzes',
   },
   {
@@ -53,7 +53,7 @@ const defaultActions = [
     title: '添加资源',
     description: '收藏教学资料',
     icon: LinkIcon,
-    color: 'bg-amber-500',
+    color: 'bg-orange-500',
     href: '/resources',
   },
   {
@@ -61,7 +61,7 @@ const defaultActions = [
     title: '一键导出',
     description: '生成报告',
     icon: Upload,
-    color: 'bg-indigo-500',
+    color: 'bg-slate-1000',
     href: '/push-logs',
   },
 ]
@@ -109,8 +109,8 @@ export function QuickActions({ data }: Props) {
       </div>
 
       {hasPendingTodos && (
-        <div className="mb-4 px-3 py-2 rounded-lg bg-amber-50 dark:bg-orange-900/20 border border-amber-200 dark:border-orange-800">
-          <p className="text-xs text-amber-700 dark:text-orange-300">
+        <div className="mb-4 px-3 py-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-amber-200 dark:border-orange-800">
+          <p className="text-xs text-orange-700 dark:text-orange-300">
             还有 <strong>{coreStats.todayTasks.total - coreStats.todayTasks.completed}</strong> 项待办未完成
           </p>
         </div>

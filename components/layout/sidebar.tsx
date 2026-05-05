@@ -202,7 +202,7 @@ function BottomSection({ expanded, onManualToggle }: { expanded: boolean; onManu
         >
           <div className="relative shrink-0">
             <Download size={16} />
-            <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-green-500" />
+            <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-stone-1000" />
           </div>
           <span className="truncate">下载客户端</span>
         </div>

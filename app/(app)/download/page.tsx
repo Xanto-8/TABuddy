@@ -54,7 +54,7 @@ export default function DownloadPage() {
                     <h2 className="text-xl font-bold text-foreground">TABuddy 桌面客户端</h2>
                     <div className="mt-1 flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">v1.0.0</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 font-medium">最新版本</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-stone-1000/10 text-green-500 font-medium">最新版本</span>
                     </div>
                     <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
                       专为 Windows 打造的桌面客户端，支持桌面通知、系统托盘、全局快捷键等高级功能，带来更高效的办公体验。

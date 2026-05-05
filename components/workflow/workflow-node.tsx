@@ -10,23 +10,23 @@ import { WORKFLOW_NODE_LABELS, WORKFLOW_NODE_ICONS } from '@/types'
 import { cn } from '@/lib/utils'
 
 const NODE_COLORS: Record<string, { bg: string; border: string; dot: string }> = {
-  grade_homework: { bg: 'from-blue-50 to-blue-100/50', border: 'border-blue-200', dot: 'bg-blue-500' },
-  homework_feedback: { bg: 'from-emerald-50 to-emerald-100/50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-  grade_quiz: { bg: 'from-violet-50 to-violet-100/50', border: 'border-violet-200', dot: 'bg-violet-500' },
-  quiz_analysis: { bg: 'from-amber-50 to-amber-100/50', border: 'border-amber-200', dot: 'bg-amber-500' },
-  course_feedback: { bg: 'from-rose-50 to-rose-100/50', border: 'border-rose-200', dot: 'bg-rose-500' },
-  send_content: { bg: 'from-cyan-50 to-cyan-100/50', border: 'border-cyan-200', dot: 'bg-cyan-500' },
+  grade_homework: { bg: 'from-blue-50 to-blue-100/50', border: 'border-blue-200', dot: 'bg-slate-1000' },
+  homework_feedback: { bg: 'from-emerald-50 to-emerald-100/50', border: 'border-emerald-200', dot: 'bg-stone-1000' },
+  grade_quiz: { bg: 'from-violet-50 to-violet-100/50', border: 'border-violet-200', dot: 'bg-gray-1000' },
+  quiz_analysis: { bg: 'from-amber-50 to-amber-100/50', border: 'border-amber-200', dot: 'bg-orange-500' },
+  course_feedback: { bg: 'from-rose-50 to-rose-100/50', border: 'border-rose-200', dot: 'bg-red-500' },
+  send_content: { bg: 'from-cyan-50 to-cyan-100/50', border: 'border-cyan-200', dot: 'bg-slate-1000' },
   send_homework: { bg: 'from-orange-50 to-orange-100/50', border: 'border-orange-200', dot: 'bg-orange-500' },
-  sync_quiz: { bg: 'from-purple-50 to-purple-100/50', border: 'border-purple-200', dot: 'bg-purple-500' },
+  sync_quiz: { bg: 'from-purple-50 to-purple-100/50', border: 'border-purple-200', dot: 'bg-gray-1000' },
   retest_list: { bg: 'from-red-50 to-red-100/50', border: 'border-red-200', dot: 'bg-red-500' },
   custom: { bg: 'from-gray-50 to-gray-100/50', border: 'border-gray-300', dot: 'bg-gray-500' },
 }
 
 const CUSTOM_AVATAR_COLORS = [
   { bg: 'from-pink-50 to-pink-100/50', border: 'border-pink-200', dot: 'bg-pink-500' },
-  { bg: 'from-teal-50 to-teal-100/50', border: 'border-teal-200', dot: 'bg-teal-500' },
-  { bg: 'from-indigo-50 to-indigo-100/50', border: 'border-indigo-200', dot: 'bg-indigo-500' },
-  { bg: 'from-sky-50 to-sky-100/50', border: 'border-sky-200', dot: 'bg-sky-500' },
+  { bg: 'from-teal-50 to-teal-100/50', border: 'border-teal-200', dot: 'bg-stone-1000' },
+  { bg: 'from-indigo-50 to-indigo-100/50', border: 'border-indigo-200', dot: 'bg-slate-1000' },
+  { bg: 'from-sky-50 to-sky-100/50', border: 'border-sky-200', dot: 'bg-slate-1000' },
   { bg: 'from-lime-50 to-lime-100/50', border: 'border-lime-200', dot: 'bg-lime-500' },
   { bg: 'from-yellow-50 to-yellow-100/50', border: 'border-yellow-200', dot: 'bg-yellow-500' },
 ]
@@ -104,7 +104,7 @@ export function WorkflowNode({
 
         {node.nodeCategory === 'optional' && (
           <div className="absolute -top-2.5 left-3 z-10">
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 shadow-sm">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-amber-200 shadow-sm">
               可选
             </span>
           </div>
@@ -150,7 +150,7 @@ export function WorkflowNode({
               onClick={(e) => { e.stopPropagation(); onEdit(node.id) }}
               className={cn(
                 'p-1.5 rounded-lg transition-all duration-200',
-                'text-gray-400 hover:bg-indigo-50 hover:text-indigo-500'
+                'text-gray-400 hover:bg-slate-100 hover:text-indigo-500'
               )}
               title="编辑节点"
             >
@@ -162,7 +162,7 @@ export function WorkflowNode({
               className={cn(
                 'p-1.5 rounded-lg transition-all duration-200',
                 node.enabled
-                  ? 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600'
+                  ? 'text-emerald-500 hover:bg-stone-100 hover:text-stone-600'
                   : 'text-gray-300 hover:bg-gray-100 hover:text-gray-400'
               )}
               title={node.enabled ? '关闭此节点' : '开启此节点'}

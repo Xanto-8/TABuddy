@@ -270,21 +270,21 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
         'flex items-center gap-3 p-3 rounded-xl border transition-all',
         'cursor-context-menu',
         isEnded && 'bg-muted/30 border-border/50 opacity-60',
-        isInProgress && 'bg-green-50 dark:bg-orange-900/20 border-green-200 dark:border-orange-700 shadow-sm',
+        isInProgress && 'bg-stone-100 dark:bg-orange-900/20 border-green-200 dark:border-orange-700 shadow-sm',
         !isEnded && !isInProgress && 'bg-card border-border hover:border-muted-foreground/20'
       )}
     >
       <div className={cn(
         'shrink-0 w-10 h-10 rounded-xl flex items-center justify-center',
         isEnded && 'bg-muted/50',
-        isInProgress && 'bg-green-100 dark:bg-orange-800/30',
-        !isEnded && !isInProgress && 'bg-indigo-100 dark:bg-orange-900/20'
+        isInProgress && 'bg-stone-100 dark:bg-orange-800/30',
+        !isEnded && !isInProgress && 'bg-slate-100 dark:bg-orange-900/20'
       )}>
         <span className={cn(
           'text-sm font-bold',
           isEnded && 'text-muted-foreground',
-          isInProgress && 'text-green-700 dark:text-orange-300',
-          !isEnded && !isInProgress && 'text-indigo-600 dark:text-orange-300'
+          isInProgress && 'text-stone-700 dark:text-orange-300',
+          !isEnded && !isInProgress && 'text-slate-600 dark:text-orange-300'
         )}>
           {course.startTime.split(':')[0]}
         </span>
@@ -299,7 +299,7 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); onClassNameClick?.() }}
-            className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-orange-900/30 text-indigo-600 dark:text-orange-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer"
+            className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-orange-900/30 text-slate-600 dark:text-orange-300 hover:bg-slate-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer"
           >
             {course.classTypeLabel}
           </button>
@@ -314,7 +314,7 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
             </span>
           )}
           {!isEnded && !isInProgress && (
-            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-orange-900/20 text-blue-600 dark:text-orange-300">
+            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-orange-900/20 text-slate-600 dark:text-orange-300">
               课程暂未开始
             </span>
           )}
@@ -328,7 +328,7 @@ function CourseRow({ course, status, checkedIn, remainingTime, onCheckIn, onCont
             {course.startTime} - {course.endTime}
           </span>
           {isInProgress && remainingTime && (
-            <span className="text-[10px] font-mono font-bold text-green-600 dark:text-orange-300 tabular-nums">
+            <span className="text-[10px] font-mono font-bold text-stone-600 dark:text-orange-300 tabular-nums">
               剩余 {remainingTime}
             </span>
           )}
@@ -512,8 +512,8 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
       <div className="p-5">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-indigo-100 dark:bg-orange-900/20">
-            <CalendarDays className="h-5 w-5 text-indigo-600" />
+          <div className="p-2 rounded-lg bg-slate-100 dark:bg-orange-900/20">
+            <CalendarDays className="h-5 w-5 text-slate-600" />
           </div>
           <h3 className="font-semibold text-foreground">我的课表</h3>
         </div>
@@ -630,7 +630,7 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                             {formatDate(date)} 周{getDayOfWeek(date)}
                           </span>
                           {date === todayStr && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-orange-900/20 text-blue-600 dark:text-orange-300">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-orange-900/20 text-slate-600 dark:text-orange-300">
                               今天
                             </span>
                           )}
@@ -649,15 +649,15 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                               >
                                 <div className={cn(
                                   'w-2 h-2 rounded-full shrink-0',
-                                  checkedIn ? 'bg-emerald-500' : 'bg-red-500'
+                                  checkedIn ? 'bg-stone-1000' : 'bg-red-500'
                                 )} />
-                                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-orange-900/20 flex items-center justify-center shrink-0">
-                                  <Clock className="h-3.5 w-3.5 text-indigo-600 dark:text-orange-300" />
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-orange-900/20 flex items-center justify-center shrink-0">
+                                  <Clock className="h-3.5 w-3.5 text-slate-600 dark:text-orange-300" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-xs font-semibold text-foreground">{course.courseName}</span>
-                                    <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-indigo-50 dark:bg-orange-900/30 text-indigo-600 dark:text-orange-300">
+                                    <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-slate-100 dark:bg-orange-900/30 text-slate-600 dark:text-orange-300">
                                       {course.className}
                                     </span>
                                   </div>
@@ -667,11 +667,11 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                                 </div>
                                 <span className={cn(
                                   'text-[10px] font-medium flex items-center gap-1',
-                                  checkedIn ? 'text-emerald-600' : 'text-red-500'
+                                  checkedIn ? 'text-stone-600' : 'text-red-500'
                                 )}>
                                   <span className={cn(
                                     'w-1.5 h-1.5 rounded-full',
-                                    checkedIn ? 'bg-emerald-500' : 'bg-red-500'
+                                    checkedIn ? 'bg-stone-1000' : 'bg-red-500'
                                   )} />
                                   {checkedIn ? '已打卡' : '未打卡'}
                                 </span>
@@ -761,13 +761,13 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
                               className={cn(
                                 'flex items-center gap-0.5 text-[8px] leading-tight rounded-sm px-0.5 cursor-context-menu',
                                 checkedIn
-                                  ? 'bg-emerald-50 dark:bg-orange-900/30 text-emerald-700 dark:text-orange-300'
+                                  ? 'bg-stone-100 dark:bg-orange-900/30 text-stone-700 dark:text-orange-300'
                                   : 'bg-red-50 dark:bg-orange-900/30 text-red-600 dark:text-orange-300'
                               )}
                             >
                               <span className={cn(
                                 'w-1 h-1 rounded-full shrink-0',
-                                checkedIn ? 'bg-emerald-500' : 'bg-red-400'
+                                checkedIn ? 'bg-stone-1000' : 'bg-red-400'
                               )} />
                               <span className="truncate">{course.className}</span>
                             </div>
@@ -782,7 +782,7 @@ export function ScheduleAttendanceCard({ className }: { className?: string }) {
 
             <div className="mt-3 flex items-center gap-3 text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> 已打卡
+                <span className="w-1.5 h-1.5 rounded-full bg-stone-1000" /> 已打卡
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> 未打卡

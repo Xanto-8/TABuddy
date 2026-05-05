@@ -35,22 +35,22 @@ const TYPE_CONFIG: Record<KnowledgeEntry['type'], { label: string; icon: React.R
   link: {
     label: '链接',
     icon: <LinkIcon className="w-3.5 h-3.5" />,
-    color: 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
   template: {
     label: '模板',
     icon: <FileText className="w-3.5 h-3.5" />,
-    color: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
   document: {
     label: '文档',
     icon: <BookOpen className="w-3.5 h-3.5" />,
-    color: 'bg-purple-100 text-purple-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-gray-100 text-gray-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
   info: {
     label: '信息',
     icon: <Info className="w-3.5 h-3.5" />,
-    color: 'bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
   },
 }
 

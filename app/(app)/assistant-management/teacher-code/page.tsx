@@ -93,8 +93,8 @@ export default function TeacherCodeManagementPage() {
     <PageContainer>
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-            <KeyRound className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <KeyRound className="w-5 h-5 text-stone-600 dark:text-emerald-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">老师注册码</h1>
@@ -104,12 +104,12 @@ export default function TeacherCodeManagementPage() {
           </div>
         </div>
 
-        <div className="p-5 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 mb-6">
+        <div className="p-5 rounded-xl border border-amber-200 bg-orange-50 dark:border-amber-800 dark:bg-amber-900/20 mb-6">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">使用说明</h3>
-              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+              <h3 className="text-sm font-semibold text-orange-800 dark:text-amber-300">使用说明</h3>
+              <p className="text-xs text-orange-700 dark:text-amber-400 mt-1 leading-relaxed">
                 新老师在注册页面选择「任课老师」身份，输入此注册码即可完成注册，账号自动成为<strong>班级管理员</strong>。
                 注册码可<strong>多人重复使用</strong>，不会一次性失效。如需更换，点击「重置注册码」即可生成新的码，旧码自动失效。
               </p>
@@ -166,15 +166,15 @@ export default function TeacherCodeManagementPage() {
               </div>
             ) : (
               <div className="flex items-center gap-4 p-5 rounded-xl border border-emerald-200 bg-white dark:border-emerald-800 dark:bg-emerald-950/20 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
-                  <CheckCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                  <CheckCheck className="w-6 h-6 text-stone-600 dark:text-emerald-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-2xl font-mono font-bold tracking-[0.25em] text-emerald-700 dark:text-emerald-300">
+                    <span className="text-2xl font-mono font-bold tracking-[0.25em] text-stone-700 dark:text-emerald-300">
                       {activeCode.code}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-emerald-900/40 dark:text-emerald-400">
                       已启用
                     </span>
                   </div>
@@ -186,7 +186,7 @@ export default function TeacherCodeManagementPage() {
                 <button
                   type="button"
                   onClick={() => handleCopy(activeCode.code)}
-                  className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 transition-colors border-none cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-lg text-stone-700 bg-stone-100 hover:bg-stone-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 transition-colors border-none cursor-pointer"
                 >
                   {copied ? (
                     <CheckCheck className="w-3.5 h-3.5" />

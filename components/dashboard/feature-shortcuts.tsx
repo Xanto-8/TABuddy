@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { Zap, GraduationCap, FileText, ClipboardList, MessageSquare, BookOpen } from 'lucide-react'
 
 const shortcuts = [
-  { icon: GraduationCap, label: '班级管理', href: '/classes', color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-orange-900/20' },
-  { icon: FileText, label: '作业管理', href: '/homework', color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-orange-900/20' },
-  { icon: ClipboardList, label: '随堂测验', href: '/quizzes', color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-orange-900/20' },
-  { icon: MessageSquare, label: '反馈管理', href: '/feedback', color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-orange-900/20' },
-  { icon: BookOpen, label: '教学资源', href: '/resources', color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-orange-900/20' },
+  { icon: GraduationCap, label: '班级管理', href: '/classes', color: 'text-blue-500', bg: 'bg-slate-100 dark:bg-orange-900/20' },
+  { icon: FileText, label: '作业管理', href: '/homework', color: 'text-emerald-500', bg: 'bg-stone-100 dark:bg-orange-900/20' },
+  { icon: ClipboardList, label: '随堂测验', href: '/quizzes', color: 'text-purple-500', bg: 'bg-gray-100 dark:bg-orange-900/20' },
+  { icon: MessageSquare, label: '反馈管理', href: '/feedback', color: 'text-amber-500', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+  { icon: BookOpen, label: '教学资源', href: '/resources', color: 'text-rose-500', bg: 'bg-red-50 dark:bg-orange-900/20' },
 ]
 
 export function FeatureShortcuts() {

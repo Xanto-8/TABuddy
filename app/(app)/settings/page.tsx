@@ -16,12 +16,12 @@ function getColor(name?: string) {
   const colors = [
     'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
-    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    'bg-orange-100 text-orange-700 dark:bg-amber-900/30 dark:text-amber-400',
+    'bg-stone-100 text-stone-700 dark:bg-green-900/30 dark:text-green-400',
+    'bg-stone-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+    'bg-slate-100 text-slate-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'bg-slate-100 text-slate-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+    'bg-gray-100 text-gray-700 dark:bg-purple-900/30 dark:text-purple-400',
     'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
   ]
   let hash = 0
@@ -187,7 +187,7 @@ function ProfileSettings({ user }: { user: NonNullable<ReturnType<typeof useAuth
         <div
           className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm ${
             message.type === 'success'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+              ? 'bg-stone-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
               : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
           }`}
         >

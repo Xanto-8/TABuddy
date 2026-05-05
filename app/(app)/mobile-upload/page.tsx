@@ -283,7 +283,7 @@ export default function MobileUploadPage() {
       <div className="flex-1 flex flex-col px-4 pt-6 pb-4">
         {uploaded.length > 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-5">
+            <div className="w-20 h-20 rounded-full bg-stone-1000/20 flex items-center justify-center mb-5">
               <CheckCircle className="h-10 w-10 text-green-400" />
             </div>
             <h2 className="text-xl font-semibold mb-2">上传成功!</h2>
@@ -317,7 +317,7 @@ export default function MobileUploadPage() {
                   <div className="space-y-3">
                     <button
                       onClick={() => cameraInputRef.current?.click()}
-                      className="inline-flex items-center justify-center w-full px-6 py-4 rounded-xl bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors text-base font-medium"
+                      className="inline-flex items-center justify-center w-full px-6 py-4 rounded-xl bg-slate-1000 hover:bg-blue-600 active:bg-blue-700 transition-colors text-base font-medium"
                     >
                       <Camera className="h-5 w-5 mr-2.5" />
                       拍照
@@ -387,7 +387,7 @@ export default function MobileUploadPage() {
                     <button
                       onClick={uploadPhotos}
                       disabled={uploading}
-                      className="inline-flex items-center justify-center w-full px-4 py-3.5 rounded-xl bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                      className="inline-flex items-center justify-center w-full px-4 py-3.5 rounded-xl bg-slate-1000 hover:bg-blue-600 active:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                     >
                       {uploading ? (
                         <span className="inline-flex items-center">

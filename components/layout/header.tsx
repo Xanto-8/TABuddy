@@ -176,7 +176,7 @@ export function Header() {
                         <Shield className="h-5 w-5 text-white" />
                       </div>
                     )}
-                    <div className={`absolute -bottom-1 -right-1 h-3 w-3 md:h-4 md:w-4 rounded-full border-2 border-background ${userOnline ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-500'}`} />
+                    <div className={`absolute -bottom-1 -right-1 h-3 w-3 md:h-4 md:w-4 rounded-full border-2 border-background ${userOnline ? 'bg-stone-1000' : 'bg-gray-300 dark:bg-gray-500'}`} />
                   </div>
                   <ChevronDown className={cn('hidden md:block h-4 w-4 text-muted-foreground transition-transform', dropdownOpen && 'rotate-180')} />
                 </button>
@@ -473,9 +473,9 @@ function SwitchAccountModal({
                 <div className={cn(
                   'h-10 w-10 rounded-full flex items-center justify-center shrink-0',
                   account.role === 'superadmin'
-                    ? 'bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300'
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
                     : account.role === 'classadmin'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300'
+                    ? 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300'
                     : 'bg-gradient-to-r from-primary to-secondary text-white'
                 )}>
                   {account.role === 'superadmin' ? <Shield className="w-5 h-5" /> : <User className="w-5 h-5" />}
@@ -490,12 +490,12 @@ function SwitchAccountModal({
                       </span>
                     )}
                     {account.role === 'superadmin' && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300 shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 shrink-0">
                         超级管理员
                       </span>
                     )}
                     {account.role === 'classadmin' && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300 shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300 shrink-0">
                         班级管理员
                       </span>
                     )}

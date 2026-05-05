@@ -33,8 +33,8 @@ export function UpcomingDeadlines({ data }: Props) {
   const getDeadlineStatus = (daysUntilDue: number) => {
     if (daysUntilDue <= 0) return { label: '已截止', color: 'text-red-600', bg: 'bg-red-50 dark:bg-orange-900/20', border: 'border-red-200 dark:border-orange-800', icon: AlertCircle }
     if (daysUntilDue <= 1) return { label: '紧急', color: 'text-red-600', bg: 'bg-red-50 dark:bg-orange-900/20', border: 'border-red-200 dark:border-orange-800', icon: AlertTriangle }
-    if (daysUntilDue <= 3) return { label: '即将截止', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-orange-900/20', border: 'border-amber-200 dark:border-orange-800', icon: Clock }
-    return { label: '进行中', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-orange-900/20', border: 'border-blue-200 dark:border-orange-800', icon: Calendar }
+    if (daysUntilDue <= 3) return { label: '即将截止', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-amber-200 dark:border-orange-800', icon: Clock }
+    return { label: '进行中', color: 'text-slate-600', bg: 'bg-slate-100 dark:bg-orange-900/20', border: 'border-blue-200 dark:border-orange-800', icon: Calendar }
   }
 
   return (
@@ -134,7 +134,7 @@ export function UpcomingDeadlines({ data }: Props) {
 
                   <button
                     onClick={() => handleQuickComplete(task.id)}
-                    className="shrink-0 p-2 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/20 text-green-600 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                    className="shrink-0 p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-green-900/20 text-stone-600 opacity-0 group-hover:opacity-100 transition-all duration-200"
                     title="标记完成"
                   >
                     <CheckCircle2 className="h-4 w-4" />

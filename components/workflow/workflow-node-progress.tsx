@@ -150,8 +150,8 @@ export function WorkflowNodeProgress() {
     return (
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-green-100">
-            <GitBranch size={20} className="text-green-600" />
+          <div className="p-2 rounded-lg bg-stone-100">
+            <GitBranch size={20} className="text-stone-600" />
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-sm">课中工作流</h3>
@@ -170,8 +170,8 @@ export function WorkflowNodeProgress() {
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-green-100">
-            <GitBranch size={20} className="text-green-600" />
+          <div className="p-2 rounded-lg bg-stone-100">
+            <GitBranch size={20} className="text-stone-600" />
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-sm">
@@ -204,7 +204,7 @@ export function WorkflowNodeProgress() {
               className={cn(
                 'shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200',
                 selectedCourse?.id === course.id
-                  ? 'bg-green-50 border-green-200 text-green-700 dark:bg-orange-900/30 dark:border-orange-700/50 dark:text-orange-300'
+                  ? 'bg-stone-100 border-green-200 text-stone-700 dark:bg-orange-900/30 dark:border-orange-700/50 dark:text-orange-300'
                   : 'bg-card border-border text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground'
               )}
             >
@@ -258,7 +258,7 @@ export function WorkflowNodeProgress() {
                         {isCompleted ? (
                           <CheckCircle size={20} className="text-green-500" />
                         ) : (
-                          <Circle size={20} className="text-green-500 hover:text-green-600 transition-colors" />
+                          <Circle size={20} className="text-green-500 hover:text-stone-600 transition-colors" />
                         )}
                       </button>
                     </div>
@@ -268,7 +268,7 @@ export function WorkflowNodeProgress() {
                         'text-sm font-medium flex items-center gap-1.5',
                         isCompleted
                           ? 'text-muted-foreground/60'
-                          : 'text-green-700 dark:text-orange-300'
+                          : 'text-stone-700 dark:text-orange-300'
                       )}>
                         <span className={cn('text-base', isCompleted && 'opacity-40')}>
                           {WORKFLOW_NODE_ICONS[node.type]}
@@ -286,8 +286,8 @@ export function WorkflowNodeProgress() {
                           isCompleted
                             ? 'bg-muted/50 text-muted-foreground/60 border border-border pointer-events-none'
                             : isActivating
-                              ? 'bg-green-100 text-green-400 cursor-wait'
-                              : 'bg-green-500 text-white hover:bg-green-600 active:bg-green-700 shadow-sm'
+                              ? 'bg-stone-100 text-green-400 cursor-wait'
+                              : 'bg-stone-1000 text-white hover:bg-green-600 active:bg-green-700 shadow-sm'
                         )}
                       >
                         {isCompleted ? (

@@ -110,15 +110,15 @@ export function AtRiskStudentsPanel() {
 
   const tagStyles = {
     word: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800',
-    grammar: 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300 border-blue-200 dark:border-orange-800',
+    grammar: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300 border-blue-200 dark:border-orange-800',
     both: 'bg-red-100 text-red-700 dark:bg-orange-900/30 dark:text-orange-300 border-red-200 dark:border-orange-800',
   }
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 mb-5">
-        <div className="p-2 rounded-lg bg-rose-100 dark:bg-orange-900/20">
-          <Star className="h-5 w-5 text-rose-600" />
+        <div className="p-2 rounded-lg bg-red-100 dark:bg-orange-900/20">
+          <Star className="h-5 w-5 text-red-600" />
         </div>
         <div>
           <h3 className="font-semibold text-foreground text-sm">重点学生关注面板</h3>

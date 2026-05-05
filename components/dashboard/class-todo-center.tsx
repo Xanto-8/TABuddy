@@ -43,8 +43,8 @@ interface ClassTodoData {
 }
 
 const AVATAR_COLORS = [
-  'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500',
-  'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-teal-500',
+  'bg-slate-1000', 'bg-stone-1000', 'bg-gray-1000', 'bg-orange-500',
+  'bg-red-500', 'bg-slate-1000', 'bg-slate-1000', 'bg-stone-1000',
   'bg-orange-500', 'bg-pink-500',
 ]
 
@@ -241,7 +241,7 @@ function LeaveModal({
                   className={cn(
                     'flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer',
                     selectedIds.includes(student.id)
-                      ? 'border-indigo-200 bg-indigo-50/60 dark:border-orange-500/30 dark:bg-orange-900/30'
+                      ? 'border-indigo-200 bg-slate-100/60 dark:border-orange-500/30 dark:bg-orange-900/30'
                       : 'border-border hover:border-muted-foreground/30 hover:bg-accent/50'
                   )}
                 >
@@ -249,7 +249,7 @@ function LeaveModal({
                     type="checkbox"
                     checked={selectedIds.includes(student.id)}
                     onChange={() => toggleStudent(student.id)}
-                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="w-4 h-4 rounded border-gray-300 text-slate-600 focus:ring-indigo-500"
                   />
                   <div className={cn(
                     'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0',
@@ -269,7 +269,7 @@ function LeaveModal({
             <div className="flex gap-3">
               <button
                 onClick={selectAll}
-                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                className="text-xs text-slate-600 hover:text-slate-700 font-medium transition-colors"
               >
                 全选
               </button>
@@ -281,8 +281,8 @@ function LeaveModal({
               </button>
             </div>
             <span className="text-xs text-muted-foreground">
-              已勾选<span className="font-semibold text-indigo-600 mx-1">{selectedIds.length}</span>
-              名请假学生，作业/小测待办将扣减<span className="font-semibold text-indigo-600 mx-1">{selectedIds.length}</span>项
+              已勾选<span className="font-semibold text-slate-600 mx-1">{selectedIds.length}</span>
+              名请假学生，作业/小测待办将扣减<span className="font-semibold text-slate-600 mx-1">{selectedIds.length}</span>项
             </span>
           </div>
           <button
@@ -364,14 +364,14 @@ function ClassTodoCard({
           </div>
           <div className="shrink-0">
             {allComplete ? (
-              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-orange-900/30 border border-emerald-200 dark:border-orange-900/50">
+              <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-orange-900/30 border border-emerald-200 dark:border-orange-900/50">
                 <span className="text-xs">✅</span>
-                <span className="text-xs font-medium text-emerald-600">已全部完成</span>
+                <span className="text-xs font-medium text-stone-600">已全部完成</span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-orange-950/40 dark:to-orange-950/40 border border-amber-200 dark:border-orange-900/50 shadow-sm">
                 <Clock size={14} className="text-amber-500" />
-                <span className="text-lg font-bold text-amber-600">{item.totalPending}</span>
+                <span className="text-lg font-bold text-orange-600">{item.totalPending}</span>
                 <span className="text-xs text-amber-500 font-medium">待处理</span>
               </div>
             )}
@@ -384,28 +384,28 @@ function ClassTodoCard({
           'grid grid-cols-3 gap-2',
           allComplete && 'opacity-40'
         )}>
-          <div className="text-center p-2 rounded-lg bg-blue-50/50 dark:bg-orange-900/30 border border-blue-100 dark:border-orange-900/50">
+          <div className="text-center p-2 rounded-lg bg-slate-100/50 dark:bg-orange-900/30 border border-blue-100 dark:border-orange-900/50">
             <p className={cn(
               'text-sm font-bold',
-              item.core.homeworkPending > 0 ? 'text-blue-600' : 'text-gray-400'
+              item.core.homeworkPending > 0 ? 'text-slate-600' : 'text-gray-400'
             )}>
               {item.core.homeworkPending}
             </p>
             <p className="text-[10px] text-muted-foreground leading-tight">作业反馈</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-purple-50/50 dark:bg-orange-900/30 border border-purple-100 dark:border-orange-900/50">
+          <div className="text-center p-2 rounded-lg bg-gray-100/50 dark:bg-orange-900/30 border border-purple-100 dark:border-orange-900/50">
             <p className={cn(
               'text-sm font-bold',
-              item.core.quizPending > 0 ? 'text-purple-600' : 'text-gray-400'
+              item.core.quizPending > 0 ? 'text-gray-600' : 'text-gray-400'
             )}>
               {item.core.quizPending}
             </p>
             <p className="text-[10px] text-muted-foreground leading-tight">小测反馈</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-emerald-50/50 dark:bg-orange-900/30 border border-emerald-100 dark:border-orange-900/50">
+          <div className="text-center p-2 rounded-lg bg-stone-100/50 dark:bg-orange-900/30 border border-emerald-100 dark:border-orange-900/50">
             <p className={cn(
               'text-sm font-bold',
-              item.core.taskPending > 0 ? 'text-emerald-600' : 'text-gray-400'
+              item.core.taskPending > 0 ? 'text-stone-600' : 'text-gray-400'
             )}>
               {item.core.taskPending}
             </p>
@@ -414,7 +414,7 @@ function ClassTodoCard({
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); setLeaveModalOpen(true) }}
-          className="mt-2 w-full py-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/30 transition-all"
+          className="mt-2 w-full py-1.5 rounded-lg border border-dashed border-border text-xs text-muted-foreground hover:text-slate-600 hover:border-indigo-200 hover:bg-slate-100/30 dark:hover:bg-indigo-950/30 transition-all"
         >
           标记请假学生
         </button>
@@ -422,7 +422,7 @@ function ClassTodoCard({
 
       <div className="border-t border-border px-4 py-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-600">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
             <Layers size={14} />
             <span>课中工作流</span>
             <span className="text-muted-foreground font-normal">
@@ -450,7 +450,7 @@ function ClassTodoCard({
                     'flex items-center gap-2.5 p-2.5 rounded-lg border transition-all duration-200',
                     todo.completed
                       ? 'border-border bg-muted/50'
-                      : 'border-border bg-card hover:border-indigo-200 hover:bg-indigo-50/20 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-950/20'
+                      : 'border-border bg-card hover:border-indigo-200 hover:bg-slate-100/20 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-950/20'
                   )}
                 >
                   <button
@@ -527,8 +527,8 @@ export function ClassTodoCenter() {
     return (
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-5">
-          <div className="p-2 rounded-lg bg-amber-100">
-            <Layers size={20} className="text-amber-600" />
+          <div className="p-2 rounded-lg bg-orange-100">
+            <Layers size={20} className="text-orange-600" />
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-sm">分班待办中心</h3>
@@ -546,8 +546,8 @@ export function ClassTodoCenter() {
   return (
     <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-5">
-        <div className="p-2 rounded-lg bg-amber-100">
-          <Layers size={20} className="text-amber-600" />
+        <div className="p-2 rounded-lg bg-orange-100">
+          <Layers size={20} className="text-orange-600" />
         </div>
         <div>
           <h3 className="font-semibold text-foreground text-sm">分班待办中心</h3>

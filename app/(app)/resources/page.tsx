@@ -33,8 +33,8 @@ const CARDS = [
     icon: Archive,
     gradient: 'from-blue-50 to-indigo-50 dark:from-orange-950/30 dark:to-orange-950/30',
     border: 'border-blue-200 dark:border-orange-800',
-    iconBg: 'bg-blue-100 dark:bg-orange-900/40',
-    iconColor: 'text-blue-600 dark:text-orange-300',
+    iconBg: 'bg-slate-100 dark:bg-orange-900/40',
+    iconColor: 'text-slate-600 dark:text-orange-300',
   },
   {
     id: 'answers' as const,
@@ -43,8 +43,8 @@ const CARDS = [
     icon: CheckSquare,
     gradient: 'from-green-50 to-emerald-50 dark:from-orange-950/30 dark:to-orange-950/30',
     border: 'border-green-200 dark:border-orange-800',
-    iconBg: 'bg-green-100 dark:bg-orange-900/50',
-    iconColor: 'text-green-600 dark:text-orange-300',
+    iconBg: 'bg-stone-100 dark:bg-orange-900/50',
+    iconColor: 'text-stone-600 dark:text-orange-300',
   },
   {
     id: 'feedback' as const,
@@ -53,8 +53,8 @@ const CARDS = [
     icon: BarChart3,
     gradient: 'from-amber-50 to-orange-50 dark:from-orange-950/30 dark:to-orange-950/30',
     border: 'border-amber-200 dark:border-orange-800',
-    iconBg: 'bg-amber-100 dark:bg-orange-900/50',
-    iconColor: 'text-amber-600 dark:text-orange-300',
+    iconBg: 'bg-orange-100 dark:bg-orange-900/50',
+    iconColor: 'text-orange-600 dark:text-orange-300',
   },
 ]
 
@@ -294,8 +294,8 @@ export default function ResourcesPage() {
     >
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-orange-900/40">
-            <Archive className="h-5 w-5 text-blue-600 dark:text-orange-300" />
+          <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-orange-900/40">
+            <Archive className="h-5 w-5 text-slate-600 dark:text-orange-300" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">班级仓库汇总</h2>
@@ -316,7 +316,7 @@ export default function ResourcesPage() {
             <span>
               {selectedClass?.name || '选择班级'}
               {selectedClass && isTeachingClass(selectedClass.id) && (
-                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
+                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
               )}
             </span>
             <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', isClassSelectOpen && 'rotate-180')} />
@@ -346,7 +346,7 @@ export default function ResourcesPage() {
                         <span>
                           {cls.name}
                           {isTeachingClass(cls.id) && (
-                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
+                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
                           )}
                         </span>
                       </button>
@@ -457,13 +457,13 @@ export default function ResourcesPage() {
             <div className={cn(
               'p-1.5 rounded-lg',
               type === 'answers'
-                ? 'bg-green-100 dark:bg-orange-900/50'
-                : 'bg-amber-100 dark:bg-orange-900/50'
+                ? 'bg-stone-100 dark:bg-orange-900/50'
+                : 'bg-orange-100 dark:bg-orange-900/50'
             )}>
               {type === 'answers' ? (
-                <CheckSquare className="h-4 w-4 text-green-600 dark:text-orange-300" />
+                <CheckSquare className="h-4 w-4 text-stone-600 dark:text-orange-300" />
               ) : (
-                <BarChart3 className="h-4 w-4 text-amber-600 dark:text-orange-300" />
+                <BarChart3 className="h-4 w-4 text-orange-600 dark:text-orange-300" />
               )}
             </div>
             <span className="text-sm font-medium text-foreground">

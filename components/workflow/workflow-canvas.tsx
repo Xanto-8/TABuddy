@@ -137,8 +137,8 @@ function EditNodeModal({ node, onSave, onClose }: EditModalProps) {
                         key={ic}
                         onClick={() => { setIcon(ic); setShowIconPicker(false) }}
                         className={cn(
-                          'w-9 h-9 flex items-center justify-center rounded-lg text-lg transition-all hover:bg-indigo-50',
-                          icon === ic && 'bg-indigo-100 ring-2 ring-indigo-300'
+                          'w-9 h-9 flex items-center justify-center rounded-lg text-lg transition-all hover:bg-slate-100',
+                          icon === ic && 'bg-slate-100 ring-2 ring-indigo-300'
                         )}
                       >
                         {ic}
@@ -171,7 +171,7 @@ function EditNodeModal({ node, onSave, onClose }: EditModalProps) {
                 className={cn(
                   'flex-1 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all',
                   nodeCategory === 'required'
-                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                    ? 'border-indigo-200 bg-slate-100 text-slate-700'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
                 )}
               >
@@ -182,7 +182,7 @@ function EditNodeModal({ node, onSave, onClose }: EditModalProps) {
                 className={cn(
                   'flex-1 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all',
                   nodeCategory === 'optional'
-                    ? 'border-amber-200 bg-amber-50 text-amber-700'
+                    ? 'border-amber-200 bg-orange-50 text-orange-700'
                     : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
                 )}
               >
@@ -200,7 +200,7 @@ function EditNodeModal({ node, onSave, onClose }: EditModalProps) {
               onClick={() => setCountInTodo(!countInTodo)}
               className={cn(
                 'relative w-11 h-6 rounded-full transition-all duration-200',
-                countInTodo ? 'bg-indigo-500' : 'bg-gray-300'
+                countInTodo ? 'bg-slate-1000' : 'bg-gray-300'
               )}
             >
               <motion.div
@@ -262,7 +262,7 @@ function ConfirmDialog({ title, message, confirmText = '确认', cancelText = '�
           <div className="flex items-center gap-3 mb-3">
             <div className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center',
-              variant === 'danger' ? 'bg-red-50 text-red-500' : 'bg-indigo-50 text-indigo-500'
+              variant === 'danger' ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-indigo-500'
             )}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 {variant === 'danger' ? (
@@ -363,24 +363,24 @@ function NodeLibraryPanel({ onSelectPreset, onCreateCustom, existingTypes, onClo
             onClick={() => setTab('preset')}
             className={cn(
               'relative px-4 py-3 text-sm font-medium transition-all',
-              tab === 'preset' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+              tab === 'preset' ? 'text-slate-600' : 'text-gray-500 hover:text-gray-700'
             )}
           >
             系统预设
             {tab === 'preset' && (
-              <motion.div layoutId="libTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
+              <motion.div layoutId="libTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-1000 rounded-full" />
             )}
           </button>
           <button
             onClick={() => setTab('custom')}
             className={cn(
               'relative px-4 py-3 text-sm font-medium transition-all',
-              tab === 'custom' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+              tab === 'custom' ? 'text-slate-600' : 'text-gray-500 hover:text-gray-700'
             )}
           >
             创建自定义
             {tab === 'custom' && (
-              <motion.div layoutId="libTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />
+              <motion.div layoutId="libTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-1000 rounded-full" />
             )}
           </button>
         </div>
@@ -403,14 +403,14 @@ function NodeLibraryPanel({ onSelectPreset, onCreateCustom, existingTypes, onClo
                       'w-full flex items-center gap-3 p-3 rounded-xl border text-left group transition-all',
                       preset.isExisting
                         ? 'border-gray-100 bg-gray-50 hover:bg-gray-100'
-                        : 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/30'
+                        : 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-slate-100/30'
                     )}
                   >
                     <span className={cn('text-xl', preset.isExisting && 'opacity-50')}>{preset.icon}</span>
                     <div className="flex-1">
                       <p className={cn(
                         'text-sm font-medium transition-colors',
-                        preset.isExisting ? 'text-gray-500' : 'text-gray-800 group-hover:text-indigo-600'
+                        preset.isExisting ? 'text-gray-500' : 'text-gray-800 group-hover:text-slate-600'
                       )}>
                         {preset.label}
                       </p>
@@ -467,8 +467,8 @@ function NodeLibraryPanel({ onSelectPreset, onCreateCustom, existingTypes, onClo
                               key={ic}
                               onClick={() => { setCustomIcon(ic); setShowIconPicker(false) }}
                               className={cn(
-                                'w-9 h-9 flex items-center justify-center rounded-lg text-lg transition-all hover:bg-indigo-50',
-                                customIcon === ic && 'bg-indigo-100 ring-2 ring-indigo-300'
+                                'w-9 h-9 flex items-center justify-center rounded-lg text-lg transition-all hover:bg-slate-100',
+                                customIcon === ic && 'bg-slate-100 ring-2 ring-indigo-300'
                               )}
                             >
                               {ic}
@@ -751,7 +751,7 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
           <button
             onClick={() => setShowNodeLibrary(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium
-              text-indigo-600 bg-indigo-50 hover:bg-indigo-100
+              text-slate-600 bg-slate-100 hover:bg-slate-100
               rounded-xl transition-all duration-200
               border border-indigo-200/50"
           >
@@ -845,7 +845,7 @@ export function WorkflowCanvas({ courseType, templateOverride, onTemplateChange 
               <p className="text-sm">暂无工作流节点</p>
               <button
                 onClick={() => setShowNodeLibrary(true)}
-                className="mt-2 text-indigo-500 hover:text-indigo-600 text-sm font-medium"
+                className="mt-2 text-indigo-500 hover:text-slate-600 text-sm font-medium"
               >
                 点击添加节点
               </button>

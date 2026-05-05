@@ -149,7 +149,7 @@ export default function AdminClassesPage() {
       </div>
 
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-red-100 text-red-800 dark:bg-orange-900/30 dark:text-orange-300'}`}>
+        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-stone-100 text-green-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-red-100 text-red-800 dark:bg-orange-900/30 dark:text-orange-300'}`}>
           {message.type === 'success' ? <Check className="w-4 h-4 inline mr-1" /> : <X className="w-4 h-4 inline mr-1" />}
           {message.text}
         </div>

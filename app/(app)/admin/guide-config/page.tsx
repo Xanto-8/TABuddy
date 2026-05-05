@@ -184,8 +184,8 @@ export default function GuideConfigPage() {
               )}
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <p className="text-sm text-amber-800">
+            <div className="bg-orange-50 border border-amber-200 rounded-xl p-4">
+              <p className="text-sm text-orange-800">
                 <strong>提示：</strong>请确保语雀文档已设置为「公开」，任何人可查看。
                 链接为空时将使用默认的说明书链接。
               </p>
@@ -267,7 +267,7 @@ export default function GuideConfigPage() {
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="bg-slate-100 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-800">
                 <strong>说明：</strong>问卷仅对已阅读说明书的用户弹出。
                 新用户首次登录时只会看到使用说明书，不会看到问卷。

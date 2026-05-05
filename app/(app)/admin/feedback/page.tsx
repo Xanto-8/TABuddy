@@ -33,13 +33,13 @@ interface FeedbackItem {
 
 const TYPE_CONFIG = {
   bug: { icon: Bug, label: 'Bug 反馈', color: 'text-red-500', bg: 'bg-red-50' },
-  suggestion: { icon: Lightbulb, label: '功能建议', color: 'text-amber-500', bg: 'bg-amber-50' },
-  other: { icon: HelpCircle, label: '其他', color: 'text-blue-500', bg: 'bg-blue-50' },
+  suggestion: { icon: Lightbulb, label: '功能建议', color: 'text-amber-500', bg: 'bg-orange-50' },
+  other: { icon: HelpCircle, label: '其他', color: 'text-blue-500', bg: 'bg-slate-100' },
 } as const
 
 const STATUS_CONFIG = {
-  pending: { icon: Clock, label: '待处理', color: 'text-amber-600', bg: 'bg-amber-50' },
-  resolved: { icon: CheckCircle, label: '已回复', color: 'text-green-600', bg: 'bg-green-50' },
+  pending: { icon: Clock, label: '待处理', color: 'text-orange-600', bg: 'bg-orange-50' },
+  resolved: { icon: CheckCircle, label: '已回复', color: 'text-stone-600', bg: 'bg-stone-100' },
   closed: { icon: XCircle, label: '已关闭', color: 'text-gray-500', bg: 'bg-gray-50' },
 } as const
 

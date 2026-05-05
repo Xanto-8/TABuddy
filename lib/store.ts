@@ -636,10 +636,10 @@ export function getClassTypeLabel(type: ClassType): string {
 
 export function getClassTypeColor(type: ClassType): string {
   const colors: Record<string, string> = {
-    GY: 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300',
-    KET: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300',
+    GY: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300',
+    KET: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300',
     PET: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    FCE: 'bg-purple-100 text-purple-700 dark:bg-orange-900/30 dark:text-orange-300',
+    FCE: 'bg-gray-100 text-gray-700 dark:bg-orange-900/30 dark:text-orange-300',
     CAE: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     CPE: 'bg-red-100 text-red-700 dark:bg-orange-900/30 dark:text-orange-300',
     OTHER: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',

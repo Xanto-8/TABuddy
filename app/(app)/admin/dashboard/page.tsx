@@ -59,32 +59,32 @@ export default function AdminDashboardPage() {
       value: data?.totalUsers ?? 0,
       icon: Users,
       color: 'from-blue-500 to-indigo-600',
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-      textColor: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-slate-100 dark:bg-blue-900/20',
+      textColor: 'text-slate-600 dark:text-blue-400',
     },
     {
       label: '实时在线',
       value: data?.onlineUsers ?? 0,
       icon: Activity,
       color: 'from-green-500 to-emerald-600',
-      bg: 'bg-green-50 dark:bg-green-900/20',
-      textColor: 'text-green-600 dark:text-green-400',
+      bg: 'bg-stone-100 dark:bg-green-900/20',
+      textColor: 'text-stone-600 dark:text-green-400',
     },
     {
       label: '班级总数',
       value: data?.classGroups?.length ?? 0,
       icon: BookOpen,
       color: 'from-purple-500 to-pink-600',
-      bg: 'bg-purple-50 dark:bg-purple-900/20',
-      textColor: 'text-purple-600 dark:text-purple-400',
+      bg: 'bg-gray-100 dark:bg-purple-900/20',
+      textColor: 'text-gray-600 dark:text-purple-400',
     },
     {
       label: '在线率',
       value: data?.totalUsers ? Math.round((data.onlineUsers / data.totalUsers) * 100) + '%' : '0%',
       icon: TrendingUp,
       color: 'from-amber-500 to-orange-600',
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      textColor: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-orange-50 dark:bg-amber-900/20',
+      textColor: 'text-orange-600 dark:text-amber-400',
     },
   ]
 
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
                     <td className="py-3 px-2 font-medium">{cg.name}</td>
                     <td className="py-3 px-2 text-right">{cg.totalStudents}</td>
                     <td className="py-3 px-2 text-right">
-                      <span className="text-green-600 dark:text-green-400">{cg.onlineStudents}</span>
+                      <span className="text-stone-600 dark:text-green-400">{cg.onlineStudents}</span>
                     </td>
                     <td className="py-3 px-2 text-right">
                       {cg.totalStudents > 0

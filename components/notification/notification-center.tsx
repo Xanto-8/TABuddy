@@ -42,11 +42,11 @@ export function NotificationCenter() {
   }
 
   function getDotColor(type: ReminderType) {
-    if (type === 'workflow_node') return 'bg-green-500'
-    if (type === '15min') return 'bg-amber-500'
-    if (type === '30min') return 'bg-blue-500'
-    if (type === 'feedback') return 'bg-purple-500'
-    return 'bg-blue-500'
+    if (type === 'workflow_node') return 'bg-stone-1000'
+    if (type === '15min') return 'bg-orange-500'
+    if (type === '30min') return 'bg-slate-1000'
+    if (type === 'feedback') return 'bg-gray-1000'
+    return 'bg-slate-1000'
   }
 
   function getTypeLabel(type: ReminderType) {

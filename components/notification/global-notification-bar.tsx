@@ -22,13 +22,13 @@ export function GlobalNotificationBar() {
 
   function getBarStyle(type: ReminderType) {
     if (type === '15min') {
-      return 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-orange-900/50 dark:border-orange-700 dark:text-orange-200'
+      return 'bg-orange-50 border-amber-300 text-amber-900 dark:bg-orange-900/50 dark:border-orange-700 dark:text-orange-200'
     }
-    return 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-orange-900/40 dark:border-orange-800 dark:text-orange-300'
+    return 'bg-slate-100 border-blue-200 text-blue-800 dark:bg-orange-900/40 dark:border-orange-800 dark:text-orange-300'
   }
 
   function getIconColor(type: ReminderType) {
-    if (type === '15min') return 'text-amber-600 dark:text-orange-300'
+    if (type === '15min') return 'text-orange-600 dark:text-orange-300'
     return 'text-blue-500'
   }
 

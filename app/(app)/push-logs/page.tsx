@@ -96,7 +96,7 @@ export default function PushLogsPage() {
                     <span className={cn(
                       'text-[10px] px-2 py-0.5 rounded-full font-medium',
                       log.status === 'sent'
-                        ? 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300'
+                        ? 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300'
                         : log.status === 'failed'
                         ? 'bg-red-100 text-red-700 dark:bg-orange-900/30 dark:text-orange-300'
                         : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'

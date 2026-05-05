@@ -119,8 +119,8 @@ export default function AdminTeacherCodePage() {
     <PageContainer>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-            <KeyRound className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <KeyRound className="w-5 h-5 text-stone-600 dark:text-emerald-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">老师注册码管理</h1>
@@ -128,12 +128,12 @@ export default function AdminTeacherCodePage() {
           </div>
         </div>
 
-        <div className="p-5 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 mb-6">
+        <div className="p-5 rounded-xl border border-amber-200 bg-orange-50 dark:border-amber-800 dark:bg-amber-900/20 mb-6">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-5 h-5 text-orange-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">说明</h3>
-              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+              <h3 className="text-sm font-semibold text-orange-800 dark:text-amber-300">说明</h3>
+              <p className="text-xs text-orange-700 dark:text-amber-400 mt-1 leading-relaxed">
                 通过老师注册码注册的账号，将直接自动成为<strong>班级管理员（任课老师）</strong>身份。
                 注册码支持多人重复使用，不会一次性失效。如需停用，可手动禁用该注册码。
                 老师之间可以互相转发此注册码给新老师注册使用。
@@ -146,7 +146,7 @@ export default function AdminTeacherCodePage() {
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold text-foreground">当前注册码</h2>
             {activeCodes.length > 0 && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-emerald-900/40 dark:text-emerald-400">
                 {activeCodes.length} 个活跃
               </span>
             )}
@@ -197,15 +197,15 @@ export default function AdminTeacherCodePage() {
                 key={code.id}
                 className="flex items-center gap-4 p-4 rounded-xl border border-emerald-200 bg-white dark:border-emerald-800 dark:bg-emerald-950/20"
               >
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
-                  <CheckCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 rounded-lg bg-stone-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                  <CheckCheck className="w-5 h-5 text-stone-600 dark:text-emerald-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-mono font-bold tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
+                    <span className="text-lg font-mono font-bold tracking-[0.2em] text-stone-700 dark:text-emerald-300">
                       {code.code}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 shrink-0">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-emerald-900/40 dark:text-emerald-400 shrink-0">
                       已启用
                     </span>
                   </div>
@@ -220,7 +220,7 @@ export default function AdminTeacherCodePage() {
                   <button
                     type="button"
                     onClick={() => handleCopy(code.code, code.id)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 border-none cursor-pointer"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-muted-foreground hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-emerald-900/30 border-none cursor-pointer"
                     title="复制注册码"
                   >
                     {copiedId === code.id ? <CheckCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -229,7 +229,7 @@ export default function AdminTeacherCodePage() {
                     type="button"
                     onClick={() => handleToggle(code.id)}
                     disabled={togglingId === code.id}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 border-none cursor-pointer disabled:opacity-50"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-muted-foreground hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-amber-900/30 border-none cursor-pointer disabled:opacity-50"
                     title="禁用注册码"
                   >
                     {togglingId === code.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <EyeOff className="w-4 h-4" />}
@@ -274,7 +274,7 @@ export default function AdminTeacherCodePage() {
                       type="button"
                       onClick={() => handleToggle(code.id)}
                       disabled={togglingId === code.id}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 border-none cursor-pointer disabled:opacity-50"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-muted-foreground hover:text-stone-600 hover:bg-stone-100 dark:hover:bg-emerald-900/30 border-none cursor-pointer disabled:opacity-50"
                       title="启用注册码"
                     >
                       {togglingId === code.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}

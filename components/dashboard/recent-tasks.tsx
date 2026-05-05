@@ -40,10 +40,10 @@ export function RecentTasks({ data }: Props) {
   const getLessonColor = (lesson?: string) => {
     if (!lesson) return 'text-gray-500 bg-gray-50 dark:bg-gray-900/20'
     const colors = [
-      'text-blue-500 bg-blue-50 dark:bg-orange-900/20',
-      'text-green-500 bg-green-50 dark:bg-orange-900/20',
-      'text-purple-500 bg-purple-50 dark:bg-orange-900/20',
-      'text-amber-500 bg-amber-50 dark:bg-orange-900/20',
+      'text-blue-500 bg-slate-100 dark:bg-orange-900/20',
+      'text-green-500 bg-stone-100 dark:bg-orange-900/20',
+      'text-purple-500 bg-gray-100 dark:bg-orange-900/20',
+      'text-amber-500 bg-orange-50 dark:bg-orange-900/20',
     ]
     const hash = lesson.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
     return colors[hash % colors.length]
@@ -53,8 +53,8 @@ export function RecentTasks({ data }: Props) {
     <div className="rounded-xl border border-border bg-card p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-blue-100 dark:bg-orange-900/20">
-            <ListTodo className="h-5 w-5 text-blue-600" />
+          <div className="p-2 rounded-lg bg-slate-100 dark:bg-orange-900/20">
+            <ListTodo className="h-5 w-5 text-slate-600" />
           </div>
           <div>
             <h3 className="font-semibold text-foreground">最近任务</h3>
@@ -161,7 +161,7 @@ export function RecentTasks({ data }: Props) {
                 {!task.completed && (
                   <button
                     onClick={() => handleToggleComplete(task.id, false)}
-                    className="p-1.5 rounded-md hover:bg-green-100 dark:hover:bg-green-900/20 text-green-600 transition-colors"
+                    className="p-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-green-900/20 text-stone-600 transition-colors"
                     title="标记完成"
                   >
                     <Check className="h-3.5 w-3.5" />
@@ -188,7 +188,7 @@ export function RecentTasks({ data }: Props) {
             </span>
             <div className="h-1.5 w-32 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-green-500 rounded-full transition-all duration-500"
+                className="h-full bg-stone-1000 rounded-full transition-all duration-500"
                 style={{
                   width: `${filteredTasks.length > 0
                     ? Math.round(filteredTasks.filter(t => t.completed).length / filteredTasks.length * 100)

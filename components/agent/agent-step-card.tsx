@@ -342,22 +342,22 @@ export function AgentStepCard({ cardData, onCancel, onQuickSelect }: AgentStepCa
                   </div>
 
                   {showSwitchConfirm && pendingClass && (
-                    <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
-                      <p className="text-xs text-amber-700 mb-2">
+                    <div className="mt-2 p-2 rounded-lg bg-orange-50 border border-amber-200">
+                      <p className="text-xs text-orange-700 mb-2">
                         确定要将任务添加到【{pendingClass.name}】课程吗？
                       </p>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={confirmSwitch}
-                          className="px-3 py-1 text-xs rounded-md bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                          className="px-3 py-1 text-xs rounded-md bg-orange-500 text-white hover:bg-amber-600 transition-colors"
                         >
                           确定
                         </button>
                         <button
                           type="button"
                           onClick={cancelSwitch}
-                          className="px-3 py-1 text-xs rounded-md border border-amber-300 text-amber-700 hover:bg-amber-50 transition-colors"
+                          className="px-3 py-1 text-xs rounded-md border border-amber-300 text-orange-700 hover:bg-orange-50 transition-colors"
                         >
                           取消
                         </button>
@@ -368,7 +368,7 @@ export function AgentStepCard({ cardData, onCancel, onQuickSelect }: AgentStepCa
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-50 border border-amber-200 text-orange-700">
               <span className="text-xs">⚠️</span>
               <span className="text-xs">当前没有活跃的课程，任务将无法同步</span>
             </div>
@@ -611,15 +611,15 @@ export function AgentStepCard({ cardData, onCancel, onQuickSelect }: AgentStepCa
           </div>
 
           {syncStatus === 'syncing' && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 border border-blue-200">
               <span className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
-              <span className="text-xs text-blue-600">正在同步到工作流...</span>
+              <span className="text-xs text-slate-600">正在同步到工作流...</span>
             </div>
           )}
 
           {syncStatus === 'success' && effectiveClass && (
-            <div className="px-3 py-2 rounded-lg bg-green-50 border border-green-200">
-              <p className="text-xs text-green-700">
+            <div className="px-3 py-2 rounded-lg bg-stone-100 border border-green-200">
+              <p className="text-xs text-stone-700">
                 ✅ 任务已添加成功！已同步到{effectiveClass.name}（{effectiveClass.type}）课程的工作流中，你可以在分班待办中心查看和调整
               </p>
             </div>

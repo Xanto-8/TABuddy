@@ -48,14 +48,14 @@ const completionLabels: Record<CompletionStatus, string> = {
 }
 
 const completionColors: Record<CompletionStatus, string> = {
-  completed: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300',
+  completed: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300',
   partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   not_done: 'bg-red-100 text-red-700 dark:bg-orange-900/30 dark:text-orange-300',
 }
 
 const accuracyColor = (value: number | null) => {
   if (value === null) return 'text-muted-foreground'
-  if (value >= 85) return 'text-green-600 dark:text-orange-300'
+  if (value >= 85) return 'text-stone-600 dark:text-orange-300'
   if (value >= 50) return 'text-orange-500 dark:text-orange-400'
   return 'text-red-500 dark:text-orange-300'
 }
@@ -319,7 +319,7 @@ export default function QuizzesPage() {
         toast.success(
           <div>
             <p className="font-medium">✅ 导出成功，文件已开始下载</p>
-            <p className="text-xs text-amber-700 mt-1">Word生成异常，已自动降级为TXT文件</p>
+            <p className="text-xs text-orange-700 mt-1">Word生成异常，已自动降级为TXT文件</p>
           </div>,
           { duration: 6000 }
         )
@@ -473,7 +473,7 @@ export default function QuizzesPage() {
               <span>
                 {selectedClass ? selectedClass.name : '选择班级'}
                 {selectedClass && isTeachingClass(selectedClass.id) && (
-                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
+                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
                 )}
               </span>
               <ChevronDown className={`h-4 w-4 ml-2 text-muted-foreground transition-transform ${isClassSelectOpen ? 'rotate-180' : ''}`} />
@@ -502,7 +502,7 @@ export default function QuizzesPage() {
                        <span>
                          {cls.name}
                          {isTeachingClass(cls.id) && (
-                           <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
+                           <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
                          )}
                        </span>
                        {selectedClassId === cls.id && (
@@ -519,8 +519,8 @@ export default function QuizzesPage() {
           {selectedClassId && (
             <div className="flex items-center gap-3 flex-1 max-w-[520px]">
               <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                <div className="p-2 rounded-lg bg-green-50 dark:bg-orange-900/20 shrink-0">
-                  <Target className="h-5 w-5 text-green-600 dark:text-orange-300" />
+                <div className="p-2 rounded-lg bg-stone-100 dark:bg-orange-900/20 shrink-0">
+                  <Target className="h-5 w-5 text-stone-600 dark:text-orange-300" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground leading-tight">单词平均正确率</p>
@@ -890,7 +890,7 @@ export default function QuizzesPage() {
                                           {wordAccuracy != null && (
                                             <span className={cn(
                                               'text-xs px-1.5 py-0.5 rounded font-medium',
-                                              wordAccuracy >= 85 ? 'text-green-600 bg-green-50 dark:text-orange-300 dark:bg-orange-900/20' :
+                                              wordAccuracy >= 85 ? 'text-stone-600 bg-stone-100 dark:text-orange-300 dark:bg-orange-900/20' :
                                               wordAccuracy >= 50 ? 'text-orange-500 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/20' :
                                               'text-red-500 bg-red-50 dark:text-orange-300 dark:bg-orange-900/20'
                                             )}>
@@ -914,7 +914,7 @@ export default function QuizzesPage() {
                                             return (
                                               <span className={cn(
                                                 'text-xs px-1.5 py-0.5 rounded font-medium',
-                                                ga >= 85 ? 'text-green-600 bg-green-50 dark:text-orange-300 dark:bg-orange-900/20' :
+                                                ga >= 85 ? 'text-stone-600 bg-stone-100 dark:text-orange-300 dark:bg-orange-900/20' :
                                                 ga >= 50 ? 'text-orange-500 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/20' :
                                                 'text-red-500 bg-red-50 dark:text-orange-300 dark:bg-orange-900/20'
                                               )}>
@@ -926,7 +926,7 @@ export default function QuizzesPage() {
                                       ) : record.grammarAccuracy != null ? (
                                         <span className={cn(
                                           'text-xs px-1.5 py-0.5 rounded font-medium',
-                                          record.grammarAccuracy >= 85 ? 'text-green-600 bg-green-50 dark:text-orange-300 dark:bg-orange-900/20' :
+                                          record.grammarAccuracy >= 85 ? 'text-stone-600 bg-stone-100 dark:text-orange-300 dark:bg-orange-900/20' :
                                           record.grammarAccuracy >= 50 ? 'text-orange-500 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/20' :
                                           'text-red-500 bg-red-50 dark:text-orange-300 dark:bg-orange-900/20'
                                         )}>
@@ -1068,7 +1068,7 @@ function UploadQuizModal({
   const percentColor = (p: string | null) => {
     if (!p) return ''
     const v = parseFloat(p)
-    if (v >= 85) return 'text-green-600 dark:text-orange-300'
+    if (v >= 85) return 'text-stone-600 dark:text-orange-300'
     if (v >= 50) return 'text-orange-500 dark:text-orange-400'
     return 'text-red-500 dark:text-orange-300'
   }

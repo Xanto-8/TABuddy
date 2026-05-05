@@ -116,9 +116,9 @@ export default function WorkflowPage() {
           transition={{ delay: 0.1 }}
           className="mb-6"
         >
-          <div className="flex items-center gap-2 bg-indigo-50/70 border border-indigo-100 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 bg-slate-100/70 border border-indigo-100 rounded-xl px-4 py-3">
             <Info size={15} className="text-indigo-400 flex-shrink-0" />
-            <p className="text-xs text-indigo-600/80 leading-relaxed">
+            <p className="text-xs text-slate-600/80 leading-relaxed">
               每个课程体系拥有独立的工作流模板。开启/关闭节点、拖拽调整顺序后点击「保存」即可生效。
               保存后，仪表盘分班待办中心将自动同步更新。
             </p>
@@ -140,7 +140,7 @@ export default function WorkflowPage() {
                 className={cn(
                   'relative px-4 py-3 text-sm font-medium transition-all duration-200 whitespace-nowrap',
                   activeKey === tab.type
-                    ? 'text-indigo-600'
+                    ? 'text-slate-600'
                     : 'text-gray-500 hover:text-gray-700'
                 )}
               >
@@ -148,7 +148,7 @@ export default function WorkflowPage() {
                 {activeKey === tab.type && (
                   <motion.div
                     layoutId="workflowTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-1000 rounded-full"
                   />
                 )}
               </button>
@@ -161,7 +161,7 @@ export default function WorkflowPage() {
                 className={cn(
                   'relative px-4 py-3 text-sm font-medium transition-all duration-200 whitespace-nowrap group',
                   activeKey === ct.id
-                    ? 'text-indigo-600'
+                    ? 'text-slate-600'
                     : 'text-gray-500 hover:text-gray-700'
                 )}
               >
@@ -180,7 +180,7 @@ export default function WorkflowPage() {
                 {activeKey === ct.id && (
                   <motion.div
                     layoutId="workflowTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-1000 rounded-full"
                   />
                 )}
               </button>
@@ -260,7 +260,7 @@ export default function WorkflowPage() {
                         className={cn(
                           'px-3.5 py-2.5 rounded-xl border text-sm font-medium transition-all text-left',
                           createCourse === opt.type
-                            ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                            ? 'border-indigo-200 bg-slate-100 text-slate-700'
                             : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
                         )}
                       >

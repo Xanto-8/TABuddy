@@ -13,18 +13,18 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 const ROLE_STYLES: Record<string, string> = {
-  superadmin: 'bg-amber-100 text-amber-700 dark:bg-orange-900/30 dark:text-orange-300',
-  classadmin: 'bg-blue-100 text-blue-700 dark:bg-orange-900/30 dark:text-orange-300',
-  assistant: 'bg-green-100 text-green-700 dark:bg-orange-900/30 dark:text-orange-300',
+  superadmin: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  classadmin: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300',
+  assistant: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300',
   student: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
 }
 
 function getColor(name: string) {
   const colors = [
     'bg-red-100 text-red-700', 'bg-orange-100 text-orange-700',
-    'bg-amber-100 text-amber-700', 'bg-green-100 text-green-700',
-    'bg-teal-100 text-teal-700', 'bg-blue-100 text-blue-700',
-    'bg-indigo-100 text-indigo-700', 'bg-purple-100 text-purple-700',
+    'bg-orange-100 text-orange-700', 'bg-stone-100 text-stone-700',
+    'bg-stone-100 text-teal-700', 'bg-slate-100 text-slate-700',
+    'bg-slate-100 text-slate-700', 'bg-gray-100 text-gray-700',
   ]
   let hash = 0
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)

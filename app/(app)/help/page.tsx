@@ -268,7 +268,7 @@ export default function HelpPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center justify-center py-20 text-center"
           >
-            <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mb-6">
+            <div className="w-20 h-20 rounded-full bg-stone-1000/10 flex items-center justify-center mb-6">
               <CheckCircle className="h-10 w-10 text-green-500" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">感谢您的反馈！</h2>
@@ -598,8 +598,8 @@ export default function HelpPage() {
                       const TypeIcon = { bug: Bug, suggestion: Lightbulb, other: HelpCircle }[fb.type] || HelpCircle
                       const statusLabel = { pending: '待处理', resolved: '已解决', closed: '已关闭' }[fb.status] || fb.status
                       const statusColor = {
-                        pending: 'text-amber-500 bg-amber-500/10',
-                        resolved: 'text-green-500 bg-green-500/10',
+                        pending: 'text-amber-500 bg-orange-500/10',
+                        resolved: 'text-green-500 bg-stone-1000/10',
                         closed: 'text-muted-foreground bg-muted',
                       }[fb.status] || 'text-muted-foreground bg-muted'
 
@@ -615,8 +615,8 @@ export default function HelpPage() {
                             <div className={cn(
                               'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
                               fb.type === 'bug' ? 'bg-red-500/10 text-red-500' :
-                              fb.type === 'suggestion' ? 'bg-amber-500/10 text-amber-500' :
-                              'bg-blue-500/10 text-blue-500'
+                              fb.type === 'suggestion' ? 'bg-orange-500/10 text-amber-500' :
+                              'bg-slate-1000/10 text-blue-500'
                             )}>
                               <TypeIcon className="h-4 w-4" />
                             </div>
