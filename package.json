@@ -1,8 +1,9 @@
 {
   "name": "ta-buddy",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "新东方国际教育助教效率工具 - 帮助助教提升工作效率",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "dev:clean": "cmd /c clean-restart2.bat",
@@ -12,7 +13,13 @@
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "postinstall": "prisma generate",
-    "vercel-build": "prisma generate && prisma db push --accept-data-loss && next build"
+    "vercel-build": "prisma generate && prisma db push --accept-data-loss && next build",
+    "electron:dev": "electron .",
+    "electron:build:win": "electron-builder --win --x64",
+    "electron:build:portable": "electron-builder --win --x64 --config.portable",
+    "electron:generate-icons": "node electron/scripts/generate-icons.js",
+    "electron:build:all": "electron-builder --win --x64",
+    "electron:publish": "scripts\\publish-update.bat"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -26,6 +33,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "docx": "^9.6.1",
+    "electron-updater": "^6.3.9",
     "face-api.js": "^0.22.2",
     "file-saver": "^2.0.5",
     "framer-motion": "^11.11.7",
@@ -59,12 +67,15 @@
     "@types/three": "^0.184.0",
     "@typescript-eslint/eslint-plugin": "^7",
     "@typescript-eslint/parser": "^7",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "encoding": "^0.1.13",
     "eslint": "^8",
-    "prisma": "^5.22.0",
     "eslint-config-next": "14.2.25",
+    "png-to-ico": "^3.0.1",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
+    "prisma": "^5.22.0",
     "typescript": "^5"
   },
   "keywords": [
@@ -72,7 +83,9 @@
     "teaching-assistant",
     "productivity",
     "nextjs",
-    "react"
+    "react",
+    "electron",
+    "desktop"
   ],
   "author": "TABuddy Team",
   "license": "MIT",

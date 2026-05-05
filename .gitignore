@@ -63,3 +63,7 @@ electron/node_modules/
 # Installer packages (too large for GitHub, use Releases)
 public/releases/*.exe
 *.exe
+
+# Build packages
+TABuddy-Setup-*.7z
+TABuddy*.zip

@@ -1,5 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx'
 import { saveAs } from 'file-saver'
+import * as XLSX from 'xlsx'
 
 const SEP = '═══════════════════════════════════════'
 const DASH = '───────────────────────────────────────'
@@ -11,6 +12,14 @@ interface StudentFeedbackData {
     keywords: string
     createdAt: Date
   }[]
+}
+
+interface ExerciseScoreRow {
+  序号: number
+  姓名: string
+  课中练习成绩: string
+  简要表现: string
+  状态: string
 }
 
 interface ExportParams {
@@ -113,4 +122,48 @@ export async function exportFeedbackDocx(params: ExportParams): Promise<{ succes
     downloadTxt(lines, `${fileNameBase}.txt`)
     return { success: true, usedFallback: true, fileName: `${fileNameBase}.txt` }
   }
+}
+
+export interface ExerciseExportItem {
+  studentName: string
+  exerciseScore: number | undefined
+  exerciseTotal: number | undefined
+  briefPerformance: string | undefined
+  isAbsent: boolean
+}
+
+export function exportExerciseScoresXlsx(
+  className: string,
+  items: ExerciseExportItem[]
+) {
+  const dateStr = new Date().toISOString().slice(0, 10)
+  const rows: ExerciseScoreRow[] = items.map((item, index) => ({
+    序号: index + 1,
+    姓名: item.studentName,
+    课中练习成绩:
+      item.isAbsent
+        ? '已请假'
+        : item.exerciseScore !== undefined && item.exerciseTotal !== undefined
+          ? `${item.exerciseScore}/${item.exerciseTotal}`
+          : '',
+    简要表现: item.isAbsent ? '已请假' : item.briefPerformance || '',
+    状态: item.isAbsent ? '已请假' : item.exerciseScore !== undefined ? '已填' : '',
+  }))
+
+  const wb = XLSX.utils.book_new()
+  const ws = XLSX.utils.json_to_sheet(rows)
+
+  const colWidths = [
+    { wch: 6 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 30 },
+    { wch: 10 },
+  ]
+  ws['!cols'] = colWidths
+
+  XLSX.utils.book_append_sheet(wb, ws, '课中练习成绩')
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+  const blob = new Blob([wbout], { type: 'application/octet-stream' })
+  saveAs(blob, `${className}-课中练习成绩-${dateStr}.xlsx`)
 }

@@ -330,7 +330,7 @@ export default function HomeworkPage() {
                     学生列表
                     <span className="ml-2 text-xs text-muted-foreground">({students.length})</span>
                   </h3>
-                  <StudentSortDropdown />
+                  <StudentSortDropdown students={students} classId={selectedClassId || undefined} />
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto max-h-[560px]">

@@ -450,7 +450,7 @@ export async function syncClassToTeachers(data: {
 
 // ========== 学生 (Students) ==========
 
-export type StudentSortBy = 'createdAt' | 'name_asc' | 'name_desc'
+export type StudentSortBy = 'createdAt' | 'name_asc' | 'name_desc' | 'custom'
 let _studentSortBy: StudentSortBy = 'createdAt'
 
 export function getStudentSortBy(): StudentSortBy {
@@ -464,6 +464,22 @@ export function setStudentSortBy(sortBy: StudentSortBy): void {
   }
 }
 
+export function getStudentCustomOrder(classId: string): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(`tabuddy_student_order_${classId}`)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function setStudentCustomOrder(classId: string, studentIds: string[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`tabuddy_student_order_${classId}`, JSON.stringify(studentIds))
+  }
+}
+
 function sortStudentsList(students: Student[], sortBy: StudentSortBy): Student[] {
   const sorted = [...students]
   switch (sortBy) {
@@ -473,6 +489,20 @@ function sortStudentsList(students: Student[], sortBy: StudentSortBy): Student[]
       return sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
     case 'name_desc':
       return sorted.sort((a, b) => b.name.localeCompare(a.name, 'zh-CN'))
+    case 'custom': {
+      const classId = sorted.length > 0 ? sorted[0].classId : ''
+      const order = classId ? getStudentCustomOrder(classId) : []
+      if (order.length === 0) return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      const orderMap = new Map(order.map((id, i) => [id, i]))
+      return sorted.sort((a, b) => {
+        const ai = orderMap.get(a.id)
+        const bi = orderMap.get(b.id)
+        if (ai === undefined && bi === undefined) return 0
+        if (ai === undefined) return 1
+        if (bi === undefined) return -1
+        return ai - bi
+      })
+    }
     default:
       return sorted
   }

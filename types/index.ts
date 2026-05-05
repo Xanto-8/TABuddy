@@ -230,6 +230,9 @@ export interface FeedbackRecord {
   overallGrade?: string
   generatedContent: string
   usedModules?: string[]
+  exerciseScore?: number
+  exerciseTotal?: number
+  briefPerformance?: string
   createdAt: Date
 }
 

@@ -1,0 +1,50 @@
+appId: com.tabuddy.app
+productName: TABuddy
+directories:
+  output: release
+  buildResources: electron/assets
+
+files:
+  - electron/**/*
+  - package.json
+
+extraResources: []
+asar: false
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: electron/assets/icon.png
+  artifactName: ${productName}-Setup-${version}.${ext}
+  signAndEditExecutable: false
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: TABuddy
+  installerIcon: electron/assets/icon.ico
+  uninstallerIcon: electron/assets/icon.ico
+  installerHeaderIcon: electron/assets/icon.ico
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
+
+portable:
+  artifactName: ${productName}-Portable-${version}.exe
+  requestExecutionLevel: user
+  unpackDirName: TABuddy
+
+publish:
+  provider: generic
+  url: https://www.tabuddy.top/releases
+  channel: latest
+
+releaseInfo:
+  releaseNotes: 新版本发布
