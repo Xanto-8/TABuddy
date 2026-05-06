@@ -1,16 +1,18 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   GraduationCap, Plus, Pencil, Trash2, ChevronDown,
   BookOpen, Users, Target, Sparkles, RefreshCw, Copy, Download,
   Save, Loader2, AlertCircle, X, Check, ArrowDown, ArrowUpFromLine,
-  FileSpreadsheet, UserCheck, UserX, FileText,
+  FileSpreadsheet, UserCheck, UserX, FileText, Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import StudentSortDropdown from '@/components/student-sort-dropdown'
+import BatchFeedbackPanel from '@/components/feedback/BatchFeedbackPanel'
+import AutoFillConfigPanel from '@/components/feedback/AutoFillConfigPanel'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FeedbackRecord,
@@ -76,6 +78,8 @@ export default function FeedbackPage() {
   const [isClassLoading, setIsClassLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isExportingScores, setIsExportingScores] = useState(false)
+  const [showBatchPanel, setShowBatchPanel] = useState(false)
+  const [showAutoFillPanel, setShowAutoFillPanel] = useState(false)
   const classSelectRef = useRef<HTMLDivElement>(null)
   const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
@@ -606,6 +610,20 @@ export default function FeedbackPage() {
 
           {selectedClassId && (
             <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => setShowBatchPanel(true)}
+                className="inline-flex items-center px-5 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md shadow-lg shadow-primary/20 cursor-pointer"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                批量生成反馈
+              </button>
+              <button
+                onClick={() => setShowAutoFillPanel(true)}
+                className="inline-flex items-center px-5 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                自动填写配置
+              </button>
               <button
                 onClick={handleCopyExerciseScores}
                 className="inline-flex items-center px-5 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
@@ -1254,6 +1272,57 @@ export default function FeedbackPage() {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {showBatchPanel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowBatchPanel(false)}
+          >
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <BatchFeedbackPanel
+                students={students}
+                selectedClass={selectedClass}
+                classContent={classContent}
+                onClose={() => setShowBatchPanel(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showAutoFillPanel && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAutoFillPanel(false)}
+          >
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <AutoFillConfigPanel />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageContainer>
   )
 }
