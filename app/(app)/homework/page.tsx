@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   ClipboardCheck, Plus, Pencil, Trash2, ChevronDown,
-  BookOpen, Users, Target, FileText, Clock, AlertCircle,
+  BookOpen, Bookmark, Users, Target, FileText, Clock, AlertCircle,
   Sparkles, RefreshCw, Copy, Loader2, UserCheck, UserX,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -31,6 +31,7 @@ import { getAbsentStudentIds, setAbsentStudents, isStudentAbsent } from '@/lib/a
 import { generateHomeworkFeedback } from '@/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import { useCopyShortcut } from '@/lib/copy-shortcut'
+import BookmarkletSetup from '@/components/auto-fill/BookmarkletSetup'
 
 function getLocalDateString(d?: Date): string {
   const date = d ?? new Date()
@@ -47,9 +48,9 @@ const completionLabels: Record<CompletionStatus, string> = {
 }
 
 const completionColors: Record<CompletionStatus, string> = {
-  completed: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300',
+  completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  not_done: 'bg-red-100 text-red-700 dark:bg-orange-900/30 dark:text-orange-300',
+  not_done: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 }
 
 const handwritingLabels: Record<HandwritingQuality, string> = {
@@ -60,8 +61,8 @@ const handwritingLabels: Record<HandwritingQuality, string> = {
 }
 
 const handwritingColors: Record<HandwritingQuality, string> = {
-  excellent: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300',
-  good: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300',
+  excellent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  good: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
   fair: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
   poor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
 }
@@ -73,6 +74,7 @@ export default function HomeworkPage() {
   const [selectedClassId, setSelectedClassId] = useState<string>('')
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [showModal, setShowModal] = useState(false)
+  const [showBookmarkletSetup, setShowBookmarkletSetup] = useState(false)
   const [isClassSelectOpen, setIsClassSelectOpen] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isClassLoading, setIsClassLoading] = useState(false)
@@ -221,6 +223,21 @@ export default function HomeworkPage() {
     ? assessments.sort((a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime())[0]
     : null
 
+  const bookmarkletStudentFeedbacks = React.useMemo(() => {
+    if (!selectedClassId) return []
+    const classStudents = getStudentsByClass(selectedClassId)
+    return classStudents.map(s => {
+      const records = getHomeworkAssessmentsByStudent(s.id)
+      const latest = records.length > 0
+        ? records.sort((a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime())[0]
+        : null
+      return {
+        name: s.name,
+        feedback: latest?.generatedFeedback || latest?.feedback || '',
+      }
+    })
+  }, [selectedClassId])
+
   if (classes.length === 0) {
     return (
       <PageContainer>
@@ -258,6 +275,13 @@ export default function HomeworkPage() {
           <h1 className="text-2xl font-bold text-foreground">作业评估</h1>
           <p className="text-muted-foreground mt-1">记录和评估学生的作业完成情况</p>
         </div>
+        <button
+          onClick={() => setShowBookmarkletSetup(true)}
+          className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <Bookmark className="h-4 w-4 mr-2" />
+          书签脚本
+        </button>
       </div>
 
       <div className="relative" ref={classSelectRef}>
@@ -270,7 +294,7 @@ export default function HomeworkPage() {
           <span>
             {selectedClass ? selectedClass.name : '选择班级'}
             {selectedClass && isTeachingClass(selectedClass.id) && (
-              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
+              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
             )}
           </span>
           <ChevronDown className={`h-4 w-4 ml-2 text-muted-foreground transition-transform ${isClassSelectOpen ? 'rotate-180' : ''}`} />
@@ -299,7 +323,7 @@ export default function HomeworkPage() {
                       <span>
                         {cls.name}
                         {isTeachingClass(cls.id) && (
-                          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
+                          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
                         )}
                       </span>
                       {selectedClassId === cls.id && (
@@ -471,8 +495,8 @@ export default function HomeworkPage() {
                             {assessments.length > 0 ? `${avgAccuracy}%` : '-'}
                           </p>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-stone-100 dark:bg-orange-900/30">
-                          <Target className="h-5 w-5 text-stone-600 dark:text-orange-300" />
+                        <div className="p-2.5 rounded-lg bg-green-100 dark:bg-green-900/30">
+                          <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
                         </div>
                       </div>
                     </div>
@@ -597,7 +621,7 @@ export default function HomeworkPage() {
                                       <div
                                         className={cn(
                                           'h-full rounded-full transition-all',
-                                          assessment.accuracy >= 80 ? 'bg-stone-1000' :
+                                          assessment.accuracy >= 80 ? 'bg-green-500' :
                                           assessment.accuracy >= 60 ? 'bg-yellow-500' :
                                           'bg-red-500'
                                         )}
@@ -625,7 +649,7 @@ export default function HomeworkPage() {
                                       className={cn(
                                         'p-1.5 rounded-lg transition-all',
                                         (assessment.generatedFeedback || assessment.feedback)
-                                          ? 'text-muted-foreground hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-blue-950/30'
+                                          ? 'text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30'
                                           : 'text-muted-foreground/30 cursor-not-allowed'
                                       )}
                                       title="复制反馈"
@@ -674,6 +698,13 @@ export default function HomeworkPage() {
           />
         )}
       </AnimatePresence>
+
+      <BookmarkletSetup
+        isOpen={showBookmarkletSetup}
+        onClose={() => setShowBookmarkletSetup(false)}
+        classTitle={selectedClass?.name}
+        students={bookmarkletStudentFeedbacks}
+      />
       </div>
     </PageContainer>
   )
@@ -876,7 +907,7 @@ function AddAssessmentModal({
                       onClick={handleCopy}
                       className={cn(
                         'inline-flex items-center text-xs transition-colors',
-                        copySuccess ? 'text-stone-600 dark:text-orange-300' : 'text-muted-foreground hover:text-primary'
+                        copySuccess ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground hover:text-primary'
                       )}
                     >
                       <Copy className="h-3.5 w-3.5 mr-1" />

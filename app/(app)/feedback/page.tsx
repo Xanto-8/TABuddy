@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   GraduationCap, Plus, Pencil, Trash2, ChevronDown,
-  BookOpen, Users, Target, Sparkles, RefreshCw, Copy, Download,
+  BookOpen, Bookmark, Users, Target, Sparkles, RefreshCw, Copy, Download,
   Save, Loader2, AlertCircle, X, Check, ArrowDown, ArrowUpFromLine,
   FileSpreadsheet, UserCheck, UserX, FileText, Settings,
 } from 'lucide-react'
@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import StudentSortDropdown from '@/components/student-sort-dropdown'
 import BatchFeedbackPanel from '@/components/feedback/BatchFeedbackPanel'
 import AutoFillConfigPanel from '@/components/feedback/AutoFillConfigPanel'
+import BookmarkletSetup from '@/components/auto-fill/BookmarkletSetup'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FeedbackRecord,
@@ -80,6 +81,7 @@ export default function FeedbackPage() {
   const [isExportingScores, setIsExportingScores] = useState(false)
   const [showBatchPanel, setShowBatchPanel] = useState(false)
   const [showAutoFillPanel, setShowAutoFillPanel] = useState(false)
+  const [showBookmarkletSetup, setShowBookmarkletSetup] = useState(false)
   const classSelectRef = useRef<HTMLDivElement>(null)
   const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
@@ -267,6 +269,20 @@ export default function FeedbackPage() {
   const totalFeedbacksInClass = React.useMemo(() => {
     if (!selectedClassId) return 0
     return students.reduce((sum, s) => sum + getFeedbackHistoryByStudent(s.id).length, 0)
+  }, [selectedClassId, students])
+
+  const bookmarkletStudentFeedbacks = React.useMemo(() => {
+    if (!selectedClassId) return []
+    return students.map(s => {
+      const records = getFeedbackHistoryByStudent(s.id)
+      const latest = records.length > 0
+        ? records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+        : null
+      return {
+        name: s.name,
+        feedback: latest?.generatedContent || '',
+      }
+    })
   }, [selectedClassId, students])
 
   const handleGenerate = async () => {
@@ -627,6 +643,13 @@ export default function FeedbackPage() {
               >
                 <Settings className="h-4 w-4 mr-2" />
                 自动填写配置
+              </button>
+              <button
+                onClick={() => setShowBookmarkletSetup(true)}
+                className="inline-flex items-center px-5 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+              >
+                <Bookmark className="h-4 w-4 mr-2" />
+                书签脚本
               </button>
               <button
                 onClick={handleCopyExerciseScores}
@@ -1326,6 +1349,13 @@ export default function FeedbackPage() {
             </motion.div>
           </motion.div>
         )}
+
+        <BookmarkletSetup
+          isOpen={showBookmarkletSetup}
+          onClose={() => setShowBookmarkletSetup(false)}
+          classTitle={selectedClass?.name}
+          students={bookmarkletStudentFeedbacks}
+        />
       </AnimatePresence>
     </PageContainer>
   )
