@@ -77,6 +77,9 @@ export default function BatchFeedbackPanel({ students, selectedClass, classConte
     }))
 
     try {
+      const savedWordCount = localStorage.getItem('tabuddy_feedback_word_count')
+      const wordCount = savedWordCount ? parseInt(savedWordCount, 10) : undefined
+
       const res = await fetch('/api/feedback/batch-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +87,7 @@ export default function BatchFeedbackPanel({ students, selectedClass, classConte
           classId: selectedClass?.id || '',
           students: studentsToGenerate,
           classContent: classContent.trim(),
+          wordCount,
         }),
       })
 

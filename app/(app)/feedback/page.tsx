@@ -291,6 +291,9 @@ export default function FeedbackPage() {
     const toastId = toast.loading('AI 正在生成反馈...')
 
     try {
+      const savedWordCount = localStorage.getItem('tabuddy_feedback_word_count')
+      const wordCount = savedWordCount ? parseInt(savedWordCount, 10) : undefined
+
       const res = await fetch('/api/feedback/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -303,6 +306,7 @@ export default function FeedbackPage() {
             .map((r) => r.generatedContent)
             .filter(Boolean),
           classContent: classContent.trim(),
+          wordCount,
         }),
       })
 

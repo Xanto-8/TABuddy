@@ -15,6 +15,7 @@ import {
   getFeedbackHistoryByStudent,
   isScheduleDayForClass,
   getCurrentClassByTime,
+  addNotification,
 } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import {
@@ -312,7 +313,16 @@ function ClassTodoCard({
   const pendingWorkflow = item.workflowTodos.filter((t) => !t.completed)
 
   const handleToggleTodo = (todoId: string) => {
-    toggleWorkflowTodo(todoId, cls.id)
+    const updated = toggleWorkflowTodo(todoId, cls.id)
+    if (updated?.completed) {
+      addNotification({
+        classId: cls.id,
+        className: cls.name,
+        type: 'workflow_node',
+        title: updated.label,
+        message: `「${updated.label}」已完成，继续加油~`,
+      })
+    }
     onRefresh()
   }
 

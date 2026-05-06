@@ -118,6 +118,7 @@ export function WorkflowNodeProgress() {
   const toggleComplete = useCallback(async (node: WorkflowNode) => {
     const nodeName = node.customName || WORKFLOW_NODE_LABELS[node.type]
     const classId = selectedCourse?.classId || selectedCourse?.id || ''
+    const className = selectedCourse?.className || selectedCourse?.name || ''
 
     setCompletedMap(prev => {
       const current = prev[node.id] ?? false
@@ -135,8 +136,16 @@ export function WorkflowNodeProgress() {
       } catch {
         // Silently proceed
       }
+
+      addNotification({
+        classId,
+        className,
+        type: 'workflow_node',
+        title: nodeName,
+        message: `「${nodeName}」已完成，可以进入下一步啦~`,
+      })
     }
-  }, [selectedCourse])
+  }, [selectedCourse, completedMap])
 
   const formatCourseTime = (startTime: string, endTime: string) => {
     const fmt = (t: string) => {

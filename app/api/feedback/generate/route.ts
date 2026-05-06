@@ -3,7 +3,7 @@ import { generateFeedback } from '@/lib/feedback-generator'
 
 export async function POST(request: NextRequest) {
   try {
-    const { keywords, studentName, studentId, history, classContent } = await request.json()
+    const { keywords, studentName, studentId, history, classContent, wordCount } = await request.json()
 
     if (!keywords || !studentName || !studentId) {
       return NextResponse.json(
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await generateFeedback({ keywords, studentName, studentId, history, classContent })
+    const result = await generateFeedback({ keywords, studentName, studentId, history, classContent, wordCount })
 
     return NextResponse.json(result)
   } catch (error) {

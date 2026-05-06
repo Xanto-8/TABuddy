@@ -10,6 +10,7 @@ interface BatchGenerateRequest {
     keywords: string
   }>
   classContent?: string
+  wordCount?: number
 }
 
 interface BatchGenerateResult {
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
             studentId: student.id,
             history,
             classContent: body.classContent || '',
+            wordCount: body.wordCount,
           })
 
           return {

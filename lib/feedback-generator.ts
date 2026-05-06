@@ -6,6 +6,7 @@ interface GenerateFeedbackParams {
   studentId: string
   history?: string[]
   classContent?: string
+  wordCount?: number
 }
 
 function pickRandom<T>(arr: T[]): T {
@@ -72,7 +73,7 @@ function getRandomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function generateLocalFeedback(keywords: string, studentName: string): string {
+function generateLocalFeedback(keywords: string, studentName: string, wordCount?: number): string {
   const cats = getPhrasesByKeywords(keywords)
 
   const performanceCat = cats.performanceCategory
@@ -102,8 +103,7 @@ function generateLocalFeedback(keywords: string, studentName: string): string {
 
   let feedback = pickRandom(templates)
 
-  const saved = localStorage.getItem('tabuddy_feedback_word_count')
-  const targetLength = saved ? parseInt(saved, 10) : getRandomInt(190, 210)
+  const targetLength = wordCount || getRandomInt(190, 210)
   if (feedback.length > targetLength + 30) {
     feedback = feedback.slice(0, targetLength + 10) + '。'
   } else if (feedback.length < targetLength - 30) {
@@ -144,7 +144,7 @@ export async function generateFeedback(params: GenerateFeedbackParams): Promise<
   content: string
   usedAI: boolean
 }> {
-  const { keywords, studentName, studentId, history = [], classContent = '' } = params
+  const { keywords, studentName, studentId, history = [], classContent = '', wordCount } = params
 
   const historyContext = history.length > 0
     ? history.map((h, i) => `反馈${i + 1}：${h.slice(0, 100)}...`).join('\n')
@@ -173,9 +173,8 @@ export async function generateFeedback(params: GenerateFeedbackParams): Promise<
       ? `\n本节课课堂内容：\n${classContent.trim()}\n`
       : ''
 
-    const savedWordCount = localStorage.getItem('tabuddy_feedback_word_count')
-    const wordCount = savedWordCount ? parseInt(savedWordCount, 10) : 200
-    const wordRange = `${Math.max(50, wordCount - 20)}-${wordCount + 20}`
+    const effectiveWordCount = wordCount || 200
+    const wordRange = `${Math.max(50, effectiveWordCount - 20)}-${effectiveWordCount + 20}`
 
     const prompt = `你是少儿英语课程的老师，请根据学生课堂关键词，生成一段${wordRange}字的课后反馈。${classContext ? '\n注意：必须结合本节课实际课堂内容进行反馈，让反馈贴合当天上课实际情况。' : ''}
 
@@ -230,7 +229,7 @@ ${classContext ? '5. 反馈中要自然融入本节课知识点和课堂内容�
     console.warn('AI feedback generation failed, falling back to local engine:', error)
 
     const localContent = regenerateUntilUnique(
-      () => generateLocalFeedback(keywords, studentName),
+      () => generateLocalFeedback(keywords, studentName, wordCount),
       history.map((h) => h.slice(0, 100))
     )
 
@@ -238,9 +237,9 @@ ${classContext ? '5. 反馈中要自然融入本节课知识点和课堂内容�
   }
 }
 
-export function generateLocalFallback(keywords: string, studentName: string, history: string[] = []): string {
+export function generateLocalFallback(keywords: string, studentName: string, history: string[] = [], wordCount?: number): string {
   return regenerateUntilUnique(
-    () => generateLocalFeedback(keywords, studentName),
+    () => generateLocalFeedback(keywords, studentName, wordCount),
     history.map((h) => h.slice(0, 100))
   )
 }
