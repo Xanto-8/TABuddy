@@ -62,18 +62,6 @@ function ProfileSettings({ user }: { user: NonNullable<ReturnType<typeof useAuth
   const [showConfirmPwd, setShowConfirmPwd] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
 
-  const [feedbackWordCount, setFeedbackWordCount] = useState(() => {
-    const saved = localStorage.getItem('tabuddy_feedback_word_count')
-    return saved ? parseInt(saved, 10) : 200
-  })
-
-  // 保存反馈字数设置
-  const handleFeedbackWordCountChange = (value: number) => {
-    setFeedbackWordCount(value)
-    localStorage.setItem('tabuddy_feedback_word_count', String(value))
-    toast.success(`反馈字数已设置为 ${value} 字`)
-  }
-
   const handleAvatarClick = () => {
     fileInputRef.current?.click()
   }
@@ -438,6 +426,24 @@ function ProfileSettings({ user }: { user: NonNullable<ReturnType<typeof useAuth
         </CardContent>
       </Card>
 
+    </div>
+  )
+}
+
+function AIFeedbackSettings() {
+  const [feedbackWordCount, setFeedbackWordCount] = useState(() => {
+    const saved = localStorage.getItem('tabuddy_feedback_word_count')
+    return saved ? parseInt(saved, 10) : 200
+  })
+
+  const handleFeedbackWordCountChange = (value: number) => {
+    setFeedbackWordCount(value)
+    localStorage.setItem('tabuddy_feedback_word_count', String(value))
+    toast.success(`反馈字数已设置为 ${value} 字`)
+  }
+
+  return (
+    <div className="space-y-4 md:space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -499,6 +505,10 @@ export default function SettingsPage() {
               <User className="w-4 h-4" />
               个人信息
             </TabsTrigger>
+            <TabsTrigger value="ai-feedback" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              AI 反馈设置
+            </TabsTrigger>
             <TabsTrigger value="shortcuts" className="gap-2">
               <Keyboard className="w-4 h-4" />
               快捷键设置
@@ -508,6 +518,10 @@ export default function SettingsPage() {
 
         <TabsContent value="profile">
           <ProfileSettings user={user} />
+        </TabsContent>
+
+        <TabsContent value="ai-feedback">
+          <AIFeedbackSettings />
         </TabsContent>
 
         <TabsContent value="shortcuts">
