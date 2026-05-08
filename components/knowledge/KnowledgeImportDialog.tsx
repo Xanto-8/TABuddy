@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, X, FileSpreadsheet, FileText, FileType, AlertCircle, CheckCircle2, ChevronDown, ChevronRight, BookOpen, Link as LinkIcon, FileText as FileTextIcon, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { parseFile, type ImportResult } from '@/lib/knowledge-import/parser'
+import { parseFile, isExtSupported, getAllSupportedExtensions, type ImportResult } from '@/lib/knowledge-import/parser'
 import type { KnowledgeEntry } from '@/lib/knowledge-base-store'
 import type { KnowledgeFolder } from '@/lib/knowledge-folder-store'
 
@@ -37,11 +37,13 @@ export default function KnowledgeImportDialog({ open, onClose, onImport, folders
   const [selectedFolderId, setSelectedFolderId] = useState<string>('')
   const [showPreview, setShowPreview] = useState(true)
 
+  const allowedExts = getAllSupportedExtensions()
+  const acceptStr = allowedExts.join(',')
+
   const handleFile = useCallback(async (file: File) => {
     const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
-    const allowed = ['.xlsx', '.xls', '.docx', '.pptx']
-    if (!allowed.includes(ext)) {
-      alert('只支持 .xlsx / .xls / .docx / .pptx 格式')
+    if (!isExtSupported(ext)) {
+      alert(`不支持的文件格式: ${ext}\n\n支持的格式:\n${allowedExts.join(' / ')}`)
       return
     }
 
@@ -122,7 +124,7 @@ export default function KnowledgeImportDialog({ open, onClose, onImport, folders
                 >
                   <input
                     type="file"
-                    accept=".xlsx,.xls,.docx,.pptx"
+                    accept={acceptStr}
                     onChange={handleFileSelect}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
@@ -134,20 +136,24 @@ export default function KnowledgeImportDialog({ open, onClose, onImport, folders
                       拖拽文件到此处，或点击选择文件
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      支持 Excel(.xlsx / .xls)、Word(.docx)、PowerPoint(.pptx)
+                      支持 Excel 电子表格、Word 文档、PPT 演示等格式
                     </p>
-                    <div className="flex items-center gap-3 mt-2">
+                    <div className="flex items-center gap-3 mt-2 flex-wrap justify-center">
                       <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                         <FileSpreadsheet className="w-3.5 h-3.5" />
-                        .xlsx
+                        .xlsx .xlsm .xlsb .xls
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <FileText className="w-3.5 h-3.5" />
+                        .csv .ods .xml
                       </div>
                       <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-stone-50 text-stone-600 dark:bg-stone-900/30 dark:text-stone-400">
                         <FileText className="w-3.5 h-3.5" />
-                        .docx
+                        .docx .docm .dotx
                       </div>
                       <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
                         <FileType className="w-3.5 h-3.5" />
-                        .pptx
+                        .pptx .pptm .potx
                       </div>
                     </div>
                     <div className="mt-2 text-[11px] text-muted-foreground bg-accent/50 px-3 py-1.5 rounded-lg leading-relaxed">

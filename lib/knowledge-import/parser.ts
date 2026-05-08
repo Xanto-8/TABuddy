@@ -47,22 +47,36 @@ function getFileExt(name: string): string {
   return name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
 }
 
+const EXCEL_EXTS = new Set(['.xlsx', '.xls', '.xlsm', '.xlsb', '.csv', '.ods', '.xml'])
+const WORD_EXTS = new Set(['.docx', '.docm', '.dotx'])
+const PPT_EXTS = new Set(['.pptx', '.pptm', '.potx'])
+
+const ALL_EXTS = new Set(Array.from(EXCEL_EXTS).concat(Array.from(WORD_EXTS)).concat(Array.from(PPT_EXTS)))
+
+export function getAllSupportedExtensions(): string[] {
+  const all = Array.from(EXCEL_EXTS).concat(Array.from(WORD_EXTS)).concat(Array.from(PPT_EXTS))
+  return all.sort()
+}
+
+export function isExtSupported(ext: string): boolean {
+  return ALL_EXTS.has(ext)
+}
+
 export async function parseFile(
   file: File
 ): Promise<ImportResult> {
   const ext = getFileExt(file.name)
 
-  switch (ext) {
-    case '.xlsx':
-    case '.xls':
-      return parseExcel(file)
-    case '.docx':
-      return parseWord(file)
-    case '.pptx':
-      return parsePowerPoint(file)
-    default:
-      throw new Error(`不支持的文件格式: ${ext}`)
+  if (EXCEL_EXTS.has(ext)) {
+    return parseExcel(file)
   }
+  if (WORD_EXTS.has(ext)) {
+    return parseWord(file)
+  }
+  if (PPT_EXTS.has(ext)) {
+    return parsePowerPoint(file)
+  }
+  throw new Error(`不支持的文件格式: ${ext}`)
 }
 
 async function parseExcel(file: File): Promise<ImportResult> {
