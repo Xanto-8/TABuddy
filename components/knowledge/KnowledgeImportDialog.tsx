@@ -19,6 +19,7 @@ interface Props {
 interface UploadingFile {
   id: string
   name: string
+  size: number
   progress: 'uploading' | 'done' | 'error'
   error?: string
   entry?: KnowledgeEntry
@@ -45,6 +46,12 @@ function extColor(ext: string) {
   return 'bg-gray-50 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400'
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
 export default function KnowledgeImportDialog({ open, onClose, onImport, folders = [] }: Props) {
   const [dragOver, setDragOver] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
@@ -58,6 +65,7 @@ export default function KnowledgeImportDialog({ open, onClose, onImport, folders
     const newFiles: UploadingFile[] = files.map(f => ({
       id: generateId(),
       name: f.name,
+      size: f.size,
       progress: 'uploading' as const,
     }))
     setUploadingFiles(prev => [...prev, ...newFiles])
@@ -220,6 +228,7 @@ export default function KnowledgeImportDialog({ open, onClose, onImport, folders
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-foreground truncate">{f.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{formatSize(f.size)}</p>
                           {f.progress === 'uploading' && (
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <Loader2 className="w-3 h-3 animate-spin text-primary" />

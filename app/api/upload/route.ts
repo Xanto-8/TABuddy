@@ -40,10 +40,26 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      return NextResponse.json(
-        { error: 'Vercel 环境不支持本地存储，请配置 IMGUR_CLIENT_ID 后使用 Imgur 图床上传' },
-        { status: 400 }
-      )
+      const maxDataSize = 1024 * 1024
+      if (file.size > maxDataSize) {
+        return NextResponse.json(
+          { error: `Vercel 环境未配置 Imgur，仅支持 1MB 以内的文件直接嵌入，当前文件 ${(file.size / 1024 / 1024).toFixed(1)}MB` },
+          { status: 400 }
+        )
+      }
+
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const base64 = buffer.toString('base64')
+      const mimeType = getMimeType(ext)
+      const dataUrl = `data:${mimeType};base64,${base64}`
+
+      return NextResponse.json({
+        success: true,
+        fileName: file.name,
+        filePath: dataUrl,
+        fileSize: file.size,
+      })
     }
 
     const { writeFile, mkdir } = await import('fs/promises')
@@ -89,4 +105,36 @@ async function uploadToImgur(file: File, clientId: string) {
     throw new Error(data.data?.error || 'Imgur 上传失败')
   }
   return data.data
+}
+
+const MIME_MAP: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.docm': 'application/vnd.ms-word.document.macroEnabled.12',
+  '.dotx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.template',
+  '.xls': 'application/vnd.ms-excel',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.xlsm': 'application/vnd.ms-excel.sheet.macroEnabled.12',
+  '.xlsb': 'application/vnd.ms-excel.sheet.binary.macroEnabled.12',
+  '.csv': 'text/csv',
+  '.ods': 'application/vnd.oasis.opendocument.spreadsheet',
+  '.xml': 'application/xml',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.pptm': 'application/vnd.ms-powerpoint.presentation.macroEnabled.12',
+  '.potx': 'application/vnd.openxmlformats-officedocument.presentationml.template',
+  '.txt': 'text/plain',
+  '.md': 'text/markdown',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml',
+}
+
+function getMimeType(ext: string): string {
+  return MIME_MAP[ext] || 'application/octet-stream'
 }
