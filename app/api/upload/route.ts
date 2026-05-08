@@ -9,7 +9,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '没有上传文件' }, { status: 400 })
     }
 
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
+    const allowedExtensions = [
+      '.pdf', '.doc', '.docx', '.docm', '.dotx',
+      '.xls', '.xlsx', '.xlsm', '.xlsb', '.csv', '.ods', '.xml',
+      '.ppt', '.pptx', '.pptm', '.potx',
+      '.txt', '.md',
+      '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg',
+    ]
     const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
     if (!allowedExtensions.includes(ext)) {
       return NextResponse.json({ error: '不支持的文件格式' }, { status: 400 })

@@ -2,9 +2,9 @@
 
 import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, X, FileSpreadsheet, FileText, FileType, AlertCircle, CheckCircle2, ChevronDown, ChevronRight, BookOpen, Link as LinkIcon, FileText as FileTextIcon, Info } from 'lucide-react'
+import { Upload, X, FileSpreadsheet, FileText, FileType, CheckCircle2, Loader2, FileUp, FolderOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { parseFile, isExtSupported, getAllSupportedExtensions, type ImportResult } from '@/lib/knowledge-import/parser'
+import { getAllSupportedExtensions, isExtSupported, uploadFile } from '@/lib/knowledge-import/parser'
 import type { KnowledgeEntry } from '@/lib/knowledge-base-store'
 import type { KnowledgeFolder } from '@/lib/knowledge-folder-store'
 
@@ -16,78 +16,127 @@ interface Props {
   mode: 'private' | 'public'
 }
 
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  link: <LinkIcon className="w-3 h-3" />,
-  template: <FileTextIcon className="w-3 h-3" />,
-  document: <BookOpen className="w-3 h-3" />,
-  info: <Info className="w-3 h-3" />,
+interface UploadingFile {
+  id: string
+  name: string
+  progress: 'uploading' | 'done' | 'error'
+  error?: string
+  entry?: KnowledgeEntry
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  link: '链接',
-  template: '模板',
-  document: '文档',
-  info: '信息',
+function generateId(): string {
+  return `import-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`
 }
 
-export default function KnowledgeImportDialog({ open, onClose, onImport, folders = [], mode }: Props) {
+function extIcon(ext: string) {
+  const e = ext.toLowerCase()
+  if (['.xlsx', '.xls', '.xlsm', '.xlsb', '.csv', '.ods', '.xml'].includes(e)) return <FileSpreadsheet className="w-4 h-4" />
+  if (['.docx', '.docm', '.dotx', '.doc'].includes(e)) return <FileText className="w-4 h-4" />
+  if (['.pptx', '.pptm', '.potx', '.ppt'].includes(e)) return <FileType className="w-4 h-4" />
+  return <FileUp className="w-4 h-4" />
+}
+
+function extColor(ext: string) {
+  const e = ext.toLowerCase()
+  if (['.xlsx', '.xls', '.xlsm', '.xlsb', '.csv', '.ods', '.xml'].includes(e)) return 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+  if (['.docx', '.docm', '.dotx', '.doc'].includes(e)) return 'bg-stone-50 text-stone-600 dark:bg-stone-900/30 dark:text-stone-400'
+  if (['.pptx', '.pptm', '.potx', '.ppt'].includes(e)) return 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+  if (['.pdf'].includes(e)) return 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+  return 'bg-gray-50 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400'
+}
+
+export default function KnowledgeImportDialog({ open, onClose, onImport, folders = [] }: Props) {
   const [dragOver, setDragOver] = useState(false)
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
   const [importing, setImporting] = useState(false)
-  const [result, setResult] = useState<ImportResult | null>(null)
-  const [selectedFolderId, setSelectedFolderId] = useState<string>('')
-  const [showPreview, setShowPreview] = useState(true)
+  const [selectedFolderId, setSelectedFolderId] = useState('')
+  const supportedExts = getAllSupportedExtensions()
+  const acceptStr = supportedExts.join(',')
 
-  const allowedExts = getAllSupportedExtensions()
-  const acceptStr = allowedExts.join(',')
+  const addFiles = useCallback(async (fileList: FileList) => {
+    const files = Array.from(fileList)
+    const newFiles: UploadingFile[] = files.map(f => ({
+      id: generateId(),
+      name: f.name,
+      progress: 'uploading' as const,
+    }))
+    setUploadingFiles(prev => [...prev, ...newFiles])
 
-  const handleFile = useCallback(async (file: File) => {
-    const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
-    if (!isExtSupported(ext)) {
-      alert(`不支持的文件格式: ${ext}\n\n支持的格式:\n${allowedExts.join(' / ')}`)
-      return
-    }
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const fileId = newFiles[i].id
+      const ext = file.name.toLowerCase().match(/\.[^.]+$/)?.[0] || ''
+      if (!isExtSupported(ext)) {
+        setUploadingFiles(prev => prev.map(uf =>
+          uf.id === fileId ? { ...uf, progress: 'error', error: `不支持格式 ${ext}` } : uf
+        ))
+        continue
+      }
 
-    setImporting(true)
-    setResult(null)
-    try {
-      const parsed = await parseFile(file)
-      setResult(parsed)
-    } catch (e: any) {
-      alert(`解析失败: ${e?.message || e}`)
-    } finally {
-      setImporting(false)
+      try {
+        const result = await uploadFile(file)
+        const title = file.name.replace(/\.[^.]+$/, '')
+        const entry: KnowledgeEntry = {
+          id: generateId(),
+          title,
+          content: `上传文件: ${file.name}`,
+          keywords: title.split(/[\s\-_]+/).filter(s => s.length >= 2),
+          type: 'document',
+          url: result.filePath,
+          priority: 3,
+        }
+        setUploadingFiles(prev => prev.map(uf =>
+          uf.id === fileId ? { ...uf, progress: 'done', entry } : uf
+        ))
+      } catch (e: any) {
+        setUploadingFiles(prev => prev.map(uf =>
+          uf.id === fileId ? { ...uf, progress: 'error', error: e?.message || '上传失败' } : uf
+        ))
+      }
     }
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleFile(file)
-  }, [handleFile])
+    if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files)
+  }, [addFiles])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleFile(file)
+    if (e.target.files && e.target.files.length > 0) addFiles(e.target.files)
     e.target.value = ''
-  }, [handleFile])
+  }, [addFiles])
 
   const handleImport = async () => {
-    if (!result || result.entries.length === 0) return
-    const ok = await onImport(result.entries, selectedFolderId || undefined)
+    const entries = uploadingFiles
+      .filter(f => f.progress === 'done' && f.entry)
+      .map(f => f.entry!)
+    if (entries.length === 0) return
+
+    setImporting(true)
+    const ok = await onImport(entries, selectedFolderId || undefined)
+    setImporting(false)
+
     if (ok) {
-      setResult(null)
+      setUploadingFiles([])
       setSelectedFolderId('')
       onClose()
     }
   }
 
   const handleClose = () => {
-    setResult(null)
+    if (importing) return
+    setUploadingFiles([])
     setSelectedFolderId('')
-    setImporting(false)
     onClose()
   }
+
+  const removeFile = (id: string) => {
+    setUploadingFiles(prev => prev.filter(f => f.id !== id))
+  }
+
+  const doneCount = uploadingFiles.filter(f => f.progress === 'done').length
+  const errorCount = uploadingFiles.filter(f => f.progress === 'error').length
 
   return (
     <AnimatePresence>
@@ -97,198 +146,147 @@ export default function KnowledgeImportDialog({ open, onClose, onImport, folders
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="w-full max-w-2xl mx-4 rounded-2xl border border-border bg-card shadow-2xl"
+            className="w-full max-w-lg mx-4 rounded-2xl border border-border bg-card shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h2 className="text-base font-semibold text-foreground">
-                导入知识条目
+                上传文件到知识库
               </h2>
               <button onClick={handleClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="px-6 py-4 space-y-4 max-h-[65vh] overflow-y-auto">
-              {!result && (
-                <div
-                  onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                  className={cn(
-                    'relative border-2 border-dashed rounded-xl p-8 text-center transition-all',
-                    dragOver
-                      ? 'border-primary bg-primary/5 scale-[1.02]'
-                      : 'border-border hover:border-primary/40 hover:bg-accent/30'
-                  )}
-                >
-                  <input
-                    type="file"
-                    accept={acceptStr}
-                    onChange={handleFileSelect}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Upload className="w-6 h-6 text-primary" />
-                    </div>
-                    <p className="text-sm font-medium text-foreground">
-                      拖拽文件到此处，或点击选择文件
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      支持 Excel 电子表格、Word 文档、PPT 演示等格式
-                    </p>
-                    <div className="flex items-center gap-3 mt-2 flex-wrap justify-center">
-                      <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                        <FileSpreadsheet className="w-3.5 h-3.5" />
-                        .xlsx .xlsm .xlsb .xls
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                        <FileText className="w-3.5 h-3.5" />
-                        .csv .ods .xml
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-stone-50 text-stone-600 dark:bg-stone-900/30 dark:text-stone-400">
-                        <FileText className="w-3.5 h-3.5" />
-                        .docx .docm .dotx
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
-                        <FileType className="w-3.5 h-3.5" />
-                        .pptx .pptm .potx
-                      </div>
-                    </div>
-                    <div className="mt-2 text-[11px] text-muted-foreground bg-accent/50 px-3 py-1.5 rounded-lg leading-relaxed">
-                      <p className="font-medium mb-0.5">Excel 格式要求：</p>
-                      <p>表头需包含：title(标题)、content(内容)、keywords(关键词)、type(类型)、priority(优先级)、url(链接)</p>
-                    </div>
+            <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div
+                onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                className={cn(
+                  'relative border-2 border-dashed rounded-xl p-6 text-center transition-all',
+                  dragOver
+                    ? 'border-primary bg-primary/5 scale-[1.02]'
+                    : 'border-border hover:border-primary/40 hover:bg-accent/30'
+                )}
+              >
+                <input
+                  type="file"
+                  multiple
+                  accept={acceptStr}
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Upload className="w-6 h-6 text-primary" />
                   </div>
-                </div>
-              )}
-
-              {importing && (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm text-muted-foreground">正在解析文件...</span>
-                  </div>
-                </div>
-              )}
-
-              {result && (
-                <div className="space-y-4">
-                  {result.errors.length > 0 && (
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                      <div className="text-xs text-red-600 dark:text-red-400">
-                        <p className="font-medium mb-1">解析警告（{result.errors.length} 条）</p>
-                        {result.errors.map((err, i) => (
-                          <p key={i} className="opacity-80">第 {err.row} 行：{err.message}</p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      <span className="text-foreground font-medium">{result.fileName}</span>
-                      <span className="text-muted-foreground">
-                        成功解析 {result.successRows} / {result.totalRows} 条
+                  <p className="text-sm font-medium text-foreground">
+                    拖拽文件到此处，或点击选择文件
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    支持 Office 文档、PDF、图片等 {supportedExts.length} 种格式
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-1.5 mt-1 max-w-sm">
+                    {['.xlsx', '.xlsm', '.docx', '.pptx', '.pdf'].map(ext => (
+                      <span key={ext} className={cn('text-[10px] px-1.5 py-0.5 rounded-full', extColor(ext))}>
+                        {ext}
                       </span>
-                    </div>
-                    <button
-                      onClick={() => setShowPreview(!showPreview)}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPreview ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                      {showPreview ? '收起预览' : '展开预览'}
-                    </button>
+                    ))}
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground">
+                      +{supportedExts.length - 5} 种
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {uploadingFiles.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-foreground">
+                      已添加 {uploadingFiles.length} 个文件
+                    </span>
+                    {doneCount > 0 && (
+                      <span className="text-xs text-green-600 dark:text-green-400">
+                        {doneCount} 个上传完成
+                      </span>
+                    )}
+                  </div>
+                  <div className="border border-border rounded-xl divide-y divide-border max-h-52 overflow-y-auto">
+                    {uploadingFiles.map((f) => (
+                      <div key={f.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent/30 transition-colors">
+                        <div className={cn('shrink-0 w-7 h-7 rounded-lg flex items-center justify-center', extColor(f.name.match(/\.[^.]+$/)?.[0] || ''))}>
+                          {extIcon(f.name.match(/\.[^.]+$/)?.[0] || '')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{f.name}</p>
+                          {f.progress === 'uploading' && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                              <span className="text-[10px] text-muted-foreground">上传中...</span>
+                            </div>
+                          )}
+                          {f.progress === 'done' && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <CheckCircle2 className="w-3 h-3 text-green-500" />
+                              <span className="text-[10px] text-green-600 dark:text-green-400">上传完成</span>
+                            </div>
+                          )}
+                          {f.progress === 'error' && (
+                            <p className="text-[10px] text-red-500 truncate">{f.error || '上传失败'}</p>
+                          )}
+                        </div>
+                        {f.progress !== 'uploading' && (
+                          <button onClick={() => removeFile(f.id)} className="shrink-0 w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
 
-                  {result.entries.length > 0 && (
-                    <div>
-                      <div className="mb-3">
-                        <label className="block text-xs font-medium text-foreground mb-1.5">
-                          导入到文件夹（选填）
-                        </label>
-                        <select
-                          value={selectedFolderId}
-                          onChange={e => setSelectedFolderId(e.target.value)}
-                          className="w-full h-9 px-3 text-xs rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none"
-                        >
-                          <option value="">未分类</option>
-                          {folders.map(f => (
-                            <option key={f.id} value={f.id}>{f.name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {showPreview && (
-                        <div className="border border-border rounded-xl divide-y divide-border max-h-64 overflow-y-auto">
-                          {result.entries.map((entry, i) => (
-                            <div key={i} className="flex items-start gap-3 p-3 hover:bg-accent/30 transition-colors">
-                              <div className={cn(
-                                'shrink-0 w-6 h-6 rounded flex items-center justify-center text-[10px]',
-                                entry.type === 'link' ? 'bg-slate-100 text-slate-600 dark:bg-orange-900/30 dark:text-orange-300' :
-                                entry.type === 'template' ? 'bg-stone-100 text-stone-600 dark:bg-orange-900/30 dark:text-orange-300' :
-                                entry.type === 'document' ? 'bg-gray-100 text-gray-600 dark:bg-orange-900/30 dark:text-orange-300' :
-                                'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300'
-                              )}>
-                                {TYPE_ICONS[entry.type] || <Info className="w-3 h-3" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-medium text-foreground truncate">{entry.title}</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-muted-foreground shrink-0">
-                                    {TYPE_LABELS[entry.type] || entry.type}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">{entry.content}</p>
-                                {entry.keywords.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {entry.keywords.slice(0, 5).map(kw => (
-                                      <span key={kw} className="text-[10px] px-1 py-0.5 rounded bg-accent/50 text-muted-foreground">
-                                        {kw}
-                                      </span>
-                                    ))}
-                                    {entry.keywords.length > 5 && (
-                                      <span className="text-[10px] text-muted-foreground">+{entry.keywords.length - 5}</span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="mt-3">
+                    <label className="flex items-center gap-2 text-xs font-medium text-foreground mb-1.5">
+                      <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
+                      导入到文件夹（选填）
+                    </label>
+                    <select
+                      value={selectedFolderId}
+                      onChange={e => setSelectedFolderId(e.target.value)}
+                      className="w-full h-9 px-3 text-xs rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none"
+                    >
+                      <option value="">未分类</option>
+                      {folders.map(f => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-2 px-6 py-4 border-t border-border">
-              <button
-                onClick={() => {
-                  setResult(null)
-                  setSelectedFolderId('')
-                }}
-                className="px-3 py-2 text-xs rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-              >
-                重新选择
-              </button>
+            <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-accent/30 rounded-b-2xl">
+              {errorCount > 0 && (
+                <span className="text-[11px] text-muted-foreground">
+                  {errorCount} 个文件上传失败，可重试
+                </span>
+              )}
+              {errorCount === 0 && <span />}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleClose}
-                  className="px-4 py-2 text-sm rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                  disabled={importing}
+                  className="px-4 py-2 text-sm rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-all disabled:opacity-40"
                 >
                   取消
                 </button>
                 <button
                   onClick={handleImport}
-                  disabled={!result || result.entries.length === 0}
-                  className="px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-40"
+                  disabled={doneCount === 0 || importing}
+                  className="px-5 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-40 inline-flex items-center gap-1.5"
                 >
-                  导入 {result ? `${result.entries.length} 条` : ''}
+                  {importing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  导入到{importing ? '中...' : `知识库 (${doneCount})`}
                 </button>
               </div>
             </div>
