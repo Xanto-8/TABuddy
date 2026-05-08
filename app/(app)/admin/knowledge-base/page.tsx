@@ -34,22 +34,22 @@ const TYPE_CONFIG: Record<PublicKnowledgeEntry['type'], { label: string; icon: R
   link: {
     label: '链接',
     icon: <LinkIcon className="w-3.5 h-3.5" />,
-    color: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   },
   template: {
     label: '模板',
     icon: <FileText className="w-3.5 h-3.5" />,
-    color: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   },
   document: {
     label: '文档',
     icon: <BookOpen className="w-3.5 h-3.5" />,
-    color: 'bg-gray-100 text-gray-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   },
   info: {
     label: '信息',
     icon: <Info className="w-3.5 h-3.5" />,
-    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   },
 }
 
@@ -407,8 +407,8 @@ export default function AdminKnowledgeBasePage() {
                   <span className={cn(
                     'px-2 py-0.5 text-[10px] font-medium rounded-full border',
                     user?.role === 'superadmin'
-                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-amber-200 dark:border-orange-800'
-                      : 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300 border-blue-200 dark:border-orange-800'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
                   )}>
                     <Shield className="w-3 h-3 inline mr-0.5" />
                     {user?.role === 'superadmin' ? '超级管理员' : '班级管理员'}
@@ -483,7 +483,7 @@ export default function AdminKnowledgeBasePage() {
             <div className="px-4 pb-3 space-y-2 text-[11px] font-mono border-t border-border pt-2">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-20 shrink-0">Auth Token:</span>
-                <span className={diagToken ? 'text-stone-600' : 'text-red-500'}>
+                <span className={diagToken ? 'text-green-600' : 'text-red-500'}>
                   {diagToken ? `存在 (${diagToken.length}字符)` : '不存在'}
                 </span>
               </div>
@@ -493,7 +493,7 @@ export default function AdminKnowledgeBasePage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground w-20 shrink-0">上次同步:</span>
-                <span className={diagSyncError ? 'text-red-500' : 'text-stone-600'}>
+                <span className={diagSyncError ? 'text-red-500' : 'text-green-600'}>
                   {diagSyncError || '成功'}
                 </span>
               </div>

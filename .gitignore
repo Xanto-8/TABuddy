@@ -44,6 +44,12 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
+# Personal documents
+*.docx
+*.doc
+*.xlsx
+*.pptx
+
 # Uploads (local)
 public/uploads/*
 !public/uploads/.gitkeep

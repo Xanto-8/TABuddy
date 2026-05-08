@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Bookmark, Copy, Check, Download, ChevronRight, ExternalLink } from 'lucide-react'
+import { X, Bookmark, Copy, ChevronRight, ExternalLink, AlertTriangle, MousePointer } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface StudentFeedback {
@@ -17,26 +17,15 @@ interface BookmarkletSetupProps {
   students: StudentFeedback[]
 }
 
-const BOOKMARKLET_CODE = `(function(){if(window.__tabuddyAutoFill)return;window.__tabuddyAutoFill=true;var C='#tabuddy-panel{all:initial;position:fixed;top:20px;right:20px;z-index:999999;width:380px;max-height:90vh;background:#fff;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.18);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5;color:#333;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e8e8e8}#tabuddy-panel *{all:revert;box-sizing:border-box}#tabuddy-panel .header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#4f46e5;color:#fff;font-weight:600;font-size:15px}#tabuddy-panel .header button{all:revert;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;line-height:1}#tabuddy-panel .body{padding:12px 16px;overflow-y:auto;flex:1}#tabuddy-panel .section{margin-bottom:12px}#tabuddy-panel .section label{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:4px}#tabuddy-panel textarea{all:revert;width:100%;min-height:60px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;resize:vertical}#tabuddy-panel textarea:focus{outline:none;border-color:#4f46e5}#tabuddy-panel .student-list{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}#tabuddy-panel .student-list button{all:revert;padding:4px 10px;border-radius:14px;border:1px solid #ddd;background:#f5f5f5;cursor:pointer;font-size:12px}#tabuddy-panel .student-list button:hover{border-color:#4f46e5;color:#4f46e5}#tabuddy-panel .student-list button.active{background:#4f46e5;color:#fff;border-color:#4f46e5}#tabuddy-panel .preview-box{background:#f9f9fb;border-radius:6px;padding:10px;font-size:13px;color:#444;min-height:40px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}#tabuddy-panel .preview-box.empty{color:#bbb;font-style:italic}#tabuddy-panel .actions{display:flex;gap:6px;margin-top:8px}#tabuddy-panel .actions button{all:revert;flex:1;padding:8px 0;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600}#tabuddy-panel .btn-primary{background:#4f46e5;color:#fff}#tabuddy-panel .btn-primary:hover{background:#4338ca}#tabuddy-panel .btn-primary:disabled{background:#a5b4fc;cursor:default}#tabuddy-panel .btn-secondary{background:#e5e7eb;color:#333}#tabuddy-panel .btn-secondary:hover{background:#d1d5db}#tabuddy-panel .status-bar{margin-top:8px;padding:6px 10px;border-radius:6px;font-size:12px;display:none}#tabuddy-panel .status-bar.success{display:block;background:#ecfdf5;color:#065f46}#tabuddy-panel .status-bar.error{display:block;background:#fef2f2;color:#991b1b}#tabuddy-panel .status-bar.info{display:block;background:#eff6ff;color:#1e40af}';function s(){var e=document.createElement('style');e.textContent=C;document.head.appendChild(e)}function h(t){var e=document.getElementById('tabuddy-status');if(!e)return;e.textContent=t;setTimeout(function(){e.style.display='none'},3000)}function f(){var a=document.querySelectorAll('button,a,[role="tab"],[role="button"]'),r=[],n=new Set;return a.forEach(function(e){var t=(e.textContent||'').trim();if(t.length>=2&&t.length<=6&&/^[\\u4e00-\\u9fa5a-zA-Z]+$/.test(t)&&!n.has(t)){n.add(t);r.push({name:t,el:e})}}),r}function l(t){var a=document.querySelectorAll('textarea'),r=[];return a.forEach(function(e){var n=e.parentElement,o=!1;for(var i=0;i<5;i++){if(!n)break;var c=n.querySelectorAll('label,span,div,h1,h2,h3,h4');for(var d=0;d<c.length;d++){if(c[d].textContent.indexOf(t)!==-1){o=!0;break}}if(o)break;n=n.parentElement}if(o)r.push(e)}),r}function p(e,t){e.value=t;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));e.dispatchEvent(new Event('blur',{bubbles:true}))}var x=document.createElement('div');x.id='tabuddy-panel';x.innerHTML='<div class="header"><span>📋 TABuddy 填写助手</span><button onclick="var p=document.getElementById(\\'tabuddy-panel\\');p.parentNode.removeChild(p);window.__tabuddyAutoFill=false">✕</button></div><div class="body"><div class="section"><label>📥 粘贴数据（从 TABuddy 复制）</label><textarea id="tabuddy-data-input" placeholder="在 TABuddy 点击「复制书签数据」，然后粘贴到这里..."></textarea></div><div class="section"><label>👤 选择学生</label><div class="student-list" id="tabuddy-students"></div></div><div class="section"><label>📝 反馈预览</label><div class="preview-box empty" id="tabuddy-preview">选择学生后显示反馈内容</div></div><div class="section"><label>🎯 填写目标</label><select id="tabuddy-target-field" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px"><option value="课堂表现">课堂表现</option><option value="上节课练习情况">上节课练习情况</option><option value="建议练习">建议练习</option><option value="课中掌握情况">课中掌握情况</option><option value="课堂入门测">课堂入门测</option><option value="课堂出门测">课堂出门测</option><option value="custom">自定义选择器</option></select><input id="tabuddy-custom-selector" placeholder="输入 CSS 选择器" style="display:none;width:100%;margin-top:4px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px"></div><div class="actions"><button class="btn-secondary" id="tabuddy-btn-prev">← 上一个</button><button class="btn-primary" id="tabuddy-btn-fill" disabled>✏️ 填写</button><button class="btn-secondary" id="tabuddy-btn-next">下一个 →</button></div><div class="status-bar" id="tabuddy-status"></div></div>';s();document.body.appendChild(x);var cd=null,cs=[],ci=-1,di=document.getElementById('tabuddy-data-input'),sc=document.getElementById('tabuddy-students'),pv=document.getElementById('tabuddy-preview'),fb=document.getElementById('tabuddy-btn-fill'),pb=document.getElementById('tabuddy-btn-prev'),nb=document.getElementById('tabuddy-btn-next'),ts=document.getElementById('tabuddy-target-field'),cs2=document.getElementById('tabuddy-custom-selector');ts.addEventListener('change',function(){cs2.style.display=this.value==='custom'?'block':'none'});di.addEventListener('paste',function(){setTimeout(function(){var e=di.value.trim();if(!e)return;try{cd=JSON.parse(e);if(!cd.students||!Array.isArray(cd.students)){h('数据格式错误','error');return}cs=cd.students;sc.innerHTML='';cs.forEach(function(s,i){var b=document.createElement('button');b.textContent=s.name;b.onclick=function(){ci=i;var btns=sc.querySelectorAll('button');btns.forEach(function(bb,j){bb.className=j===i?'active':''});var st=cs[i];if(st&&st.feedback){pv.textContent=st.feedback;pv.className='preview-box';fb.disabled=false}else{pv.textContent='暂无反馈';pv.className='preview-box empty';fb.disabled=true}};sc.appendChild(b)});h('已加载 '+cs.length+' 名学生','success')}catch(e2){h('解析失败:'+e2.message,'error')}},100)});fb.addEventListener('click',function(){if(ci<0||!cs[ci])return;var s2=cs[ci],f2=ts.value;if(f2==='custom')f2=cs2.value.trim();if(!f2){h('请选择填写目标','error');return}var tas;if(ts.value==='custom'){var sel=cs2.value.trim();tas=sel?document.querySelectorAll(sel):[]}else{tas=l(f2)}if(!tas.length){h('未找到「'+f2+'」输入框','error');return}p(tas[0],s2.feedback);h('✅ 已填入「'+s2.name+'」','success')});pb.addEventListener('click',function(){if(!cs.length)return;var idx=ci<=0?cs.length-1:ci-1;ci=idx;var btns=sc.querySelectorAll('button');btns.forEach(function(b,i){b.className=i===idx?'active':''});var st=cs[idx];if(st&&st.feedback){pv.textContent=st.feedback;pv.className='preview-box';fb.disabled=false}else{pv.textContent='暂无反馈';pv.className='preview-box empty';fb.disabled=true}});nb.addEventListener('click',function(){if(!cs.length)return;var idx=ci>=cs.length-1?0:ci+1;ci=idx;var btns=sc.querySelectorAll('button');btns.forEach(function(b,i){b.className=i===idx?'active':''});var st=cs[idx];if(st&&st.feedback){pv.textContent=st.feedback;pv.className='preview-box';fb.disabled=false}else{pv.textContent='暂无反馈';pv.className='preview-box empty';fb.disabled=true}})})()`
+const BOOKMARKLET_CODE = `(function(){if(window.__tabuddyAutoFill)return;window.__tabuddyAutoFill=true;var C='#tabuddy-panel{all:initial;position:fixed;top:20px;right:20px;z-index:999999;width:380px;max-height:90vh;background:#fff;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.18);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5;color:#333;display:flex;flex-direction:column;overflow:hidden;border:1px solid #e8e8e8}#tabuddy-panel *{all:revert;box-sizing:border-box}#tabuddy-panel .header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#4f46e5;color:#fff;font-weight:600;font-size:15px}#tabuddy-panel .header button{all:revert;background:none;border:none;color:#fff;font-size:20px;cursor:pointer;padding:0 4px;line-height:1}#tabuddy-panel .body{padding:12px 16px;overflow-y:auto;flex:1}#tabuddy-panel .section{margin-bottom:12px}#tabuddy-panel .section label{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:4px}#tabuddy-panel textarea{all:revert;width:100%;min-height:60px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;resize:vertical}#tabuddy-panel textarea:focus{outline:none;border-color:#4f46e5}#tabuddy-panel .student-list{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}#tabuddy-panel .student-list button{all:revert;padding:4px 10px;border-radius:14px;border:1px solid #ddd;background:#f5f5f5;cursor:pointer;font-size:12px}#tabuddy-panel .student-list button:hover{border-color:#4f46e5;color:#4f46e5}#tabuddy-panel .student-list button.active{background:#4f46e5;color:#fff;border-color:#4f46e5}#tabuddy-panel .preview-box{background:#f9f9fb;border-radius:6px;padding:10px;font-size:13px;color:#444;min-height:40px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}#tabuddy-panel .preview-box.empty{color:#bbb;font-style:italic}#tabuddy-panel .actions{display:flex;gap:6px;margin-top:8px}#tabuddy-panel .actions button{all:revert;flex:1;padding:8px 0;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer;text-align:center}#tabuddy-panel .actions .btn-fill{background:#4f46e5;color:#fff}#tabuddy-panel .actions .btn-fill:hover{background:#4338ca}#tabuddy-panel .actions .btn-fill:disabled{background:#a5b4fc;cursor:not-allowed}#tabuddy-panel .actions .btn-prev{background:#e5e7eb;color:#374151;flex:0.4}#tabuddy-panel .actions .btn-next{background:#e5e7eb;color:#374151;flex:0.4}#tabuddy-panel .actions .btn-prev:hover{background:#d1d5db}#tabuddy-panel .actions .btn-next:hover{background:#d1d5db}';var s=document.createElement("style");s.textContent=C;document.head.appendChild(s);var p=document.createElement("div");p.id="tabuddy-panel";p.innerHTML='<div class="header"><span>\uD83D\uDCCB TABuddy \u586B\u5199\u52A9\u624B</span><button onclick="this.closest(\\'#tabuddy-panel\\').remove();window.__tabuddyAutoFill=false">\u2716</button></div><div class="body"><div class="section"><label>\u2714\uFE0F \u5DF2\u590D\u5236\u7684\u6570\u636E</label><textarea id="t-data" placeholder="\u5728 TABuddy \u4E2D\u70B9\u51FB\u300C\u590D\u5236\u4E66\u7B7E\u6570\u636E\u300D\uFF0C\u7136\u540E\u7C98\u8D34\u5230\u8FD9\u91CC..."></textarea></div><div class="section"><label>\uD83D\uDC65 \u5B66\u751F\u5217\u8868</label><div id="t-students" class="student-list"></div></div><div class="section"><label>\uD83D\uDCC4 \u586B\u5199\u5185\u5BB9\u9884\u89C8</label><div id="t-preview" class="preview-box empty">\u8BF7\u5148\u7C98\u8D34\u6570\u636E\u5E76\u9009\u62E9\u5B66\u751F</div></div><div class="section"><label>\uD83C\uDFAF \u76EE\u6807\u5B57\u6BB5</label><select id="t-field" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px"><option value="\u8BFE\u5802\u8868\u73B0">\u8BFE\u5802\u8868\u73B0</option><option value="\u4E0A\u8282\u8BFE\u7EC3\u4E60\u60C5\u51B5">\u4E0A\u8282\u8BFE\u7EC3\u4E60\u60C5\u51B5</option><option value="\u5EFA\u8BAE\u7EC3\u4E60">\u5EFA\u8BAE\u7EC3\u4E60</option><option value="\u8BFE\u4E2D\u638C\u63E1\u60C5\u51B5">\u8BFE\u4E2D\u638C\u63E1\u60C5\u51B5</option><option value="\u8BFE\u5802\u5165\u95E8\u6D4B">\u8BFE\u5802\u5165\u95E8\u6D4B</option><option value="\u8BFE\u5802\u51FA\u95E8\u6D4B">\u8BFE\u5802\u51FA\u95E8\u6D4B</option></select></div><div class="actions"><button class="btn-prev" id="t-prev">\u2190 \u4E0A\u4E00\u4E2A</button><button class="btn-fill" id="t-fill" disabled>\u270F\uFE0F \u586B\u5199</button><button class="btn-next" id="t-next">\u4E0B\u4E00\u4E2A \u2192</button></div></div>';document.body.appendChild(p);var D=null,S=null,I=-1;var E=document.getElementById("t-data"),B=document.getElementById("t-students"),P=document.getElementById("t-preview"),F=document.getElementById("t-field"),FB=document.getElementById("t-fill"),PB=document.getElementById("t-prev"),NB=document.getElementById("t-next");function findStudentButtons(){var r=[];if(!D||!D.students)return r;var names=D.students.map(function(s){return s.name}),els=document.querySelectorAll("button,span,a,div,li");els.forEach(function(el){var t=el.textContent.trim();if(names.indexOf(t)!==-1){var r2=el.closest("div");if(r2&&r2.querySelector("button")){r2.style.outline="2px solid #4f46e5";r2.style.outlineOffset="2px";r.push({name:t,element:r2})}}});return r}function findTextareasByLabel(l){var textareas=document.querySelectorAll("textarea");var results=[];textareas.forEach(function(ta){var p=ta.parentElement;var found=false;for(var i=0;i<5;i++){if(!p)break;var labels=p.querySelectorAll("label,span,div,p,h1,h2,h3,h4");for(var j=0;j<labels.length;j++){if(labels[j].textContent.trim().indexOf(l)!==-1){results.push(ta);found=true;break}}if(found)break;p=p.parentElement}});return results}function fillTextarea(ta,text){if(!ta)return;var v=typeof ta.value!=="undefined"?ta.value:ta.textContent;if(v===text)return;var nativeInputValueSetter=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,"value").set;nativeInputValueSetter.call(ta,text);ta.dispatchEvent(new Event("input",{bubbles:true,cancelable:true}));ta.dispatchEvent(new Event("change",{bubbles:true,cancelable:true}));ta.dispatchEvent(new Event("blur",{bubbles:true}));setTimeout(function(){ta.dispatchEvent(new Event("input",{bubbles:true,cancelable:true}));ta.dispatchEvent(new Event("change",{bubbles:true,cancelable:true}))},100)}function renderStudents(){B.innerHTML="";if(!D||!D.students){P.textContent="\u8BF7\u5148\u7C98\u8D34\u6570\u636E";P.className="preview-box empty";return}var students=D.students;if(students.length===0){P.textContent="\u6570\u636E\u4E2D\u6CA1\u6709\u5B66\u751F";P.className="preview-box empty";return}students.forEach(function(s,i){var btn=document.createElement("button");btn.textContent=s.name;btn.onclick=function(){selectStudent(i)};if(i===I&&S&&S.name===s.name)btn.className="active";B.appendChild(btn)});if(I>=students.length)I=0;if(I>=0&&I<students.length)selectStudent(I);else selectStudent(0)}function selectStudent(i){if(!D||!D.students||i<0||i>=D.students.length)return;I=i;S=D.students[i];var btns=B.querySelectorAll("button");btns.forEach(function(b,j){b.className=j===i?"active":""});var feedback=S.feedback||"";if(feedback){P.textContent=feedback;P.className="preview-box"}else{P.textContent=S.name+"\u6682\u65E0\u53CD\u9988";P.className="preview-box empty"}FB.disabled=!feedback;fillToPage()}function fillToPage(){if(!S)return;var feedback=S.feedback;if(!feedback)return;var fieldLabel=F.value;var targets=findTextareasByLabel(fieldLabel);if(targets.length===0){P.textContent="\u672A\u627E\u5230\u6807\u7B7E\u4E3A\u201C"+fieldLabel+"\u201D\u7684\u6587\u672C\u6846\uFF0C\u8BF7\u786E\u8BA4\u662F\u5426\u5728\u6DF7\u5408\u5B66\u4E60\u4E2D\u5FC3\u9875\u9762";return}targets.forEach(function(ta){fillTextarea(ta,feedback)});P.textContent="\u2714 \u5DF2\u586B\u5199\u5230 "+fieldLabel+"\uFF1A"+feedback.substring(0,50)+(feedback.length>50?"...":"");P.className="preview-box"}E.addEventListener("input",function(){try{D=JSON.parse(E.value);renderStudents()}catch(e){P.textContent="\u6570\u636E\u683C\u5F0F\u4E0D\u6B63\u786E\uFF0C\u8BF7\u91CD\u65B0\u590D\u5236";P.className="preview-box empty"}});FB.addEventListener("click",fillToPage);PB.addEventListener("click",function(){if(I>0)selectStudent(I-1)});NB.addEventListener("click",function(){if(D&&D.students&&I<D.students.length-1)selectStudent(I+1)});renderStudents()})()`
 
 function generateBookmarkletUrl(): string {
   return 'javascript:' + encodeURIComponent(BOOKMARKLET_CODE)
 }
 
-function generateBookmarkletHtml(): string {
-  return `<a href="javascript:${encodeURIComponent(BOOKMARKLET_CODE)}" onclick="return false">📋 TABuddy 填写助手</a>`
-}
-
 export default function BookmarkletSetup({ isOpen, onClose, classTitle, students }: BookmarkletSetupProps) {
-  const [bookmarkletUrl, setBookmarkletUrl] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [bookmarkletUrl] = useState(generateBookmarkletUrl)
   const dataRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (isOpen) {
-      setBookmarkletUrl(generateBookmarkletUrl())
-    }
-  }, [isOpen])
 
   const handleCopyData = useCallback(async () => {
     const data = JSON.stringify({
@@ -57,18 +46,6 @@ export default function BookmarkletSetup({ isOpen, onClose, classTitle, students
       }
     }
   }, [students])
-
-  const handleCopyBookmarklet = useCallback(async () => {
-    const url = bookmarkletUrl || generateBookmarkletUrl()
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      toast.success('已复制！请添加到书签栏')
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      toast.error('复制失败，请手动拖拽按钮')
-    }
-  }, [bookmarkletUrl])
 
   const validCount = students.filter(s => s.feedback).length
 
@@ -96,7 +73,7 @@ export default function BookmarkletSetup({ isOpen, onClose, classTitle, students
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">自动填写助手</h2>
-                  <p className="text-sm text-gray-500">书签脚本 · 一键填写混合学习中心</p>
+                  <p className="text-sm text-gray-500">一键填写混合学习中心反馈</p>
                 </div>
               </div>
               <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
@@ -104,45 +81,70 @@ export default function BookmarkletSetup({ isOpen, onClose, classTitle, students
               </button>
             </div>
 
-            <div className="p-5 space-y-6">
+            <div className="p-5 space-y-5">
+
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-semibold text-red-800 mb-1">⚠️ 不要复制到地址栏/搜索框！</p>
+                    <p className="text-red-700">书签代码<strong>不能粘贴到地址栏</strong>，需要用下面的正确方式安装到书签栏。</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
                 <h3 className="font-medium text-indigo-900 flex items-center gap-1.5 text-sm">
                   <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">1</span>
-                  首次安装：添加书签到书签栏
+                  安装到书签栏
                 </h3>
-                <p className="text-sm text-indigo-700">
-                  将下方按钮拖拽到浏览器书签栏（或右键 → 收藏）
-                </p>
 
-                <div
-                  draggable
-                  onDragStart={e => {
-                    e.dataTransfer.setData('text/uri-list', bookmarkletUrl || generateBookmarkletUrl())
-                    e.dataTransfer.setData('text/plain', bookmarkletUrl || generateBookmarkletUrl())
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg shadow-sm border border-indigo-200 text-indigo-700 font-medium text-sm cursor-grab active:cursor-grabbing hover:bg-indigo-50 transition-colors select-none"
-                >
-                  <Bookmark className="w-4 h-4" />
-                  📋 TABuddy 填写助手
-                  <span className="text-xs text-gray-400 ml-1">（拖拽到书签栏）</span>
+                <div className="flex items-center gap-2 text-sm text-indigo-700 bg-indigo-100/50 rounded-lg px-3 py-2">
+                  <MousePointer className="w-4 h-4 flex-shrink-0" />
+                  <span>拖拽下方按钮到书签栏，松开即可完成安装</span>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCopyBookmarklet}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 transition-colors"
+                <div className="relative">
+                  <div
+                    draggable
+                    onDragStart={e => {
+                      e.dataTransfer.setData('text/uri-list', bookmarkletUrl)
+                      e.dataTransfer.setData('text/plain', bookmarkletUrl)
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-3 bg-white rounded-lg shadow-md border-2 border-indigo-300 text-indigo-700 font-medium text-sm cursor-grab active:cursor-grabbing hover:bg-indigo-50 transition-colors select-none"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copied ? '已复制' : '复制书签代码'}
-                  </button>
+                    <Bookmark className="w-4 h-4" />
+                    📋 TABuddy 填写助手
+                  </div>
+                  <div className="absolute -top-3 -right-2 bg-amber-400 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                    拖我！
+                  </div>
                 </div>
 
                 <details className="text-xs text-gray-500">
-                  <summary className="cursor-pointer hover:text-gray-700">手动安装教程</summary>
-                  <ol className="mt-2 pl-4 space-y-1 list-decimal text-gray-500">
-                    <li>确保浏览器书签栏已显示（Chrome: Ctrl+Shift+B）</li>
-                    <li>按住上方按钮，拖拽到书签栏后松开</li>
-                    <li>或者右键按钮 → 点击「收藏链接」</li>
+                  <summary className="cursor-pointer hover:text-gray-700 font-medium">如果拖拽不成功，可以手动添加</summary>
+                  <ol className="mt-2 pl-4 space-y-1.5 list-decimal text-gray-500">
+                    <li>点击浏览器地址栏右侧的 <strong>⭐ 星号</strong>（收藏按钮）</li>
+                    <li>名称填：<strong>📋 TABuddy 填写助手</strong></li>
+                    <li>URL 填：<strong style={{wordBreak:'break-all', fontSize:'9px'}}>{bookmarkletUrl.substring(0, 60)}...</strong></li>
+                    <li>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(bookmarkletUrl)
+                            toast.success('书签URL已复制，粘贴到收藏夹的网址栏')
+                          } catch {
+                            toast.error('复制失败，请手动输入')
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs mt-1 hover:bg-indigo-200"
+                      >
+                        <Copy className="w-3 h-3" />
+                        复制完整URL
+                      </button>
+                    </li>
                   </ol>
                 </details>
               </div>
@@ -150,14 +152,14 @@ export default function BookmarkletSetup({ isOpen, onClose, classTitle, students
               <div className="bg-green-50 rounded-xl p-4 space-y-3">
                 <h3 className="font-medium text-green-900 flex items-center gap-1.5 text-sm">
                   <span className="w-6 h-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">2</span>
-                  每次使用：复制数据 → 点书签 → 填写
+                  每次使用步骤
                 </h3>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopyData}
                     disabled={validCount === 0}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
                     <Copy className="w-4 h-4" />
                     复制书签数据
@@ -165,18 +167,18 @@ export default function BookmarkletSetup({ isOpen, onClose, classTitle, students
                   </button>
                 </div>
 
-                <div className="text-sm text-green-800 space-y-1">
-                  <p className="flex items-center gap-1.5">
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    打开混合学习中心的「个人学情反馈」页面
+                <div className="bg-white rounded-lg p-3 text-sm text-green-800 space-y-2.5 border border-green-200">
+                  <p className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-green-700 mt-0.5">1</span>
+                    <span>打开 <strong>混合学习中心</strong> 的「个人学情反馈」页面</span>
                   </p>
-                  <p className="flex items-center gap-1.5">
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    点击书签栏的「📋 TABuddy 填写助手」
+                  <p className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-green-700 mt-0.5">2</span>
+                    <span>点击浏览器书签栏的 <strong>「📋 TABuddy 填写助手」</strong></span>
                   </p>
-                  <p className="flex items-center gap-1.5">
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    在浮动面板中粘贴数据 → 选择学生 → 一键填写
+                  <p className="flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-green-700 mt-0.5">3</span>
+                    <span>粘贴数据 → 选择学生 → 点击 <strong>「填写」</strong></span>
                   </p>
                 </div>
               </div>

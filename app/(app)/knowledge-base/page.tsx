@@ -1,8 +1,8 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Globe, Lock, FolderOpen, ChevronLeft, ChevronDown, ChevronRight, Edit3 } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, BookOpen, Link as LinkIcon, FileText, Info, RotateCcw, Globe, Lock, FolderOpen, ChevronLeft, ChevronDown, ChevronRight, Edit3, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import Folder from '@/app/动效/文件夹'
@@ -19,6 +19,7 @@ import {
   PublicKnowledgeEntry,
   getPublicKnowledgeBase,
   loadPublicKnowledgeBase,
+  createPublicEntry,
 } from '@/lib/public-knowledge-store'
 import {
   KnowledgeFolder,
@@ -27,6 +28,7 @@ import {
   updateKnowledgeFolder,
   deleteKnowledgeFolder,
 } from '@/lib/knowledge-folder-store'
+import KnowledgeImportDialog from '@/components/knowledge/KnowledgeImportDialog'
 
 type TabType = 'private' | 'public'
 type ViewType = 'folders' | 'folder-detail'
@@ -91,6 +93,7 @@ export default function KnowledgeBasePage() {
   const [folderNameInput, setFolderNameInput] = useState('')
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [showUncategorizedPicker, setShowUncategorizedPicker] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
 
   const loadEntries = useCallback(() => {
     setEntries([...getKnowledgeBase()])
@@ -124,6 +127,28 @@ export default function KnowledgeBasePage() {
     }, 300)
     return () => clearInterval(timer)
   }, [loadEntries])
+
+  const handleImport = async (entries: KnowledgeEntry[], folderId?: string): Promise<boolean> => {
+    try {
+      if (activeTab === 'private') {
+        for (const entry of entries) {
+          createKnowledgeEntry({ ...entry, folderId: folderId || entry.folderId })
+        }
+      } else {
+        for (const entry of entries) {
+          await createPublicEntry({
+            ...entry,
+            enabled: true,
+            folderId: folderId || entry.folderId,
+          })
+        }
+      }
+      loadEntries()
+      return true
+    } catch {
+      return false
+    }
+  }
 
   const activeFolder = useMemo(() => {
     if (!activeFolderId) return null
@@ -403,11 +428,30 @@ export default function KnowledgeBasePage() {
                 </button>
               )}
               <button
+                onClick={() => setShowImportDialog(true)}
+                className="inline-flex items-center px-3 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-all text-sm"
+              >
+                <Upload className="w-4 h-4 mr-1.5" />
+                导入
+              </button>
+              <button
                 onClick={handleReset}
                 className="inline-flex items-center px-3 py-2 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent transition-all text-sm"
               >
                 <RotateCcw className="w-4 h-4 mr-1.5" />
                 恢复默认
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'public' && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowImportDialog(true)}
+                className="inline-flex items-center px-3 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-all text-sm"
+              >
+                <Upload className="w-4 h-4 mr-1.5" />
+                导入
               </button>
             </div>
           )}
@@ -1072,6 +1116,14 @@ export default function KnowledgeBasePage() {
           </div>
         )}
       </AnimatePresence>
+
+      <KnowledgeImportDialog
+        open={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        onImport={handleImport}
+        folders={folders}
+        mode={activeTab}
+      />
     </PageContainer>
   )
 }
