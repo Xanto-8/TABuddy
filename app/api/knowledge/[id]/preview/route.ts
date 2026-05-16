@@ -87,11 +87,10 @@ export async function GET(
         return NextResponse.json({ error: 'PDF文件已被删除' }, { status: 404 })
       }
 
-      const stream = fs.createReadStream(pdfPath)
+      const pdfBuffer = fs.readFileSync(pdfPath)
       const stat = fs.statSync(pdfPath)
 
-      const { readable } = stream as any
-      const response = new NextResponse(readable || pdfBuffer, {
+      const response = new NextResponse(pdfBuffer, {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': 'inline',
