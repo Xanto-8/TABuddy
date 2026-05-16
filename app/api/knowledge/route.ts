@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getTokenUser, unauthorizedResponse, canViewKnowledge, canManageKnowledge } from '@/lib/auth-guard'
+import { getTokenUser, unauthorizedResponse, canManageKnowledge } from '@/lib/auth-guard'
 
 export async function GET(request: NextRequest) {
   const tokenUser = getTokenUser(request)
@@ -8,39 +8,75 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const scope = searchParams.get('scope') || 'all'
+  const search = searchParams.get('search') || ''
+  const fileType = searchParams.get('fileType') || ''
+  const category = searchParams.get('category') || ''
+  const sortBy = searchParams.get('sortBy') || 'createdAt'
+  const sortOrder = searchParams.get('sortOrder') || 'desc'
+  const hasFile = searchParams.get('hasFile') || ''
 
   try {
-    let entries
+    const where: Record<string, unknown> = {}
 
-    if (tokenUser.role === 'superadmin') {
-      entries = await prisma.knowledgeBaseEntry.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { username: true, displayName: true } },
-          classGroup: { select: { name: true } },
-        },
-      })
-    } else {
+    if (tokenUser.role !== 'superadmin') {
       const ownClassId = tokenUser.classGroupId
-      entries = await prisma.knowledgeBaseEntry.findMany({
-        where: {
-          OR: [
-            { scope: 'global' },
-            { scope: 'personal', userId: tokenUser.userId },
-            ...(ownClassId ? [{ scope: 'class', classGroupId: ownClassId }] : []),
-          ],
-        },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          user: { select: { username: true, displayName: true } },
-          classGroup: { select: { name: true } },
-        },
-      })
+      where.OR = [
+        { scope: 'global' },
+        { scope: 'personal', userId: tokenUser.userId },
+        ...(ownClassId ? [{ scope: 'class', classGroupId: ownClassId }] : []),
+      ]
     }
 
     if (scope !== 'all') {
-      entries = entries.filter(e => e.scope === scope)
+      where.scope = scope
     }
+
+    if (fileType) {
+      where.fileType = fileType
+    }
+
+    if (category) {
+      where.category = category as string
+    }
+
+    if (hasFile === 'true') {
+      where.filePath = { not: '' }
+    } else if (hasFile === 'false') {
+      where.filePath = ''
+    }
+
+    if (search) {
+      const searchWhere = {
+        OR: [
+          { title: { contains: search } },
+          { content: { contains: search } },
+          { fileName: { contains: search } },
+          { category: { contains: search } },
+          { tags: { contains: search } },
+        ],
+      }
+      if (where.OR) {
+        where.AND = [searchWhere]
+        delete where.OR
+      } else {
+        where.OR = searchWhere.OR
+      }
+    }
+
+    const orderBy: Record<string, string> = {}
+    const sortFields = ['createdAt', 'updatedAt', 'title', 'fileSize', 'fileType']
+    const safeSortBy = sortFields.includes(sortBy) ? sortBy : 'createdAt'
+    const safeSortOrder = sortOrder === 'asc' ? 'asc' : 'desc'
+    orderBy[safeSortBy] = safeSortOrder
+
+    const entries = await prisma.knowledgeBaseEntry.findMany({
+      where,
+      orderBy,
+      include: {
+        user: { select: { username: true, displayName: true } },
+        classGroup: { select: { name: true } },
+      },
+    })
 
     return NextResponse.json({ data: entries })
   } catch (error) {
@@ -55,7 +91,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { title, content, scope, classGroupId, category, tags } = body
+    const { title, content, scope, classGroupId, category, tags, fileName, fileSize, fileType, filePath } = body
 
     if (!title || !title.trim()) {
       return NextResponse.json({ error: '标题不能为空' }, { status: 400 })
@@ -86,6 +122,10 @@ export async function POST(request: NextRequest) {
         content: content || '',
         category: category || '',
         tags: tags ? JSON.stringify(tags) : '[]',
+        fileName: fileName || '',
+        fileSize: fileSize || 0,
+        fileType: fileType || '',
+        filePath: filePath || '',
         userId: targetScope === 'personal' ? tokenUser.userId : (targetScope === 'class' ? tokenUser.userId : null),
         classGroupId: targetScope === 'class' ? (classGroupId || tokenUser.classGroupId) : null,
       },

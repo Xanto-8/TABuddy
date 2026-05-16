@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   GraduationCap, Plus, Pencil, Trash2, ChevronDown,
   BookOpen, Bookmark, Users, Target, Sparkles, RefreshCw, Copy, Download,
-  Save, Loader2, AlertCircle, X, Check, ArrowDown, ArrowUpFromLine,
+  Save, Loader2, AlertCircle, Check, ArrowDown, ArrowUpFromLine,
   FileSpreadsheet, UserCheck, UserX, FileText, Settings,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -998,16 +998,14 @@ export default function FeedbackPage() {
                       <BookOpen className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-muted-foreground mb-0.5">今日课程内容</p>
-                        <p className="text-sm text-foreground leading-relaxed">
-                          {classContent.trim() || '暂未填写课程内容'}
-                        </p>
+                        <textarea
+                          value={classContent}
+                          onChange={(e) => setClassContent(e.target.value)}
+                          placeholder="填写本节课知识点、课堂任务、学习重点、课堂活动等内容..."
+                          className="w-full text-sm text-foreground leading-relaxed bg-transparent border-none resize-none focus:outline-none min-h-[60px] p-0 placeholder:text-muted-foreground/40"
+                          rows={3}
+                        />
                       </div>
-                      <button
-                        onClick={() => setClassContent('')}
-                        className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
                     </div>
 
                     <div className="rounded-xl border border-border bg-card p-4 shadow-sm shrink-0">

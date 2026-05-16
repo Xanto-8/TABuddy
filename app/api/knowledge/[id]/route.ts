@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import fs from 'fs'
+import path from 'path'
 import { prisma } from '@/lib/prisma'
 import { getTokenUser, unauthorizedResponse, canManageKnowledge } from '@/lib/auth-guard'
 
@@ -27,6 +29,8 @@ export async function PATCH(
     if (body.content !== undefined) updateData.content = body.content
     if (body.category !== undefined) updateData.category = body.category
     if (body.tags !== undefined) updateData.tags = JSON.stringify(body.tags)
+    if (body.fileName !== undefined) updateData.fileName = body.fileName
+    if (body.fileType !== undefined) updateData.fileType = body.fileType
 
     const entry = await prisma.knowledgeBaseEntry.update({
       where: { id },
@@ -59,6 +63,24 @@ export async function DELETE(
     }
 
     await prisma.knowledgeBaseEntry.delete({ where: { id } })
+
+    try {
+      if (existing.filePath) {
+        const filePath = path.join(process.cwd(), 'public', existing.filePath)
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath)
+        }
+      }
+      if (existing.pdfPath) {
+        const pdfPath = path.join(process.cwd(), 'public', existing.pdfPath)
+        if (fs.existsSync(pdfPath)) {
+          fs.unlinkSync(pdfPath)
+        }
+      }
+    } catch (fileError) {
+      console.error('[knowledge/id] 删除物理文件失败:', fileError)
+    }
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('[knowledge/id] DELETE error:', error)

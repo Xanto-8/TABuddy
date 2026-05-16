@@ -86,8 +86,15 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   // 初始化时获取当前上课班级
   useEffect(() => {
     updateCurrentClass()
+
+    const handleDataReady = () => updateCurrentClass()
+    window.addEventListener('appDataReady', handleDataReady)
+
     const interval = setInterval(updateCurrentClass, 60000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('appDataReady', handleDataReady)
+    }
   }, [updateCurrentClass])
 
   const updateProgress = (tasks: Task[]) => {

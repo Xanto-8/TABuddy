@@ -41,8 +41,15 @@ export function useCurrentTeachingClass(): string | null {
       setTeachingClassId(current?.id || null)
     }
     check()
+
+    const handleDataReady = () => check()
+    window.addEventListener('appDataReady', handleDataReady)
+
     const interval = setInterval(check, 60000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('appDataReady', handleDataReady)
+    }
   }, [])
 
   return teachingClassId

@@ -318,9 +318,18 @@ model KnowledgeBaseEntry {
   id        String   @id @default(cuid())
   scope     String   @default("personal")
   title     String
-  content   String
+  content   String   @default("")
   category  String   @default("")
   tags      String   @default("[]")
+  
+  // 文件管理相关字段
+  fileName     String   @default("")   // 原始文件名
+  fileSize     Int      @default(0)    // 文件大小(字节)
+  fileType     String   @default("")   // 文件扩展名: doc/docx/xls/xlsx/ppt/pptx/pdf
+  filePath     String   @default("")   // 原文件存储路径
+  pdfPath      String?                 // 转换后的PDF路径(可为空)
+  convertStatus String  @default("none") // 转换状态: none/converting/done/failed
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
