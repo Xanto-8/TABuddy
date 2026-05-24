@@ -9,5 +9,10 @@ README.md
 *.md
 .vscode
 .idea
+node_modules
+.next
+.trae
+electron
+scripts
 prisma/dev.db
 prisma/dev.db-journal
