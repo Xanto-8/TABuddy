@@ -1,11 +1,13 @@
 'use client'
 
+import Link from 'next/link'
 import React, { useState, useEffect, useRef } from 'react'
-import { Plus, Search, GraduationCap, Pencil, Trash2, MoreHorizontal, Mail, Phone, ChevronDown } from 'lucide-react'
+import { Plus, Search, GraduationCap, Pencil, Trash2, MoreHorizontal, Mail, Phone, ChevronDown, BarChart3 } from 'lucide-react'
 import { Student, ClassType } from '@/types'
 import { getStudents, saveStudent, updateStudent, deleteStudent, getClassTypeLabel, getClassTypeColor, getClasses } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
+import { toast } from 'sonner'
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([])
@@ -44,10 +46,18 @@ export default function StudentsPage() {
   })
 
   const handleDelete = (id: string) => {
-    if (confirm('确定要删除这个学生吗？此操作不可撤销。')) {
-      deleteStudent(id)
-      refreshStudents()
-    }
+    toast('确定要删除这个学生吗？此操作不可撤销', {
+      action: {
+        label: '确认删除',
+        onClick: () => {
+          deleteStudent(id)
+          refreshStudents()
+          toast.success('学生已删除')
+        },
+      },
+      cancel: { label: '取消', onClick: () => {} },
+      duration: 5000,
+    })
   }
 
   return (
@@ -198,6 +208,7 @@ export default function StudentsPage() {
                   <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground whitespace-nowrap">班级类型</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground whitespace-nowrap">联系方式</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground whitespace-nowrap">备注</th>
+                  <th className="text-center px-4 py-3 text-sm font-medium text-muted-foreground whitespace-nowrap">档案</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground whitespace-nowrap">操作</th>
                 </tr>
               </thead>
@@ -240,6 +251,15 @@ export default function StudentsPage() {
                       <span className="text-sm text-muted-foreground max-w-[200px] block truncate">
                         {student.notes || '-'}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <Link
+                        href={`/students/${student.id}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-xs font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                      >
+                        <BarChart3 className="h-3 w-3" />
+                        成长档案
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-right relative whitespace-nowrap">
                       <button

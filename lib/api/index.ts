@@ -1,6 +1,2 @@
 export { httpClient, HttpError } from './client'
-export { dashboardService } from './dashboard.service'
-export { userService } from './user.service'
-export { scheduleService } from './schedule.service'
-export { taskService } from './task.service'
 export type * from './types'

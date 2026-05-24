@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, X, FileSpreadsheet, FileText, FileType, CheckCircle2, Loader2, FileUp, FolderOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useEscapeKey } from '@/lib/use-escape-key'
 import { getAllSupportedExtensions, isExtSupported, uploadFile } from '@/lib/knowledge-import/parser'
 import type { KnowledgeEntry } from '@/lib/knowledge-base-store'
 import type { KnowledgeFolder } from '@/lib/knowledge-folder-store'
@@ -59,6 +60,8 @@ export default function KnowledgeImportDialog({ open, onClose, onImport, folders
   const [selectedFolderId, setSelectedFolderId] = useState('')
   const supportedExts = getAllSupportedExtensions()
   const acceptStr = supportedExts.join(',')
+
+  useEscapeKey(() => onClose(), open)
 
   const addFiles = useCallback(async (fileList: FileList) => {
     const files = Array.from(fileList)

@@ -1031,6 +1031,7 @@ export default function KnowledgeBasePage() {
                     value={form.title}
                     onChange={e => setForm({ ...form, title: e.target.value })}
                     placeholder="知识条目标题"
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); } }}
                     className="w-full h-10 px-3 text-sm rounded-lg border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   />
                 </div>
@@ -1071,6 +1072,7 @@ export default function KnowledgeBasePage() {
                     onChange={e => setForm({ ...form, content: e.target.value })}
                     placeholder="知识条目详细内容"
                     rows={4}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); } }}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
                   />
                 </div>

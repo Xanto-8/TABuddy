@@ -11,11 +11,11 @@ export interface KnowledgeEntry {
 export const knowledgeBase: KnowledgeEntry[] = [
   {
     id: 'study-center',
-    keywords: ['学习中心', '共享学习', '学习资源', '学习平台', '线上学习', '网课平台'],
-    title: '共享学习中心',
+    keywords: ['学习中心', '共享学习', '学习资源', '学习平台', '反馈中心', '反馈平台','反馈','混合学习中心','混合中心'],
+    title: '混合学习中心',
     content: '点击下方链接访问共享学习中心，获取所有课程资料和学习资源。',
     type: 'link',
-    url: 'https://study.neworiental.edu.cn/share',
+    url: 'https://il.xdf.cn/plus/calendar',
     priority: 10,
   },
   {

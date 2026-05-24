@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider'
 import { SidebarProvider } from '@/components/providers/sidebar-provider'
 import { NotificationProvider } from '@/components/notification/notification-provider'
 import { AuthProvider } from '@/lib/auth-store'
+import { ObservationRecorder } from '@/components/observation/observation-recorder'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -58,6 +59,7 @@ export default function RootLayout({
                 duration: 4000,
               }}
             />
+            <ObservationRecorder />
           </AuthProvider>
         </ThemeProvider>
       </body>

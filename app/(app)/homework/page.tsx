@@ -1,16 +1,18 @@
-﻿﻿﻿'use client'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   ClipboardCheck, Plus, Pencil, Trash2, ChevronDown,
-  BookOpen, Bookmark, Users, Target, FileText, Clock, AlertCircle,
+  BookOpen, Users, Target, FileText, Clock, AlertCircle,
   Sparkles, RefreshCw, Copy, Loader2, UserCheck, UserX,
+  Download, Star, Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import StudentSortDropdown from '@/components/student-sort-dropdown'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
+import { ClassSelector } from '@/components/ui/class-selector'
 import {
   CompletionStatus,
   HandwritingQuality,
@@ -22,50 +24,23 @@ import {
   getClasses,
   getStudentsByClass,
   getHomeworkAssessmentsByStudent,
+  getHomeworkAssessmentsByClass,
   saveHomeworkAssessment,
   updateHomeworkAssessment,
   deleteHomeworkAssessment,
 } from '@/lib/store'
 import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
+import { getLocalDateString } from '@/lib/utils'
+import { completionLabels, completionColors, handwritingLabels, handwritingColors } from '@/lib/constants'
 import { getAbsentStudentIds, setAbsentStudents, isStudentAbsent } from '@/lib/absence-store'
 import { generateHomeworkFeedback } from '@/utils'
+import BookmarkDialog from '@/components/feedback/BookmarkDialog'
+import AutoFillConfigPanel from '@/components/feedback/AutoFillConfigPanel'
 import { PageContainer } from '@/components/ui/page-container'
 import { useCopyShortcut } from '@/lib/copy-shortcut'
-import BookmarkletSetup from '@/components/auto-fill/BookmarkletSetup'
-
-function getLocalDateString(d?: Date): string {
-  const date = d ?? new Date()
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-const completionLabels: Record<CompletionStatus, string> = {
-  completed: '已完成',
-  partial: '部分完成',
-  not_done: '未完成',
-}
-
-const completionColors: Record<CompletionStatus, string> = {
-  completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  not_done: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-}
-
-const handwritingLabels: Record<HandwritingQuality, string> = {
-  excellent: '非常工整',
-  good: '清晰',
-  fair: '一般',
-  poor: '需改进',
-}
-
-const handwritingColors: Record<HandwritingQuality, string> = {
-  excellent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  good: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
-  fair: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-  poor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-}
+import { exportHomeworkScores } from '@/lib/export-homework'
+import { downloadCSV } from '@/lib/export-csv'
+import ScoreGridTable, { GridColumn, GridRow } from '@/components/dashboard/score-grid-table'
 
 export default function HomeworkPage() {
   const [classes, setClasses] = useState<Class[]>([])
@@ -74,12 +49,14 @@ export default function HomeworkPage() {
   const [selectedClassId, setSelectedClassId] = useState<string>('')
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [showModal, setShowModal] = useState(false)
-  const [showBookmarkletSetup, setShowBookmarkletSetup] = useState(false)
-  const [isClassSelectOpen, setIsClassSelectOpen] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isClassLoading, setIsClassLoading] = useState(false)
   const [absentIds, setAbsentIds] = useState<string[]>([])
-  const classSelectRef = useRef<HTMLDivElement>(null)
+  const [gridMode, setGridMode] = useState(false)
+  const [showBookmark, setShowBookmark] = useState(false)
+  const [showAutoFillConfig, setShowAutoFillConfig] = useState(false)
+  const [bookmarkEntries, setBookmarkEntries] = useState<{ name: string; content: string }[]>([])
+  const [gridDirty, setGridDirty] = useState<Set<string>>(new Set())
   const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
 
@@ -93,18 +70,6 @@ export default function HomeworkPage() {
       setStudents(classStudents)
     }
   }, [])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (classSelectRef.current && !classSelectRef.current.contains(event.target as Node)) {
-        setIsClassSelectOpen(false)
-      }
-    }
-    if (isClassSelectOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => { document.removeEventListener('mousedown', handleClickOutside) }
-  }, [isClassSelectOpen])
 
   useEffect(() => {
     if (selectedClassId) {
@@ -145,6 +110,58 @@ export default function HomeworkPage() {
   const handleSaved = () => {
     setShowModal(false)
     refreshAssessments()
+  }
+
+  const handleMarkAllComplete = () => {
+    if (!selectedClassId || students.length === 0) return
+    const classAssessments = getHomeworkAssessmentsByClass(selectedClassId)
+    toast('确认操作', {
+      description: `确认将全班 ${students.length} 名学生标记为已完成？`,
+      action: {
+        label: '确认',
+        onClick: () => {
+          for (const student of students) {
+            const existingRecord = classAssessments.find(r => r.studentId === student.id)
+            if (existingRecord) {
+              updateHomeworkAssessment(existingRecord.id, { completion: 'completed' })
+            } else {
+              saveHomeworkAssessment({
+                studentId: student.id,
+                completion: 'completed',
+                handwriting: 'good',
+                accuracy: 100,
+                feedback: '',
+                generatedFeedback: '',
+                submittedAt: new Date(),
+              })
+            }
+          }
+          toast.success(`已标记 ${students.length} 名学生`)
+        }
+      },
+      cancel: { label: '取消', onClick: () => {} }
+    })
+  }
+
+  const handleMarkAllIncomplete = () => {
+    if (!selectedClassId || students.length === 0) return
+    const classAssessments = getHomeworkAssessmentsByClass(selectedClassId)
+    toast('确认操作', {
+      description: `确认将全班 ${students.length} 名学生标记为未完成？`,
+      action: {
+        label: '确认',
+        onClick: () => {
+          for (const student of students) {
+            const existingRecord = classAssessments.find(r => r.studentId === student.id)
+            if (existingRecord) {
+              updateHomeworkAssessment(existingRecord.id, { completion: 'not_done' })
+            }
+          }
+          toast.success(`已重置 ${students.length} 名学生`)
+        }
+      },
+      cancel: { label: '取消', onClick: () => {} }
+    })
   }
 
   const handleStudentClick = useCallback((studentId: string) => {
@@ -189,12 +206,8 @@ export default function HomeworkPage() {
   }, [students, selectedStudentId, showModal, handleStudentClick])
 
   const handleClassSwitch = useCallback((classId: string) => {
-    if (classId === selectedClassId) {
-      setIsClassSelectOpen(false)
-      return
-    }
+    if (classId === selectedClassId) return
     setIsClassLoading(true)
-    setIsClassSelectOpen(false)
     setTimeout(() => {
       try {
         const classStudents = getStudentsByClass(classId)
@@ -223,20 +236,111 @@ export default function HomeworkPage() {
     ? assessments.sort((a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime())[0]
     : null
 
-  const bookmarkletStudentFeedbacks = React.useMemo(() => {
-    if (!selectedClassId) return []
-    const classStudents = getStudentsByClass(selectedClassId)
-    return classStudents.map(s => {
-      const records = getHomeworkAssessmentsByStudent(s.id)
-      const latest = records.length > 0
-        ? records.sort((a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime())[0]
-        : null
+  const gridColumns: GridColumn[] = useMemo(() => [
+    { key: 'status', label: '状态', type: 'select', options: [
+      { value: 'completed', label: '已完成' },
+      { value: 'partial', label: '部分完成' },
+      { value: 'not_done', label: '未完成' },
+    ]},
+    { key: 'score', label: '正确率', type: 'number' },
+    { key: 'notes', label: '备注', type: 'text' },
+  ], [])
+
+  const [gridRows, setGridRows] = useState<GridRow[]>([])
+
+  const initGridRows = useCallback(() => {
+    if (!selectedClassId) return
+    const classAssessments = getHomeworkAssessmentsByClass(selectedClassId)
+    const latestMap = new Map<string, HomeworkAssessment>()
+    for (const a of classAssessments) {
+      const existing = latestMap.get(a.studentId)
+      if (!existing || new Date(a.assessedAt) > new Date(existing.assessedAt)) {
+        latestMap.set(a.studentId, a)
+      }
+    }
+    const rows: GridRow[] = students.map((s) => {
+      const latest = latestMap.get(s.id)
       return {
+        id: s.id,
         name: s.name,
-        feedback: latest?.generatedFeedback || latest?.feedback || '',
+        data: {
+          status: latest?.completion ?? '',
+          score: latest?.accuracy != null ? String(latest.accuracy) : '',
+          notes: latest?.notes ?? '',
+        },
       }
     })
-  }, [selectedClassId])
+    setGridRows(rows)
+    setGridDirty(new Set())
+  }, [selectedClassId, students])
+
+  useEffect(() => {
+    if (gridMode && selectedClassId) {
+      initGridRows()
+    }
+  }, [gridMode, selectedClassId, initGridRows])
+
+  const handleGridCellChange = useCallback((rowId: string, columnKey: string, value: string) => {
+    setGridRows((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, data: { ...r.data, [columnKey]: value } } : r))
+    )
+    setGridDirty((prev) => new Set(prev).add(rowId))
+  }, [])
+
+  const handleGridSave = useCallback(async () => {
+    if (!selectedClassId) return
+    const dirtyRows = gridRows.filter((r) => gridDirty.has(r.id))
+    for (const row of dirtyRows) {
+      const status = row.data.status || 'completed'
+      const score = row.data.score ? Number(row.data.score) : 80
+      const notes = row.data.notes || ''
+      saveHomeworkAssessment({
+        studentId: row.id,
+        completion: status as CompletionStatus,
+        handwriting: 'good',
+        accuracy: Math.min(100, Math.max(0, isNaN(score) ? 80 : score)),
+        feedback: '',
+        generatedFeedback: '',
+        notes,
+        submittedAt: new Date(),
+      })
+    }
+    setGridDirty(new Set())
+    initGridRows()
+  }, [selectedClassId, gridRows, gridDirty, initGridRows])
+
+  const handleGridBatchMark = useCallback((key: string, value: string) => {
+    setGridRows((prev) =>
+      prev.map((r) => ({ ...r, data: { ...r.data, status: 'completed' } }))
+    )
+    setGridDirty(new Set(gridRows.map((r) => r.id)))
+  }, [gridRows])
+
+  const exportCSV = useCallback(() => {
+    if (!selectedClassId || !selectedClass) return
+    const allAssessments = getHomeworkAssessmentsByClass(selectedClassId)
+    const map = new Map<string, typeof allAssessments>()
+    students.forEach(s => map.set(s.id, []))
+    allAssessments.forEach(a => { const list = map.get(a.studentId); if (list) list.push(a) })
+    const dateStr = new Date().toISOString().slice(0, 10)
+    const safeName = selectedClass.name.replace(/[\\/:*?"<>|]/g, '_')
+    const rows: (string | number)[][] = [['学生姓名', '提交次数', '最近完成度', '最近正确率', '完成率']]
+    for (const s of students) {
+      const list = map.get(s.id) || []
+      const sorted = [...list].sort((a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime())
+      const latest = sorted[0]
+      const completed = list.filter(a => a.completion === 'completed').length
+      const rate = list.length > 0 ? `${Math.round((completed / list.length) * 100)}%` : '-'
+      rows.push([
+        s.name, list.length,
+        latest ? completionLabels[latest.completion] : '-',
+        latest ? `${latest.accuracy}%` : '-',
+        rate,
+      ])
+    }
+    downloadCSV(rows, `${safeName}-作业成绩-${dateStr}.csv`)
+    toast.success(`CSV 已导出，共 ${students.length} 位学生`)
+  }, [selectedClassId, selectedClass, students])
 
   if (classes.length === 0) {
     return (
@@ -275,68 +379,79 @@ export default function HomeworkPage() {
           <h1 className="text-2xl font-bold text-foreground">作业评估</h1>
           <p className="text-muted-foreground mt-1">记录和评估学生的作业完成情况</p>
         </div>
-        <button
-          onClick={() => setShowBookmarkletSetup(true)}
-          className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md"
-        >
-          <Bookmark className="h-4 w-4 mr-2" />
-          书签脚本
-        </button>
-      </div>
-
-      <div className="relative" ref={classSelectRef}>
-        <button
-          type="button"
-          onClick={() => setIsClassSelectOpen(!isClassSelectOpen)}
-          className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium cursor-pointer"
-        >
-          <BookOpen className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>
-            {selectedClass ? selectedClass.name : '选择班级'}
-            {selectedClass && isTeachingClass(selectedClass.id) && (
-              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
-            )}
-          </span>
-          <ChevronDown className={`h-4 w-4 ml-2 text-muted-foreground transition-transform ${isClassSelectOpen ? 'rotate-180' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {isClassSelectOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -4, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.96 }}
-              transition={{ duration: 0.15 }}
-              className="absolute top-full left-0 mt-1 z-50 min-w-[200px]"
+        {selectedClass && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setGridMode(!gridMode)}
+              className={cn(
+                'inline-flex items-center px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors',
+                gridMode
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-background text-foreground hover:bg-accent'
+              )}
             >
-              <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                <div className="max-h-60 overflow-y-auto">
-                  {classes.map((cls) => (
-                    <button
-                      key={cls.id}
-                      type="button"
-                      onClick={() => handleClassSwitch(cls.id)}
-                      className={cn(
-                        'w-full px-4 py-3 text-left text-sm transition-all hover:bg-accent flex items-center justify-between',
-                        selectedClassId === cls.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'
-                      )}
-                    >
-                      <span>
-                        {cls.name}
-                        {isTeachingClass(cls.id) && (
-                          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
-                        )}
-                      </span>
-                      {selectedClassId === cls.id && (
-                        <span className="w-2 h-2 rounded-full bg-primary" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              {gridMode ? '列表模式' : '表格模式'}
+            </button>
+            <button
+              onClick={() => exportHomeworkScores(selectedClassId, selectedClass.name)}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              导出成绩 (XLSX)
+            </button>
+            <button
+              onClick={exportCSV}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              导出 CSV
+            </button>
+            <button
+              onClick={() => {
+                if (!selectedClassId || students.length === 0) {
+                  toast.error('请先选择班级')
+                  return
+                }
+                const entries = students
+                  .map((s) => {
+                    const all = getHomeworkAssessmentsByStudent(s.id)
+                    const sorted = [...all].sort((a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime())
+                    const latest = sorted[0]
+                    return latest?.generatedFeedback ? { name: s.name, content: latest.generatedFeedback } : null
+                  })
+                  .filter((entry): entry is { name: string; content: string } => entry !== null)
+                if (entries.length === 0) {
+                  toast.error('请先完成作业评估再创建书签')
+                  return
+                }
+                setBookmarkEntries(entries)
+                setShowBookmark(true)
+              }}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium whitespace-nowrap cursor-pointer"
+              title="生成包含所有学生作业反馈的浏览器书签"
+            >
+              <Star className="h-4 w-4 mr-2" />
+              生成书签
+            </button>
+            <button
+              onClick={() => setShowAutoFillConfig(true)}
+              className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-colors text-sm font-medium whitespace-nowrap"
+              title="查看书签使用说明和快捷键"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              书签帮助
+            </button>
+          </div>
+        )}
+        </div>
+
+      <ClassSelector
+        classes={classes}
+        selectedClassId={selectedClassId}
+        onChange={(id) => handleClassSwitch(id)}
+        isTeachingClass={isTeachingClass}
+        isLoading={isClassLoading}
+      />
 
       {!selectedClassId ? (
         <div className="text-center py-20">
@@ -345,6 +460,23 @@ export default function HomeworkPage() {
           </div>
           <h3 className="text-lg font-medium text-foreground">请选择一个班级</h3>
           <p className="text-muted-foreground mt-1">从上方选择班级以查看学生和评估记录</p>
+        </div>
+      ) : gridMode ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-medium text-foreground">
+              批量录入 - {selectedClass?.name}
+            </h3>
+            <span className="text-xs text-muted-foreground">({students.length} 名学生)</span>
+          </div>
+          <ScoreGridTable
+            columns={gridColumns}
+            rows={gridRows}
+            onCellChange={handleGridCellChange}
+            onSave={handleGridSave}
+            onBatchMark={handleGridBatchMark}
+            batchLabel="全班已完成"
+          />
         </div>
       ) : (
         <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -699,12 +831,17 @@ export default function HomeworkPage() {
         )}
       </AnimatePresence>
 
-      <BookmarkletSetup
-        isOpen={showBookmarkletSetup}
-        onClose={() => setShowBookmarkletSetup(false)}
-        classTitle={selectedClass?.name}
-        students={bookmarkletStudentFeedbacks}
+      <BookmarkDialog
+        students={bookmarkEntries}
+        open={showBookmark}
+        onClose={() => setShowBookmark(false)}
       />
+
+      <AutoFillConfigPanel
+        open={showAutoFillConfig}
+        onClose={() => setShowAutoFillConfig(false)}
+      />
+
       </div>
     </PageContainer>
   )

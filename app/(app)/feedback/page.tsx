@@ -3,18 +3,22 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   GraduationCap, Plus, Pencil, Trash2, ChevronDown,
-  BookOpen, Bookmark, Users, Target, Sparkles, RefreshCw, Copy, Download,
+  BookOpen, Users, Target, Sparkles, RefreshCw, Copy, Download,
   Save, Loader2, AlertCircle, Check, ArrowDown, ArrowUpFromLine,
-  FileSpreadsheet, UserCheck, UserX, FileText, Settings,
+  FileSpreadsheet, UserCheck, UserX, FileText, MessageSquareText, Settings, Star,
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import StudentSortDropdown from '@/components/student-sort-dropdown'
 import BatchFeedbackPanel from '@/components/feedback/BatchFeedbackPanel'
+import BatchActionBar from '@/components/feedback/BatchActionBar'
+import CopyGuideDialog from '@/components/feedback/CopyGuideDialog'
 import AutoFillConfigPanel from '@/components/feedback/AutoFillConfigPanel'
-import BookmarkletSetup from '@/components/auto-fill/BookmarkletSetup'
+import BookmarkDialog from '@/components/feedback/BookmarkDialog'
+import VoiceInput from '@/components/feedback/VoiceInput'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ClassSelector } from '@/components/ui/class-selector'
 import {
   FeedbackRecord,
   Student,
@@ -32,18 +36,12 @@ import {
   saveFeedbackHistory,
   deleteFeedbackHistory,
   sortStudents,
+  getObservationRecords,
 } from '@/lib/store'
 import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
 import { PageContainer } from '@/components/ui/page-container'
 import { useCopyShortcut } from '@/lib/copy-shortcut'
-
-function getLocalDateString(d?: Date): string {
-  const date = d ?? new Date()
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
+import { getLocalDateString } from '@/lib/utils'
 
 const EMPTY_EXERCISE = { score: '', total: '', brief: '', isAbsent: false }
 
@@ -74,15 +72,15 @@ export default function FeedbackPage() {
   const [feedbacks, setFeedbacks] = useState<FeedbackRecord[]>([])
   const [selectedClassId, setSelectedClassId] = useState<string>('')
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
-  const [isClassSelectOpen, setIsClassSelectOpen] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isClassLoading, setIsClassLoading] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [isExportingScores, setIsExportingScores] = useState(false)
   const [showBatchPanel, setShowBatchPanel] = useState(false)
-  const [showAutoFillPanel, setShowAutoFillPanel] = useState(false)
-  const [showBookmarkletSetup, setShowBookmarkletSetup] = useState(false)
-  const classSelectRef = useRef<HTMLDivElement>(null)
+  const [showCopyGuide, setShowCopyGuide] = useState(false)
+  const [showAutoFillConfig, setShowAutoFillConfig] = useState(false)
+  const [showBookmark, setShowBookmark] = useState(false)
+  const [bookmarkEntries, setBookmarkEntries] = useState<{ name: string; content: string }[]>([])
   const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
 
@@ -95,6 +93,8 @@ export default function FeedbackPage() {
   const [usedAI, setUsedAI] = useState(false)
   const [classContent, setClassContent] = useState('')
   const [phase, setPhase] = useState<'content' | 'feedback'>(sessionStorage.getItem('tabuddy_phase') === 'feedback' ? 'feedback' : 'content')
+  const [parentText, setParentText] = useState('')
+  const [generatingParentText, setGeneratingParentText] = useState(false)
   const [exerciseData, setExerciseDataState] = useState<Record<string, { score: string; total: string; brief: string; isAbsent: boolean }>>({})
 
   const setExerciseData = useCallback((data: Record<string, { score: string; total: string; brief: string; isAbsent: boolean }> | ((prev: Record<string, { score: string; total: string; brief: string; isAbsent: boolean }>) => Record<string, { score: string; total: string; brief: string; isAbsent: boolean }>)) => {
@@ -145,18 +145,6 @@ export default function FeedbackPage() {
   }, [])
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (classSelectRef.current && !classSelectRef.current.contains(event.target as Node)) {
-        setIsClassSelectOpen(false)
-      }
-    }
-    if (isClassSelectOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => { document.removeEventListener('mousedown', handleClickOutside) }
-  }, [isClassSelectOpen])
-
-  useEffect(() => {
     if (selectedStudentId) {
       setFeedbacks(getFeedbackHistoryByStudent(selectedStudentId))
     } else {
@@ -171,9 +159,21 @@ export default function FeedbackPage() {
   }, [selectedStudentId])
 
   const handleDelete = (id: string) => {
-    deleteFeedbackHistory(id)
-    refreshFeedbacks()
-    toast.success('反馈已删除')
+    toast('确定要删除这条反馈吗？此操作不可撤销', {
+      action: {
+        label: '确认删除',
+        onClick: () => {
+          deleteFeedbackHistory(id)
+          refreshFeedbacks()
+          toast.success('反馈已删除')
+        },
+      },
+      cancel: {
+        label: '取消',
+        onClick: () => {},
+      },
+      duration: 5000,
+    })
   }
 
   const handleStudentClick = useCallback((studentId: string) => {
@@ -234,12 +234,8 @@ export default function FeedbackPage() {
   }, [students, selectedStudentId, handleStudentClick])
 
   const handleClassSwitch = useCallback((classId: string) => {
-    if (classId === selectedClassId) {
-      setIsClassSelectOpen(false)
-      return
-    }
+    if (classId === selectedClassId) return
     setIsClassLoading(true)
-    setIsClassSelectOpen(false)
     setTimeout(() => {
       try {
         const classStudents = getStudentsByClass(classId)
@@ -253,6 +249,7 @@ export default function FeedbackPage() {
         setIsEditing(false)
         setEditingFeedbackId(null)
         setKeywords('')
+        setParentText('')
         setExerciseDataState(loadExerciseData(classId))
       } catch {
         toast.error('班级数据加载失败，请重试')
@@ -271,18 +268,15 @@ export default function FeedbackPage() {
     return students.reduce((sum, s) => sum + getFeedbackHistoryByStudent(s.id).length, 0)
   }, [selectedClassId, students])
 
-  const bookmarkletStudentFeedbacks = React.useMemo(() => {
-    if (!selectedClassId) return []
-    return students.map(s => {
-      const records = getFeedbackHistoryByStudent(s.id)
-      const latest = records.length > 0
-        ? records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
-        : null
-      return {
-        name: s.name,
-        feedback: latest?.generatedContent || '',
-      }
-    })
+  const copyGuideEntries = React.useMemo(() => {
+    if (!selectedClassId || students.length === 0) return []
+    return students
+      .map((s) => {
+        const history = getFeedbackHistoryByStudent(s.id)
+        const latest = history.length > 0 ? history[history.length - 1] : null
+        return latest ? { studentId: s.id, studentName: s.name, content: latest.generatedContent } : null
+      })
+      .filter((entry): entry is { studentId: string; studentName: string; content: string } => entry !== null)
   }, [selectedClassId, students])
 
   const handleGenerate = async () => {
@@ -310,6 +304,9 @@ export default function FeedbackPage() {
       const savedWordCount = localStorage.getItem('tabuddy_feedback_word_count')
       const wordCount = savedWordCount ? parseInt(savedWordCount, 10) : undefined
 
+      const obsRecords = getObservationRecords(undefined, selectedStudent.id)
+      const observations = obsRecords.length > 0 ? obsRecords.map((r) => r.content) : undefined
+
       const res = await fetch('/api/feedback/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -323,6 +320,7 @@ export default function FeedbackPage() {
             .filter(Boolean),
           classContent: classContent.trim(),
           wordCount,
+          observations,
         }),
       })
 
@@ -506,6 +504,53 @@ export default function FeedbackPage() {
     }
   }
 
+  const handleGenerateParentText = async () => {
+    if (!selectedClass) {
+      toast.error('请先选择班级')
+      return
+    }
+    setGeneratingParentText(true)
+    setParentText('')
+    const toastId = toast.loading('正在生成家长群文案...')
+    try {
+      const res = await fetch('/api/feedback/generate-parent-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          className: selectedClass.name,
+          courseType: selectedClass.type,
+          classContent: classContent,
+        }),
+      })
+      const data = await res.json()
+      toast.dismiss(toastId)
+      if (data.success) {
+        setParentText(data.text)
+        if (data.source === 'ai') {
+          toast.success('AI 家长群文案生成完成')
+        } else {
+          toast.success('已使用模板生成家长群文案')
+        }
+      } else {
+        toast.error(data.error || '生成失败')
+      }
+    } catch {
+      toast.dismiss(toastId)
+      toast.error('生成失败，请稍后重试')
+    } finally {
+      setGeneratingParentText(false)
+    }
+  }
+
+  const handleCopyParentText = async () => {
+    try {
+      await navigator.clipboard.writeText(parentText)
+      toast.success('文案已复制')
+    } catch {
+      toast.error('复制失败，请手动复制')
+    }
+  }
+
   if (classes.length === 0) {
     return (
       <PageContainer>
@@ -547,59 +592,13 @@ export default function FeedbackPage() {
 
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4">
-            <div className="relative" ref={classSelectRef}>
-              <button
-                type="button"
-                onClick={() => setIsClassSelectOpen(!isClassSelectOpen)}
-                className="inline-flex items-center px-4 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium cursor-pointer shrink-0"
-              >
-                <BookOpen className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>
-                  {selectedClass ? selectedClass.name : '选择班级'}
-                  {selectedClass && isTeachingClass(selectedClass.id) && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
-                  )}
-                </span>
-                <ChevronDown className={`h-4 w-4 ml-2 text-muted-foreground transition-transform ${isClassSelectOpen ? 'rotate-180' : ''}`} />
-              </button>
-              <AnimatePresence>
-                {isClassSelectOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-full left-0 mt-1 z-50 min-w-[200px]"
-                  >
-                    <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                      <div className="max-h-60 overflow-y-auto">
-                        {classes.map((cls) => (
-                          <button
-                            key={cls.id}
-                            type="button"
-                            onClick={() => handleClassSwitch(cls.id)}
-                            className={cn(
-                              'w-full px-4 py-3 text-left text-sm transition-all hover:bg-accent flex items-center justify-between',
-                              selectedClassId === cls.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'
-                            )}
-                          >
-                            <span>
-                              {cls.name}
-                              {isTeachingClass(cls.id) && (
-                                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
-                              )}
-                            </span>
-                            {selectedClassId === cls.id && (
-                              <span className="w-2 h-2 rounded-full bg-primary" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <ClassSelector
+              classes={classes}
+              selectedClassId={selectedClassId}
+              onChange={(id) => handleClassSwitch(id)}
+              isTeachingClass={isTeachingClass}
+              isLoading={isClassLoading}
+            />
             {selectedClassId && (
               <div className="flex items-center gap-3 flex-1 max-w-[340px]">
                 <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
@@ -638,18 +637,18 @@ export default function FeedbackPage() {
                 批量生成反馈
               </button>
               <button
-                onClick={() => setShowAutoFillPanel(true)}
-                className="inline-flex items-center px-5 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+                onClick={() => setShowCopyGuide(true)}
+                disabled={copyGuideEntries.length === 0}
+                title={copyGuideEntries.length === 0 ? '请先生成反馈' : '逐条复制反馈到外部系统'}
+                className={cn(
+                  'inline-flex items-center px-5 py-3 rounded-lg border border-border transition-all text-sm font-medium',
+                  copyGuideEntries.length === 0
+                    ? 'text-muted-foreground cursor-not-allowed bg-muted/30'
+                    : 'text-foreground hover:bg-accent/50 bg-background hover:-translate-y-0.5 hover:shadow-md cursor-pointer'
+                )}
               >
-                <Settings className="h-4 w-4 mr-2" />
-                自动填写配置
-              </button>
-              <button
-                onClick={() => setShowBookmarkletSetup(true)}
-                className="inline-flex items-center px-5 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
-              >
-                <Bookmark className="h-4 w-4 mr-2" />
-                书签脚本
+                <Copy className="h-4 w-4 mr-2" />
+                逐条复制
               </button>
               <button
                 onClick={handleCopyExerciseScores}
@@ -689,8 +688,86 @@ export default function FeedbackPage() {
                 )}
                 {isExporting ? '正在导出...' : '导出反馈'}
               </button>
+              <button
+                onClick={handleGenerateParentText}
+                disabled={generatingParentText}
+                className="inline-flex items-center px-5 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+              >
+                {generatingParentText ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <MessageSquareText className="h-4 w-4 mr-2" />
+                )}
+                {generatingParentText ? '生成中...' : '生成家长群文案'}
+              </button>
+              <button
+                onClick={() => setShowAutoFillConfig(true)}
+                className="inline-flex items-center px-5 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+                title="查看书签使用说明和快捷键"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                书签帮助
+              </button>
+              <button
+                onClick={() => {
+                  if (!selectedClassId || students.length === 0) {
+                    toast.error('请先选择班级')
+                    return
+                  }
+                  const entries = students
+                    .map((s) => {
+                      const history = getFeedbackHistoryByStudent(s.id)
+                      const latest = history.length > 0 ? history[history.length - 1] : null
+                      return latest ? { name: s.name, content: latest.generatedContent } : null
+                    })
+                    .filter((entry): entry is { name: string; content: string } => entry !== null)
+                  if (entries.length === 0) {
+                    toast.error('请先生成反馈再创建书签')
+                    return
+                  }
+                  setBookmarkEntries(entries)
+                  setShowBookmark(true)
+                }}
+                title="生成包含所有学生反馈的浏览器书签"
+                className="inline-flex items-center px-5 py-3 rounded-lg bg-purple-600 text-white hover:bg-purple-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/20 transition-all text-sm font-medium cursor-pointer"
+              >
+                <Star className="h-4 w-4 mr-2" />
+                生成书签
+              </button>
             </div>
           )}
+
+          {parentText && (
+            <div className="rounded-xl border border-green-200 bg-green-50/50 dark:border-green-800/30 dark:bg-green-950/10 shadow-sm">
+              <div className="px-4 py-3 border-b border-green-200/50 dark:border-green-800/20 flex items-center justify-between">
+                <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <MessageSquareText className="h-4 w-4 text-green-600" />
+                  家长群通知文案
+                </h4>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCopyParentText}
+                    className="inline-flex items-center px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-all text-xs font-medium"
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1.5" />
+                    复制
+                  </button>
+                  <button
+                    onClick={() => setParentText('')}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-5">
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                  {parentText}
+                </p>
+              </div>
+            </div>
+          )}
+
         </div>
 
         {!selectedClassId ? (
@@ -1011,19 +1088,26 @@ export default function FeedbackPage() {
                     <div className="rounded-xl border border-border bg-card p-4 shadow-sm shrink-0">
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex-1 relative min-w-[200px]">
-                          <input
-                            type="text"
-                            value={keywords}
-                            onChange={(e) => setKeywords(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !generating) {
-                                handleGenerate()
-                              }
-                            }}
-                            placeholder="输入课堂关键词，如：专注、认真、课堂分心、积极、调皮..."
-                            className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground/60 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                            disabled={generating}
-                          />
+                          <div className="flex items-center gap-2">
+                            <VoiceInput
+                              onResult={(text) => {
+                                setKeywords((prev) => (prev ? prev + ' ' + text : text))
+                              }}
+                            />
+                            <input
+                              type="text"
+                              value={keywords}
+                              onChange={(e) => setKeywords(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !generating) {
+                                  handleGenerate()
+                                }
+                              }}
+                              placeholder="输入课堂关键词，如：专注、认真、课堂分心、积极、调皮..."
+                              className="flex-1 px-4 py-2.5 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground/60 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                              disabled={generating}
+                            />
+                          </div>
                         </div>
                         <button
                           onClick={handleGenerate}
@@ -1325,36 +1409,25 @@ export default function FeedbackPage() {
             </motion.div>
           </motion.div>
         )}
-
-        {showAutoFillPanel && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowAutoFillPanel(false)}
-          >
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <AutoFillConfigPanel />
-            </motion.div>
-          </motion.div>
-        )}
-
-        <BookmarkletSetup
-          isOpen={showBookmarkletSetup}
-          onClose={() => setShowBookmarkletSetup(false)}
-          classTitle={selectedClass?.name}
-          students={bookmarkletStudentFeedbacks}
-        />
       </AnimatePresence>
+
+      <CopyGuideDialog
+        entries={copyGuideEntries}
+        open={showCopyGuide}
+        onClose={() => setShowCopyGuide(false)}
+      />
+
+      <AutoFillConfigPanel
+        open={showAutoFillConfig}
+        onClose={() => setShowAutoFillConfig(false)}
+      />
+
+      <BookmarkDialog
+        students={bookmarkEntries}
+        open={showBookmark}
+        onClose={() => setShowBookmark(false)}
+      />
+
     </PageContainer>
   )
 }

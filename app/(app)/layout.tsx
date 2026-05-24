@@ -33,6 +33,10 @@ function NavigationShortcuts() {
     router.push('/classes')
   })
 
+  useRegisterShortcut('action-search', () => {
+    window.dispatchEvent(new CustomEvent('global-search:focus'))
+  })
+
   return null
 }
 

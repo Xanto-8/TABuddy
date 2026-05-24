@@ -1,12 +1,12 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx'
 import { saveAs } from 'file-saver'
-import type { QuizRecord } from '@/types'
 
 interface ExportParams {
   className: string
   studentRecords: Map<string, { name: string; records: any[] }>
   allStudents: { id: string; name: string }[]
   absentIds: string[]
+  label?: string
 }
 
 function calcAcc(score: number | undefined, total: number | undefined): number | null {
@@ -16,7 +16,12 @@ function calcAcc(score: number | undefined, total: number | undefined): number |
   return null
 }
 
-function buildContentLines(className: string, studentRecords: Map<string, { name: string; records: any[] }>, allStudents: { id: string; name: string }[], absentIds: string[]) {
+function buildContentLines(
+  className: string,
+  studentRecords: Map<string, { name: string; records: any[] }>,
+  allStudents: { id: string; name: string }[],
+  absentIds: string[]
+) {
   const lines: string[] = []
   const sep = '----------------'
 
@@ -28,16 +33,19 @@ function buildContentLines(className: string, studentRecords: Map<string, { name
   const grammarAccList: number[] = []
 
   for (const student of allStudents) {
-    lines.push(`学生：${student.name}`)
+    if (!student) continue
+    lines.push(`学生：${student.name || '未知'}`)
 
-    if (absentIds.includes(student.id)) {
+    if (absentIds && absentIds.includes(student.id)) {
       lines.push('- 状态：已请假')
     } else {
-      const data = studentRecords.get(student.id)
-      if (!data || data.records.length === 0) {
+      const data = studentRecords && studentRecords.get(student.id)
+      const records = data && Array.isArray(data.records) ? data.records : []
+      if (records.length === 0) {
         lines.push('- 暂无小测记录')
       } else {
-        for (const r of data.records) {
+        for (const r of records) {
+          if (!r) continue
           totalTestCount++
 
           const ws = r.wordScore
@@ -97,10 +105,17 @@ function downloadTxt(lines: string[], fileName: string) {
 }
 
 export async function exportQuizDocx(params: ExportParams): Promise<{ success: boolean; usedFallback?: boolean; fileName?: string }> {
-  const { className, studentRecords, allStudents, absentIds } = params
+  const { className, studentRecords, allStudents, absentIds, label } = params
   const dateStr = new Date().toISOString().slice(0, 10)
-  const fileNameBase = `${className}-小测记录-${dateStr}`
-  const lines = buildContentLines(className, studentRecords, allStudents, absentIds)
+  const safeName = className.replace(/[\\/:*?"<>|]/g, '_')
+  const fileNameBase = `${safeName}-小测记录${label ? '-' + label : ''}-${dateStr}`
+
+  let lines: string[]
+  try {
+    lines = buildContentLines(className, studentRecords, allStudents, absentIds)
+  } catch {
+    lines = [`【${className}班小测记录】`, '----------------', '数据整理失败，已降级导出']
+  }
 
   try {
     const children = lines.map((line) => {
@@ -122,12 +137,7 @@ export async function exportQuizDocx(params: ExportParams): Promise<{ success: b
     })
 
     const doc = new Document({
-      sections: [
-        {
-          properties: {},
-          children,
-        },
-      ],
+      sections: [{ properties: {}, children }],
     })
 
     const blob = await Packer.toBlob(doc)

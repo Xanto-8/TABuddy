@@ -8,7 +8,7 @@ import {
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Student, Class } from '@/types'
-import { saveFeedbackHistory, sortStudents } from '@/lib/store'
+import { saveFeedbackHistory, sortStudents, getObservationRecords } from '@/lib/store'
 
 interface BatchGenerateResult {
   success: boolean
@@ -70,11 +70,15 @@ export default function BatchFeedbackPanel({ students, selectedClass, classConte
 
     const toastId = toast.loading('正在批量生成反馈...')
 
-    const studentsToGenerate = sortedStudents.filter((s) => selectedStudents.includes(s.id)).map((s) => ({
-      id: s.id,
-      name: s.name,
-      keywords: customKeywords[s.id]?.trim() || globalKeywords.trim(),
-    }))
+    const studentsToGenerate = sortedStudents.filter((s) => selectedStudents.includes(s.id)).map((s) => {
+      const obsRecords = getObservationRecords(undefined, s.id)
+      return {
+        id: s.id,
+        name: s.name,
+        keywords: customKeywords[s.id]?.trim() || globalKeywords.trim(),
+        observations: obsRecords.length > 0 ? obsRecords.map(r => r.content) : undefined,
+      }
+    })
 
     try {
       const savedWordCount = localStorage.getItem('tabuddy_feedback_word_count')

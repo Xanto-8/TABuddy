@@ -1,8 +1,9 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { X, Loader2, KeyRound, CheckCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth-store'
+import { useEscapeKey } from '@/lib/use-escape-key'
 
 interface BindInviteCodeModalProps {
   onClose: () => void
@@ -16,6 +17,8 @@ export function BindInviteCodeModal({ onClose, onSuccess }: BindInviteCodeModalP
   const [error, setError] = useState('')
   const [step, setStep] = useState<'input' | 'success'>('input')
   const [teacherName, setTeacherName] = useState('')
+
+  useEscapeKey(() => onClose())
 
   const handleBind = async () => {
     const code = inviteCode.trim().toUpperCase()

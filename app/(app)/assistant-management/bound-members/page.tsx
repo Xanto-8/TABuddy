@@ -1,4 +1,4 @@
-﻿'use client'
+﻿﻿﻿﻿﻿﻿﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-store'
@@ -119,7 +119,7 @@ export default function BoundMembersPage() {
 
   useEffect(() => {
     if (!user || user.role !== 'classadmin') return
-    const id = setInterval(fetchMembers, 8000)
+    const id = setInterval(fetchMembers, 30000)
     return () => clearInterval(id)
   }, [fetchMembers, user?.role])
 

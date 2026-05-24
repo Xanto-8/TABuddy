@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Sparkles, Settings, Zap } from 'lucide-react'
+import { Sparkles, Settings, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface BatchActionBarProps {
@@ -34,13 +34,13 @@ export default function BatchActionBar({ onBatchGenerate, onAutoFillConfig, isBa
         whileTap={{ scale: 0.98 }}
       >
         <Settings className="h-4 w-4" />
-        自动填写配置
+        书签帮助
       </motion.button>
 
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-        <Zap className="h-4 w-4 text-amber-500" />
+        <Star className="h-4 w-4 text-purple-500" />
         <span className="text-xs text-muted-foreground">
-          支持批量生成和自动填写，提升工作效率
+          支持批量生成和书签快捷复制，提升工作效率
         </span>
       </div>
     </div>

@@ -7,6 +7,7 @@ import {
   ChevronLeft, ChevronRight, KeyRound
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { Class } from '@/types'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -16,6 +17,7 @@ import { useRoleAccess } from '@/lib/use-role-access'
 import { WelcomeBanner } from '@/components/dashboard/welcome-banner'
 import { ScheduleAttendanceCard } from '@/components/dashboard/schedule-attendance-card'
 import { ClassTodoCenter } from '@/components/dashboard/class-todo-center'
+import { TodayTodoCard } from '@/components/dashboard/today-todo-card'
 import { AtRiskStudentsPanel } from '@/components/dashboard/at-risk-students-panel'
 import { WorkStatistics } from '@/components/dashboard/work-statistics'
 import { FeatureShortcuts } from '@/components/dashboard/feature-shortcuts'
@@ -209,7 +211,8 @@ function ClassLearningOverview() {
 
 export default function DashboardPage() {
   const data = useDashboardData()
-  const { isAssistant } = useRoleAccess()
+  const { isAssistant, isClassAdmin, isSuperAdmin } = useRoleAccess()
+  const router = useRouter()
   const [showBindModal, setShowBindModal] = useState(false)
   const [boundTeachers, setBoundTeachers] = useState<{ id: string; username: string; displayName: string }[]>([])
 
@@ -218,6 +221,29 @@ export default function DashboardPage() {
       setBoundTeachers(getBoundTeachers())
     }
   }, [isAssistant])
+
+  const adminStats = useMemo(() => {
+    const allClasses = getClasses()
+    const uniqueStudentIds = new Set<string>()
+    for (const cls of allClasses) {
+      const students = getStudentsByClass(cls.id)
+      for (const s of students) {
+        uniqueStudentIds.add(s.id)
+      }
+    }
+    const records = getAllOverallAccuracyRecords()
+    const now = new Date()
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const monthRecords = records.filter((r) => r.date >= monthStart)
+    const avgAccuracy = monthRecords.length > 0
+      ? Math.round(monthRecords.reduce((acc, r) => acc + r.overallAccuracy, 0) / monthRecords.length * 10) / 10
+      : 0
+    return {
+      classCount: allClasses.length,
+      studentCount: uniqueStudentIds.size,
+      avgAccuracy,
+    }
+  }, [])
 
   return (
     <PageContainer>
@@ -261,7 +287,8 @@ export default function DashboardPage() {
                 onSuccess={() => {
                   setShowBindModal(false)
                   toast.success('绑定成功，已加载老师班级数据')
-                  window.location.reload()
+                  router.refresh()
+                  window.dispatchEvent(new CustomEvent('classDataChanged'))
                 }}
               />
             )}
@@ -289,10 +316,42 @@ export default function DashboardPage() {
                 onSuccess={() => {
                   setShowBindModal(false)
                   toast.success('绑定成功，已加载老师班级数据')
-                  window.location.reload()
+                  router.refresh()
+                  window.dispatchEvent(new CustomEvent('classDataChanged'))
                 }}
               />
             )}
+          </div>
+        )}
+
+        {(isClassAdmin || isSuperAdmin) && (
+          <div
+            onClick={() => router.push('/stats')}
+            className="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow duration-300 cursor-pointer"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2.5 rounded-xl bg-primary/10">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground text-sm">数据看板</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">查看教学数据分析与可视化</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">班级数</p>
+                <p className="text-lg font-bold text-foreground">{adminStats.classCount}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">学生数</p>
+                <p className="text-lg font-bold text-foreground">{adminStats.studentCount}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">本月平均正确率</p>
+                <p className="text-lg font-bold text-foreground">{adminStats.avgAccuracy}%</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -300,6 +359,8 @@ export default function DashboardPage() {
           <ClassTodoCenter />
           <ScheduleAttendanceCard />
         </div>
+
+        <TodayTodoCard classes={data.classes} teachingClassId={data.teachingClassId} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <ClassLearningOverview />

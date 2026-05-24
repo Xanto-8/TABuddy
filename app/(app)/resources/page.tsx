@@ -1,4 +1,4 @@
-﻿'use client'
+﻿﻿'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import {
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ClassSelector } from '@/components/ui/class-selector'
 import { toast } from 'sonner'
 import { PageContainer } from '@/components/ui/page-container'
 import { Class } from '@/types'
@@ -64,7 +65,6 @@ export default function ResourcesPage() {
   const [selectedClassId, setSelectedClassId] = useState('')
   const [resources, setResources] = useState<ClassResource[]>([])
   const [resourcesLoading, setResourcesLoading] = useState(false)
-  const [isClassSelectOpen, setIsClassSelectOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null)
@@ -72,7 +72,6 @@ export default function ResourcesPage() {
     answers: 'embed',
     feedback: 'embed',
   })
-  const classSelectRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
   const iframeRefs = useRef<{ answers?: HTMLIFrameElement; feedback?: HTMLIFrameElement }>({})
 
@@ -93,16 +92,6 @@ export default function ResourcesPage() {
       setResourcesLoading(false)
     }
   }, [selectedClassId, activeView])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (classSelectRef.current && !classSelectRef.current.contains(event.target as Node)) {
-        setIsClassSelectOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   const selectedClass = classes.find(c => c.id === selectedClassId)
   const isEmbeddedView = activeView === 'answers' || activeView === 'feedback'
@@ -146,7 +135,6 @@ export default function ResourcesPage() {
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId)
     saveManualSelection(classId)
-    setIsClassSelectOpen(false)
   }
 
   const handleCardClick = (cardId: 'repository' | 'answers' | 'feedback') => {
@@ -302,61 +290,13 @@ export default function ResourcesPage() {
             <p className="text-sm text-muted-foreground">选择班级查看对应资源</p>
           </div>
         </div>
-        <div className="relative" ref={classSelectRef}>
-          <button
-            onClick={() => setIsClassSelectOpen(!isClassSelectOpen)}
-            className={cn(
-              'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border',
-              'text-sm font-medium text-foreground bg-background',
-              'hover:bg-accent transition-all',
-              isClassSelectOpen && 'bg-accent border-primary/50'
-            )}
-          >
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-            <span>
-              {selectedClass?.name || '选择班级'}
-              {selectedClass && isTeachingClass(selectedClass.id) && (
-                <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
-              )}
-            </span>
-            <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', isClassSelectOpen && 'rotate-180')} />
-          </button>
-          <AnimatePresence>
-            {isClassSelectOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.96 }}
-                transition={{ duration: 0.15 }}
-                className="absolute top-full right-0 mt-1 z-50 min-w-[200px]"
-              >
-                <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                  <div className="py-1">
-                    {classes.map((cls) => (
-                      <button
-                        key={cls.id}
-                        onClick={() => handleClassChange(cls.id)}
-                        className={cn(
-                          'w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent',
-                          cls.id === selectedClassId
-                            ? 'text-primary font-medium bg-primary/5'
-                            : 'text-foreground'
-                        )}
-                      >
-                        <span>
-                          {cls.name}
-                          {isTeachingClass(cls.id) && (
-                            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300">正在上课</span>
-                          )}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <ClassSelector
+          classes={classes}
+          selectedClassId={selectedClassId}
+          onChange={(id) => handleClassChange(id)}
+          isTeachingClass={isTeachingClass}
+          align="right"
+        />
       </div>
 
       {resourcesLoading ? (

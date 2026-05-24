@@ -1,4 +1,4 @@
-﻿'use client'
+﻿﻿﻿﻿﻿﻿﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-store'
@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (user?.role !== 'superadmin') return
-    const id = setInterval(fetchData, 8000)
+    const id = setInterval(fetchData, 30000)
     return () => clearInterval(id)
   }, [fetchData, user?.role])
 

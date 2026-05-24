@@ -6,6 +6,7 @@ import { loadPublicKnowledgeBase } from '@/lib/public-knowledge-store'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { httpClient } from '@/lib/api/client'
 import { useProgress } from '@/components/providers/progress-provider'
 import {
@@ -231,6 +232,8 @@ export function FloatingChatAssistant() {
   const [activeClass, setActiveClass] = useState<ReturnType<typeof getCurrentClassByTime>>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [agentSessionId, setAgentSessionId] = useState<string | null>(null)
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [conversationHistory, setConversationHistory] = useState<{ role: string; content: string }[]>([])
   const [position, setPosition] = useState({ bottom: 24, right: 24 })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -238,6 +241,8 @@ export function FloatingChatAssistant() {
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const messagesRef = useRef<ChatMessage[]>([])
   const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, startBottom: 24, startRight: 24, moved: false })
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const stoppedIntentionallyRef = useRef(false)
   const { refreshCourseProgress } = useProgress()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
@@ -353,11 +358,6 @@ export function FloatingChatAssistant() {
   const handleToggleTheme = useCallback((targetMode?: 'dark' | 'light') => {
     try {
       const resolvedMode = targetMode || (theme === 'dark' ? 'light' : 'dark')
-      if (typeof document !== 'undefined') {
-        document.documentElement.classList.remove('dark', 'light')
-        document.documentElement.classList.add(resolvedMode)
-        localStorage.setItem('theme', resolvedMode)
-      }
       setTheme(resolvedMode)
       addMessage({
         id: generateId(),
@@ -396,7 +396,11 @@ export function FloatingChatAssistant() {
   }, [refreshCourseProgress])
 
   useEffect(() => {
-    setMessages(loadHistory())
+    const history = loadHistory()
+    setMessages(history)
+    if (history.length >= 100) {
+      toast.info('对话历史已超过 100 条，早期记录已自动清理', { duration: 3000 })
+    }
     syncActiveClass()
     loadPublicKnowledgeBase()
   }, [syncActiveClass])
@@ -568,6 +572,114 @@ export function FloatingChatAssistant() {
     }
   }, [buildClassContext, addMessage])
 
+  const handleStopStreaming = useCallback(() => {
+    stoppedIntentionallyRef.current = true
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    setIsStreaming(false)
+  }, [])
+
+  const handleStreamChat = useCallback(async (text: string) => {
+    stoppedIntentionallyRef.current = false
+    const classContext = buildClassContext()
+
+    const updatedHistory: { role: string; content: string }[] = [
+      ...conversationHistory,
+      { role: 'user', content: text },
+    ].slice(-20)
+    setConversationHistory(updatedHistory)
+
+    const tempId = generateId()
+    const tempMsg: ChatMessage = {
+      id: tempId,
+      role: 'assistant',
+      content: '',
+      timestamp: Date.now(),
+      type: 'text',
+    }
+    addMessage(tempMsg)
+
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+    setIsStreaming(true)
+
+    const requestMessages = updatedHistory.slice(-10)
+    const contextStr = classContext ? JSON.stringify(classContext) : undefined
+
+    let fullContent = ''
+
+    try {
+      const response = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: requestMessages,
+          context: contextStr,
+        }),
+        signal: abortController.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error('Stream request failed')
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No reader available')
+      }
+
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed || !trimmed.startsWith('data: ')) continue
+
+          const data = trimmed.slice(6).trim()
+          if (data === '[DONE]') continue
+
+          try {
+            const parsed = JSON.parse(data)
+            const content = parsed?.content
+            if (content) {
+              fullContent += content
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === tempId ? { ...m, content: fullContent } : m
+                )
+              )
+            }
+          } catch {
+          }
+        }
+      }
+    } finally {
+      setIsStreaming(false)
+      abortControllerRef.current = null
+    }
+
+    if (!stoppedIntentionallyRef.current) {
+      setConversationHistory((prev) => {
+        const next = [...prev, { role: 'assistant', content: fullContent }]
+        return next.slice(-20)
+      })
+
+      if (!fullContent) {
+        setMessages((prev) => prev.map((m) =>
+          m.id === tempId ? { ...m, content: '抱歉，我没有收到有效回复，请稍后再试。' } : m
+        ))
+      }
+    }
+  }, [buildClassContext, conversationHistory, addMessage])
+
   const handleLocalChat = useCallback(async (text: string) => {
     const trimmed = text.trim()
 
@@ -670,23 +782,26 @@ export function FloatingChatAssistant() {
           displayAgentResult(agentResult)
         } else {
           try {
-            await handleApiChat(trimmed)
+            await handleStreamChat(trimmed)
           } catch {
             await handleLocalChat(trimmed)
           }
         }
       }
     } catch {
-      addMessage({
-        id: generateId(),
-        role: 'assistant',
-        content: '抱歉，我现在暂时无法处理你的请求，请稍后再试。',
-        timestamp: Date.now(),
-      })
+      if (!stoppedIntentionallyRef.current) {
+        addMessage({
+          id: generateId(),
+          role: 'assistant',
+          content: '抱歉，我现在暂时无法处理你的请求，请稍后再试。',
+          timestamp: Date.now(),
+        })
+      }
+      stoppedIntentionallyRef.current = false
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, agentSessionId, buildClassContext, addMessage, handleAgentResponse, displayAgentResult, handleApiChat, handleLocalChat, handleToggleTheme])
+  }, [isLoading, agentSessionId, buildClassContext, addMessage, handleAgentResponse, displayAgentResult, handleApiChat, handleStreamChat, handleLocalChat, handleToggleTheme])
 
   const handleAgentCancel = useCallback(() => {
     sendMessage('取消')
@@ -714,6 +829,7 @@ export function FloatingChatAssistant() {
   const handleClear = useCallback(() => {
     setShowClearConfirm(false)
     setAgentSessionId(null)
+    setConversationHistory([])
     setMessages([])
     messagesRef.current = []
     removeHistory()
@@ -930,7 +1046,7 @@ export function FloatingChatAssistant() {
               </div>
             ))}
 
-            {isLoading && (
+            {isLoading && !isStreaming && (
               <div className="flex justify-start">
                 <div className="max-w-[85%] rounded-2xl rounded-bl-lg px-4 py-3 bg-accent/50 border border-border/50">
                   <div className="flex items-center gap-2">
@@ -1021,7 +1137,7 @@ export function FloatingChatAssistant() {
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={agentSessionId ? '请根据卡片提示输入信息...' : '输入你的问题...'}
+                  placeholder={isStreaming ? 'AI正在生成回复...' : agentSessionId ? '请根据卡片提示输入信息...' : '输入你的问题...'}
                   disabled={isLoading}
                   className={cn(
                     'w-full h-10 pl-4 pr-10 text-sm rounded-xl',
@@ -1038,20 +1154,30 @@ export function FloatingChatAssistant() {
                   </div>
                 )}
               </div>
-              <button
-                onClick={handleSend}
-                disabled={!inputValue.trim() || isLoading}
-                className={cn(
-                  'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                  'bg-primary text-primary-foreground',
-                  'hover:bg-primary/90 active:scale-95',
-                  'disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100',
-                  'transition-all'
-                )}
-                aria-label="发送消息"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+              {isStreaming ? (
+                <button
+                  onClick={handleStopStreaming}
+                  className="px-4 h-10 rounded-xl flex items-center justify-center gap-1.5 shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-95 transition-all text-sm font-medium"
+                  aria-label="停止生成"
+                >
+                  停止生成
+                </button>
+              ) : (
+                <button
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || isLoading}
+                  className={cn(
+                    'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                    'bg-primary text-primary-foreground',
+                    'hover:bg-primary/90 active:scale-95',
+                    'disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100',
+                    'transition-all'
+                  )}
+                  aria-label="发送消息"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>

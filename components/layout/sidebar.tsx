@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   LayoutDashboard, BookOpen, ClipboardList, GraduationCap, FileText,
   MessageSquare, Settings,
-  HelpCircle, X, GitBranch, Sun, Moon, Shield, ShieldCheck, Users, Activity, UserPlus, KeyRound, Download,
+  HelpCircle, X, GitBranch, Sun, Moon, Shield, ShieldCheck, Users, Activity, UserPlus, KeyRound, Download, BarChart3,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSidebar } from '@/components/providers/sidebar-provider'
@@ -18,6 +18,7 @@ const MAIN_MENU_ITEMS = [
   { icon: LayoutDashboard, label: '仪表盘', href: '/dashboard' },
   { icon: GitBranch, label: '我的工作流', href: '/workflow' },
   { icon: GraduationCap, label: '班级管理', href: '/classes' },
+  { icon: Users, label: '学生管理', href: '/students' },
   { icon: FileText, label: '作业管理', href: '/homework' },
   { icon: ClipboardList, label: '随堂测验', href: '/quizzes' },
   { icon: MessageSquare, label: '反馈管理', href: '/feedback' },
@@ -84,6 +85,7 @@ function SidebarDivider({ expanded }: { expanded: boolean }) {
 }
 
 const CLASSADMIN_SPECIFIC_ITEMS = [
+  { icon: BarChart3, label: '数据看板', href: '/stats' },
   { icon: UserPlus, label: '助教与绑定管理', href: '/assistant-management' },
   { icon: KeyRound, label: '已绑定成员管理', href: '/assistant-management/bound-members' },
   { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
@@ -97,10 +99,15 @@ function NavArea({ expanded }: { expanded: boolean }) {
   const { user } = useAuth()
   const { isSuperAdmin, isClassAdmin } = useRoleAccess()
 
+  const isActiveRoute = (href: string) =>
+    (href === '/classes' || href === '/assistant-management' || href.startsWith('/admin/'))
+      ? pathname.startsWith(href + '/') || pathname === href
+      : pathname === href
+
   const mainItems = useMemo(() =>
     MAIN_MENU_ITEMS.map(item => ({
       ...item,
-      isActive: pathname === item.href
+      isActive: isActiveRoute(item.href)
     })),
     [pathname]
   )
@@ -108,13 +115,14 @@ function NavArea({ expanded }: { expanded: boolean }) {
   const classAdminItems = useMemo(() =>
     CLASSADMIN_SPECIFIC_ITEMS.map(item => ({
       ...item,
-      isActive: pathname === item.href
+      isActive: isActiveRoute(item.href)
     })),
     [pathname]
   )
 
   const superAdminItems = useMemo(() =>
     [
+      { icon: BarChart3, label: '数据看板', href: '/stats' },
       { icon: Activity, label: '超级管理员面板', href: '/admin/dashboard' },
       { icon: Users, label: '班级管理', href: '/admin/classes' },
       { icon: Shield, label: '公共知识库管理', href: '/admin/knowledge-base' },
@@ -124,7 +132,7 @@ function NavArea({ expanded }: { expanded: boolean }) {
       { icon: Settings, label: '系统配置', href: '/admin/guide-config' },
     ].map(item => ({
       ...item,
-      isActive: pathname === item.href
+      isActive: isActiveRoute(item.href)
     })),
     [pathname]
   )
@@ -132,7 +140,7 @@ function NavArea({ expanded }: { expanded: boolean }) {
   const secondaryItems = useMemo(() =>
     SECONDARY_MENU_ITEMS.map(item => ({
       ...item,
-      isActive: pathname === item.href
+      isActive: isActiveRoute(item.href)
     })),
     [pathname]
   )

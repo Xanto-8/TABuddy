@@ -7,6 +7,7 @@ interface GenerateFeedbackParams {
   history?: string[]
   classContent?: string
   wordCount?: number
+  observations?: string[]
 }
 
 function pickRandom<T>(arr: T[]): T {
@@ -144,7 +145,7 @@ export async function generateFeedback(params: GenerateFeedbackParams): Promise<
   content: string
   usedAI: boolean
 }> {
-  const { keywords, studentName, studentId, history = [], classContent = '', wordCount } = params
+  const { keywords, studentName, studentId, history = [], classContent = '', wordCount, observations: providedObservations } = params
 
   const historyContext = history.length > 0
     ? history.map((h, i) => `反馈${i + 1}：${h.slice(0, 100)}...`).join('\n')
@@ -173,6 +174,13 @@ export async function generateFeedback(params: GenerateFeedbackParams): Promise<
       ? `\n本节课课堂内容：\n${classContent.trim()}\n`
       : ''
 
+    const observations = providedObservations && providedObservations.length > 0
+      ? providedObservations
+      : []
+    const observationContext = observations.length > 0
+      ? `\n今日课堂表现：\n- ` + observations.join('\n- ') + '\n'
+      : ''
+
     const effectiveWordCount = wordCount || 200
     const wordRange = `${Math.max(50, effectiveWordCount - 20)}-${effectiveWordCount + 20}`
 
@@ -189,7 +197,7 @@ ${classContext ? '5. 反馈中要自然融入本节课知识点和课堂内容�
 沈彬这节课整体表现稳定，能紧跟课堂节奏学习核心知识，课堂纪律良好，全程保持专注，没有出现分心或小动作的情况。练习 11/14，说明你对本节课的知识点有基本掌握，但在细节运用上还存在提升空间。后续可以针对练习中的错题进行复盘，明确薄弱环节，回家后结合课本例题巩固相关内容，加深对知识点的理解。继续保持这份认真的学习态度，多做针对性练习，逐步提高知识运用的熟练度，下次一定能取得更理想的成绩。
 
 学生姓名：${studentName}
-课堂关键词：${keywords}${classContext}`
+课堂关键词：${keywords}${classContext}${observationContext}`
 
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
@@ -204,7 +212,7 @@ ${classContext ? '5. 反馈中要自然融入本节课知识点和课堂内容�
         ],
         temperature: 0.6,
         top_p: 0.8,
-        max_tokens: 350,
+        max_tokens: 600,
         presence_penalty: 0.3,
         frequency_penalty: 0.4,
       }),
@@ -225,8 +233,9 @@ ${classContext ? '5. 反馈中要自然融入本节课知识点和课堂内容�
     content = content.replace(/^(反馈|课程反馈|评语)[：:：\s]*/i, '').trim()
 
     return { content, usedAI: true }
-  } catch (error) {
-    console.warn('AI feedback generation failed, falling back to local engine:', error)
+  } catch (error: any) {
+    const errMsg = error?.message || String(error)
+    console.error('[FeedbackGenerator] AI generation failed:', errMsg)
 
     const localContent = regenerateUntilUnique(
       () => generateLocalFeedback(keywords, studentName, wordCount),

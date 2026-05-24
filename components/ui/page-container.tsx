@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { Breadcrumb } from './breadcrumb'
 
 interface PageContainerProps {
   children: ReactNode
@@ -18,6 +19,7 @@ export function PageContainer({ children, className }: PageContainerProps) {
       )}
       style={{ width: '100%' }}
     >
+      <Breadcrumb />
       {children}
     </div>
   )

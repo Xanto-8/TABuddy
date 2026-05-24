@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateFeedback } from '@/lib/feedback-generator'
-import { getFeedbackHistoryByStudent } from '@/lib/store'
 
 interface BatchGenerateRequest {
   classId: string
@@ -8,6 +7,7 @@ interface BatchGenerateRequest {
     id: string
     name: string
     keywords: string
+    observations?: string[]
   }>
   classContent?: string
   wordCount?: number
@@ -52,18 +52,14 @@ export async function POST(request: NextRequest) {
     for (const chunk of chunks) {
       const promises = chunk.map(async (student) => {
         try {
-          const history = getFeedbackHistoryByStudent(student.id)
-            .slice(0, 10)
-            .map((r) => r.generatedContent)
-            .filter(Boolean)
-
           const result = await generateFeedback({
             keywords: student.keywords,
             studentName: student.name,
             studentId: student.id,
-            history,
+            history: [],
             classContent: body.classContent || '',
             wordCount: body.wordCount,
+            observations: student.observations,
           })
 
           return {

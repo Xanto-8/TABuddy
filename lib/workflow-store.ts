@@ -1,40 +1,74 @@
 import { WorkflowTemplate, WorkflowTodo, WorkflowNode, WorkflowNodeType, ClassType, DEFAULT_WORKFLOW_NODES, WORKFLOW_NODE_LABELS, WORKFLOW_NODE_ICONS } from '@/types'
 import { getCache, isCacheLoaded, triggerSync } from './store'
 
+function buildNodes(types: WorkflowNodeType[]): Omit<WorkflowNode, 'id'>[] {
+  return types.map((type, i) => ({
+    type,
+    enabled: true,
+    order: i,
+    nodeCategory: 'required' as const,
+  }))
+}
+
+const BASE_NODE_TYPES: WorkflowNodeType[] = [
+  'grade_homework',
+  'homework_feedback',
+  'grade_quiz',
+  'quiz_analysis',
+  'course_feedback',
+  'send_content',
+  'send_homework',
+  'sync_quiz',
+  'retest_list',
+]
+
+function insertAfter(arr: WorkflowNodeType[], after: WorkflowNodeType, ...items: WorkflowNodeType[]): WorkflowNodeType[] {
+  const idx = arr.indexOf(after)
+  if (idx === -1) return [...arr, ...items]
+  return [...arr.slice(0, idx + 1), ...items, ...arr.slice(idx + 1)]
+}
+
+const KET_PET_TYPES = insertAfter(BASE_NODE_TYPES, 'quiz_analysis', 'writing_correction')
+const FCE_CAE_CPE_TYPES = insertAfter(KET_PET_TYPES, 'writing_correction', 'speaking_assessment')
+
+const GY_NODES = buildNodes(BASE_NODE_TYPES)
+const KET_NODES = buildNodes(KET_PET_TYPES)
+const PET_NODES = buildNodes(KET_PET_TYPES)
+const FCE_NODES = buildNodes(FCE_CAE_CPE_TYPES)
+const CAE_NODES = buildNodes(FCE_CAE_CPE_TYPES)
+const CPE_NODES = buildNodes(FCE_CAE_CPE_TYPES)
+const OTHER_NODES = buildNodes(BASE_NODE_TYPES)
+
 const DEFAULT_WORKFLOW_TEMPLATES: Record<string, { name: string; nodes: Omit<WorkflowNode, 'id'>[] }> = {
   GY: {
     name: '高中英语标准流程',
-    nodes: DEFAULT_WORKFLOW_NODES.map((type, i) => ({
-      type: type as WorkflowNodeType,
-      enabled: true,
-      order: i,
-      nodeCategory: 'required' as const,
-    })),
+    nodes: GY_NODES,
   },
   KET: {
     name: 'KET标准流程',
-    nodes: DEFAULT_WORKFLOW_NODES.map((type, i) => ({
-      type: type as WorkflowNodeType,
-      enabled: true,
-      order: i,
-      nodeCategory: 'required' as const,
-    })),
+    nodes: KET_NODES,
   },
   PET: {
     name: 'PET标准流程',
-    nodes: DEFAULT_WORKFLOW_NODES.map((type, i) => ({
-      type: type as WorkflowNodeType,
-      enabled: true,
-      order: i,
-      nodeCategory: 'required' as const,
-    })),
+    nodes: PET_NODES,
+  },
+  FCE: {
+    name: 'FCE标准流程',
+    nodes: FCE_NODES,
+  },
+  CAE: {
+    name: 'CAE标准流程',
+    nodes: CAE_NODES,
+  },
+  CPE: {
+    name: 'CPE标准流程',
+    nodes: CPE_NODES,
+  },
+  OTHER: {
+    name: '默认流程',
+    nodes: OTHER_NODES,
   },
 }
-
-DEFAULT_WORKFLOW_TEMPLATES.FCE = { ...DEFAULT_WORKFLOW_TEMPLATES.GY, name: 'FCE标准流程' }
-DEFAULT_WORKFLOW_TEMPLATES.CAE = { ...DEFAULT_WORKFLOW_TEMPLATES.GY, name: 'CAE标准流程' }
-DEFAULT_WORKFLOW_TEMPLATES.CPE = { ...DEFAULT_WORKFLOW_TEMPLATES.GY, name: 'CPE标准流程' }
-DEFAULT_WORKFLOW_TEMPLATES.OTHER = { ...DEFAULT_WORKFLOW_TEMPLATES.GY, name: '默认流程' }
 
 let localTemplates: WorkflowTemplate[] = []
 let localTodos: WorkflowTodo[] = []

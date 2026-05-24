@@ -12,6 +12,7 @@ import { PageContainer } from '@/components/ui/page-container'
 import { TeacherSwitcher } from '@/components/assistant/teacher-switcher'
 import { useAuth } from '@/lib/auth-store'
 import { useRoleAccess } from '@/lib/use-role-access'
+import { toast } from 'sonner'
 
 function getDayOfWeekLabel(day: number): string {
   const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -70,10 +71,18 @@ export default function ClassesPage() {
   )
 
   const handleDelete = (id: string) => {
-    if (confirm('确定要删除这个班级吗？班级中的学生将被移出该班级。')) {
-      deleteClass(id)
-      refreshClasses()
-    }
+    toast('确定要删除这个班级吗？班级中的学生将被移出该班级', {
+      action: {
+        label: '确认删除',
+        onClick: () => {
+          deleteClass(id)
+          refreshClasses()
+          toast.success('班级已删除')
+        },
+      },
+      cancel: { label: '取消', onClick: () => {} },
+      duration: 5000,
+    })
   }
 
   return (

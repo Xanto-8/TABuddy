@@ -79,7 +79,7 @@ export function NotificationCenter() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-border bg-card shadow-xl z-50"
+            className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-border/40 bg-card/80 backdrop-blur-xl shadow-xl z-50"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <h3 className="text-sm font-semibold text-foreground">通知中心</h3>

@@ -1,17 +1,20 @@
-﻿'use client'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Camera, Plus, Pencil, Trash2, ChevronDown, Download,
   BookOpen, Users, Target, Clock, AlertCircle,
   X, Loader2, RefreshCw, UserCheck, UserX,
+  AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { downloadCSV } from '@/lib/export-csv'
 import StudentSortDropdown from '@/components/student-sort-dropdown'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ClassSelector } from '@/components/ui/class-selector'
 import {
   CompletionStatus,
   QuizRecord,
@@ -32,33 +35,9 @@ import { useAutoClass, getAutoSelectedClassId } from '@/lib/use-auto-class'
 import { getAbsentStudentIds, setAbsentStudents, isStudentAbsent } from '@/lib/absence-store'
 import { PageContainer } from '@/components/ui/page-container'
 import { useCopyShortcut } from '@/lib/copy-shortcut'
-
-function getLocalDateString(d?: Date): string {
-  const date = d ?? new Date()
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-const completionLabels: Record<CompletionStatus, string> = {
-  completed: '已完成',
-  partial: '部分完成',
-  not_done: '未完成',
-}
-
-const completionColors: Record<CompletionStatus, string> = {
-  completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  not_done: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-}
-
-const accuracyColor = (value: number | null) => {
-  if (value === null) return 'text-muted-foreground'
-  if (value >= 85) return 'text-green-600 dark:text-green-400'
-  if (value >= 50) return 'text-orange-500 dark:text-orange-400'
-  return 'text-red-500 dark:text-red-400'
-}
+import { getLocalDateString } from '@/lib/utils'
+import { completionLabels, completionColors, accuracyColor } from '@/lib/constants'
+import ScoreGridTable, { GridColumn, GridRow } from '@/components/dashboard/score-grid-table'
 
 export default function QuizzesPage() {
   const [classes, setClasses] = useState<Class[]>([])
@@ -68,13 +47,11 @@ export default function QuizzesPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [showModal, setShowModal] = useState(false)
   const [editingRecord, setEditingRecord] = useState<QuizRecord | null>(null)
-  const [isClassSelectOpen, setIsClassSelectOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isClassLoading, setIsClassLoading] = useState(false)
   const [absentIds, setAbsentIds] = useState<string[]>([])
-  const classSelectRef = useRef<HTMLDivElement>(null)
   const studentListRef = useRef<HTMLDivElement>(null)
   const { teachingClassId, isTeachingClass, saveManualSelection } = useAutoClass(classes)
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false)
@@ -83,6 +60,9 @@ export default function QuizzesPage() {
   const portalMenuRef = useRef<HTMLDivElement>(null)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
   const [refreshKey, setRefreshKey] = useState(0)
+  const [gridMode, setGridMode] = useState(false)
+  const [gridDirty, setGridDirty] = useState<Set<string>>(new Set())
+  const [exportRange, setExportRange] = useState<'today' | 'all'>('today')
 
   useEffect(() => {
     const loadedClasses = getClasses()
@@ -110,18 +90,6 @@ export default function QuizzesPage() {
     window.addEventListener('studentSortChanged', handleSortChange)
     return () => window.removeEventListener('studentSortChanged', handleSortChange)
   }, [selectedClassId])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (classSelectRef.current && !classSelectRef.current.contains(event.target as Node)) {
-        setIsClassSelectOpen(false)
-      }
-    }
-    if (isClassSelectOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => { document.removeEventListener('mousedown', handleClickOutside) }
-  }, [isClassSelectOpen])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -170,6 +138,86 @@ export default function QuizzesPage() {
     setEditingRecord(null)
     refreshRecords()
     setRefreshKey(k => k + 1)
+  }
+
+  const handleMarkAllCheckedIn = () => {
+    if (!selectedClassId || students.length === 0) return
+    toast('确认操作', {
+      description: `确认将全班 ${students.length} 名学生标记为已打卡？`,
+      action: {
+        label: '确认',
+        onClick: () => {
+          const records = getQuizRecordsByClass(selectedClassId)
+          const today = getLocalDateString()
+          let count = 0
+          for (const student of students) {
+            const hasRecordToday = records.some(r =>
+              r.studentId === student.id &&
+              new Date(r.assessedAt).toISOString().split('T')[0] === today
+            )
+            if (!hasRecordToday) {
+              saveQuizRecord({
+                studentId: student.id,
+                classId: selectedClassId,
+                completion: 'completed',
+                photos: [],
+              })
+              count++
+            }
+          }
+          toast.success(`已标记 ${count} 名学生`)
+        }
+      },
+      cancel: { label: '取消', onClick: () => {} }
+    })
+  }
+
+  const handleMarkAllExcellent = () => {
+    if (!selectedClassId || students.length === 0) return
+    const records = getQuizRecordsByClass(selectedClassId)
+    const today = getLocalDateString()
+    const excellentStudents = students.filter(s => {
+      const todayRecords = records.filter(r =>
+        r.studentId === s.id &&
+        new Date(r.assessedAt).toISOString().split('T')[0] === today
+      )
+      if (todayRecords.length > 0) {
+        const best = todayRecords.reduce((best, r) =>
+          (r.overallAccuracy || 0) > (best.overallAccuracy || 0) ? r : best
+        , todayRecords[0])
+        return (best.overallAccuracy || 0) >= 80
+      }
+      return false
+    })
+    if (excellentStudents.length === 0) {
+      toast.info('没有正确率 ≥80% 的学生')
+      return
+    }
+    toast('确认操作', {
+      description: `确认将 ${excellentStudents.length} 名优秀学生（正确率≥80%）标记为优秀？`,
+      action: {
+        label: '确认',
+        onClick: () => {
+          for (const s of excellentStudents) {
+            saveQuizRecord({
+              studentId: s.id,
+              classId: selectedClassId,
+              wordScore: 10,
+              wordTotal: 10,
+              grammarScore: 10,
+              grammarTotal: 10,
+              completion: 'completed',
+              photos: [],
+              notes: '优秀',
+            })
+          }
+          refreshRecords()
+          setRefreshKey(k => k + 1)
+          toast.success(`已标记 ${excellentStudents.length} 名优秀学生`)
+        }
+      },
+      cancel: { label: '取消', onClick: () => {} }
+    })
   }
 
   const handleRefresh = () => {
@@ -228,12 +276,8 @@ export default function QuizzesPage() {
   }, [students, selectedStudentId, showModal, handleStudentClick])
 
   const handleClassSwitch = useCallback((classId: string) => {
-    if (classId === selectedClassId) {
-      setIsClassSelectOpen(false)
-      return
-    }
+    if (classId === selectedClassId) return
     setIsClassLoading(true)
-    setIsClassSelectOpen(false)
     setTimeout(() => {
       try {
         const classStudents = getStudentsByClass(classId)
@@ -256,8 +300,15 @@ export default function QuizzesPage() {
 
   const classQuizRecords = React.useMemo(() => {
     if (!selectedClassId) return []
-    return getQuizRecordsByClass(selectedClassId)
-  }, [selectedClassId, refreshKey])
+    const all = getQuizRecordsByClass(selectedClassId)
+    if (exportRange === 'today') {
+      const today = getLocalDateString()
+      return all.filter((r) => {
+        try { return getLocalDateString(r.assessedAt) === today } catch { return false }
+      })
+    }
+    return all
+  }, [selectedClassId, refreshKey, exportRange])
 
   const classStats = React.useMemo(() => {
     const data = classQuizRecords
@@ -283,12 +334,26 @@ export default function QuizzesPage() {
     }
   }, [classQuizRecords])
 
-  const exportClassDocx = async () => {
-    if (!selectedClass) return
+  const retestStudents = useMemo(() => {
+    if (!selectedClassId) return []
+    return students
+      .map(s => {
+        const records = classQuizRecords.filter(r => r.studentId === s.id)
+        const latestWithWord = records
+          .filter(r => r.wordScore != null && r.wordTotal != null && r.wordTotal > 0)
+          .sort((a, b) => new Date(b.assessedAt).getTime() - new Date(a.assessedAt).getTime())[0]
+        if (!latestWithWord) return null
+        const accuracy = Math.round((latestWithWord.wordScore! / latestWithWord.wordTotal!) * 100)
+        if (accuracy >= 80) return null
+        return { name: s.name, accuracy }
+      })
+      .filter(Boolean)
+      .sort((a, b) => a!.accuracy - b!.accuracy) as { name: string; accuracy: number }[]
+  }, [students, selectedClassId])
 
-    const classRecords = getQuizRecordsByClass(selectedClassId)
-    if (classRecords.length === 0) {
-      toast.error('当前班级暂无任何小测记录，无法导出')
+  const exportClassDocx = async () => {
+    if (!selectedClass || classQuizRecords.length === 0) {
+      toast.error(exportRange === 'today' ? '今天暂无小测记录，无法导出' : '当前班级暂无任何小测记录，无法导出')
       return
     }
 
@@ -297,7 +362,7 @@ export default function QuizzesPage() {
     try {
       const classStudents = getStudentsByClass(selectedClassId)
       const studentRecordsMap = new Map<string, { name: string; records: QuizRecord[] }>()
-      for (const r of classRecords) {
+      for (const r of classQuizRecords) {
         if (!studentRecordsMap.has(r.studentId)) {
           const student = classStudents.find((s) => s.id === r.studentId)
           studentRecordsMap.set(r.studentId, {
@@ -313,6 +378,7 @@ export default function QuizzesPage() {
         studentRecords: studentRecordsMap,
         allStudents: classStudents.map(s => ({ id: s.id, name: s.name })),
         absentIds,
+        label: exportRange === 'today' ? '当天' : '全部',
       })
       toast.dismiss(toastId)
       if (result.usedFallback) {
@@ -336,9 +402,8 @@ export default function QuizzesPage() {
   }
 
   const getStudentLatestScores = useCallback(() => {
-    const classRecords = getQuizRecordsByClass(selectedClassId)
     const studentLatestMap = new Map<string, QuizRecord>()
-    for (const r of classRecords) {
+    for (const r of classQuizRecords) {
       const existing = studentLatestMap.get(r.studentId)
       if (!existing || new Date(r.assessedAt) > new Date(existing.assessedAt)) {
         studentLatestMap.set(r.studentId, r)
@@ -348,7 +413,7 @@ export default function QuizzesPage() {
       student: s,
       record: studentLatestMap.get(s.id) || null,
     }))
-  }, [selectedClassId, students])
+  }, [selectedClassId, students, classQuizRecords])
 
   const copyWordScores = useCallback(async () => {
     if (!selectedClassId) return
@@ -418,9 +483,125 @@ export default function QuizzesPage() {
     }
   }, [selectedClassId, getStudentLatestScores, absentIds])
 
+  const exportCSV = useCallback(() => {
+    const scores = getStudentLatestScores()
+    const className = classes.find(c => c.id === selectedClassId)?.name ?? selectedClassId
+    const dateStr = new Date().toISOString().slice(0, 10)
+    const rows: (string | number)[][] = [
+      ['学生姓名', '单词得分', '单词总分', '单词正确率', '语法得分', '语法总分', '语法正确率'],
+    ]
+    for (const { student, record } of scores) {
+      if (absentIds.includes(student.id)) {
+        rows.push([student.name, '已请假', '', '', '', '', ''])
+        continue
+      }
+      const wa = record?.wordScore != null && record?.wordTotal != null
+        ? `${Math.round((record.wordScore / record.wordTotal) * 1000) / 10}%` : ''
+      const ga = record?.grammarScore != null && record?.grammarTotal != null
+        ? `${Math.round((record.grammarScore / record.grammarTotal) * 1000) / 10}%`
+        : record?.grammarAccuracy != null ? `${record.grammarAccuracy}%` : ''
+      rows.push([
+        student.name,
+        record?.wordScore ?? '', record?.wordTotal ?? '', wa,
+        record?.grammarScore ?? '', record?.grammarTotal ?? '', ga,
+      ])
+    }
+    downloadCSV(rows, `${className}-小测成绩-${dateStr}.csv`)
+    toast.success(`CSV 已导出，共 ${scores.length} 位学生`)
+  }, [selectedClassId, getStudentLatestScores, absentIds, classes])
+
+  const handleCopyRetestList = useCallback(async () => {
+    if (retestStudents.length === 0) return
+    const className = classes.find(c => c.id === selectedClassId)?.name ?? ''
+    const header = `${className}需重测名单：`
+    const rows = retestStudents.map(s => `${s.name} 单词正确率${s.accuracy}%`)
+    const footer = '以上孩子可课后留下重测'
+    const text = [header, ...rows, footer].join('\n')
+    await navigator.clipboard.writeText(text)
+    toast.success(`重测名单已复制，共 ${retestStudents.length} 人`)
+  }, [retestStudents, classes, selectedClassId])
+
   useCopyShortcut('quizzes-page', useCallback(() => {
     copyBothScores()
   }, [copyBothScores]))
+
+  const gridColumns: GridColumn[] = useMemo(() => [
+    { key: 'wordScore', label: '单词得分', type: 'number' },
+    { key: 'wordTotal', label: '单词总分', type: 'number' },
+    { key: 'grammarScore', label: '语法得分', type: 'number' },
+    { key: 'grammarTotal', label: '语法总分', type: 'number' },
+  ], [])
+
+  const [gridRows, setGridRows] = useState<GridRow[]>([])
+
+  const initGridRows = useCallback(() => {
+    if (!selectedClassId) return
+    const classRecords = getQuizRecordsByClass(selectedClassId)
+    const latestMap = new Map<string, QuizRecord>()
+    for (const r of classRecords) {
+      const existing = latestMap.get(r.studentId)
+      if (!existing || new Date(r.assessedAt) > new Date(existing.assessedAt)) {
+        latestMap.set(r.studentId, r)
+      }
+    }
+    const rows: GridRow[] = students.map((s) => {
+      const latest = latestMap.get(s.id)
+      return {
+        id: s.id,
+        name: s.name,
+        data: {
+          wordScore: latest?.wordScore != null ? String(latest.wordScore) : '',
+          wordTotal: latest?.wordTotal != null ? String(latest.wordTotal) : '',
+          grammarScore: latest?.grammarScore != null ? String(latest.grammarScore) : '',
+          grammarTotal: latest?.grammarTotal != null ? String(latest.grammarTotal) : '',
+        },
+      }
+    })
+    setGridRows(rows)
+    setGridDirty(new Set())
+  }, [selectedClassId, students])
+
+  useEffect(() => {
+    if (gridMode && selectedClassId) {
+      initGridRows()
+    }
+  }, [gridMode, selectedClassId, initGridRows])
+
+  const handleGridCellChange = useCallback((rowId: string, columnKey: string, value: string) => {
+    setGridRows((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, data: { ...r.data, [columnKey]: value } } : r))
+    )
+    setGridDirty((prev) => new Set(prev).add(rowId))
+  }, [])
+
+  const handleGridSave = useCallback(async () => {
+    if (!selectedClassId) return
+    const dirtyRows = gridRows.filter((r) => gridDirty.has(r.id))
+    for (const row of dirtyRows) {
+      const wordScore = row.data.wordScore ? Number(row.data.wordScore) : undefined
+      const wordTotal = row.data.wordTotal ? Number(row.data.wordTotal) : undefined
+      const grammarScore = row.data.grammarScore ? Number(row.data.grammarScore) : undefined
+      const grammarTotal = row.data.grammarTotal ? Number(row.data.grammarTotal) : undefined
+      saveQuizRecord({
+        studentId: row.id,
+        classId: selectedClassId,
+        wordScore: !isNaN(wordScore!) ? wordScore : undefined,
+        wordTotal: !isNaN(wordTotal!) ? wordTotal : undefined,
+        grammarScore: !isNaN(grammarScore!) ? grammarScore : undefined,
+        grammarTotal: !isNaN(grammarTotal!) ? grammarTotal : undefined,
+        completion: 'completed',
+        photos: [],
+      })
+    }
+    computeAndSaveClassAccuracy(selectedClassId)
+    setGridDirty(new Set())
+    setRefreshKey(k => k + 1)
+    initGridRows()
+  }, [selectedClassId, gridRows, gridDirty, initGridRows])
+
+  const handleGridBatchMark = useCallback((key: string, value: string) => {
+    setGridDirty(new Set(gridRows.map((r) => r.id)))
+  }, [gridRows])
 
   if (classes.length === 0) {
     return (
@@ -459,63 +640,30 @@ export default function QuizzesPage() {
             <h1 className="text-2xl font-bold text-foreground">小测管理</h1>
             <p className="text-muted-foreground mt-1">记录和管理学生的小测与练习情况</p>
           </div>
+          {selectedClassId && (
+            <button
+              onClick={() => setGridMode(!gridMode)}
+              className={cn(
+                'inline-flex items-center px-4 py-2.5 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors',
+                gridMode
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border bg-background text-foreground hover:bg-accent'
+              )}
+            >
+              {gridMode ? '列表模式' : '表格模式'}
+            </button>
+          )}
         </div>
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
-          <div className="relative" ref={classSelectRef}>
-            <button
-              type="button"
-              onClick={() => setIsClassSelectOpen(!isClassSelectOpen)}
-              className="inline-flex items-center px-4 py-3 rounded-lg border border-border bg-background text-foreground hover:bg-accent/50 transition-all text-sm font-medium cursor-pointer shrink-0"
-            >
-              <BookOpen className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span>
-                {selectedClass ? selectedClass.name : '选择班级'}
-                {selectedClass && isTeachingClass(selectedClass.id) && (
-                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
-                )}
-              </span>
-              <ChevronDown className={`h-4 w-4 ml-2 text-muted-foreground transition-transform ${isClassSelectOpen ? 'rotate-180' : ''}`} />
-            </button>
-            <AnimatePresence>
-           {isClassSelectOpen && (
-             <motion.div
-               initial={{ opacity: 0, y: -4, scale: 0.96 }}
-               animate={{ opacity: 1, y: 0, scale: 1 }}
-               exit={{ opacity: 0, y: -4, scale: 0.96 }}
-               transition={{ duration: 0.15 }}
-               className="absolute top-full left-0 mt-1 z-50 min-w-[200px]"
-             >
-               <div className="rounded-xl border border-border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
-                 <div className="max-h-60 overflow-y-auto">
-                   {classes.map((cls) => (
-                     <button
-                       key={cls.id}
-                       type="button"
-                       onClick={() => handleClassSwitch(cls.id)}
-                       className={cn(
-                         'w-full px-4 py-3 text-left text-sm transition-all hover:bg-accent flex items-center justify-between',
-                         selectedClassId === cls.id ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'
-                       )}
-                     >
-                       <span>
-                         {cls.name}
-                         {isTeachingClass(cls.id) && (
-                           <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">正在上课</span>
-                         )}
-                       </span>
-                       {selectedClassId === cls.id && (
-                         <span className="w-2 h-2 rounded-full bg-primary" />
-                       )}
-                     </button>
-                   ))}
-                 </div>
-               </div>
-             </motion.div>
-           )}
-         </AnimatePresence>
-          </div>
+          <ClassSelector
+            classes={classes}
+            selectedClassId={selectedClassId}
+            onChange={(id) => handleClassSwitch(id)}
+            isTeachingClass={isTeachingClass}
+            isLoading={isClassLoading}
+          />
           {selectedClassId && (
             <div className="flex items-center gap-3 flex-1 max-w-[520px]">
               <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
@@ -547,6 +695,30 @@ export default function QuizzesPage() {
         {selectedClassId && (
             <div className="overflow-x-auto">
               <div className="flex items-center shrink-0 gap-2">
+                <div className="inline-flex items-center rounded-lg border border-border bg-background overflow-hidden">
+                  <button
+                    onClick={() => setExportRange('today')}
+                    className={cn(
+                      'px-3 py-2.5 text-xs font-medium transition-colors',
+                      exportRange === 'today'
+                        ? 'bg-purple-600 text-white'
+                        : 'text-muted-foreground hover:bg-accent/50'
+                    )}
+                  >
+                    当天
+                  </button>
+                  <button
+                    onClick={() => setExportRange('all')}
+                    className={cn(
+                      'px-3 py-2.5 text-xs font-medium transition-colors border-l border-border',
+                      exportRange === 'all'
+                        ? 'bg-purple-600 text-white'
+                        : 'text-muted-foreground hover:bg-accent/50'
+                    )}
+                  >
+                    全部
+                  </button>
+                </div>
                 <div ref={buttonGroupRef} className={cn(
                   'inline-flex items-center rounded-lg border border-border transition-all duration-200',
                   classQuizRecords.length === 0
@@ -608,6 +780,35 @@ export default function QuizzesPage() {
                   <RefreshCw className="h-4 w-4 mr-1.5" />
                   刷新
                 </button>
+                <button
+                  onClick={handleMarkAllCheckedIn}
+                  disabled={!selectedClassId || students.length === 0}
+                  className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                >
+                  全班打卡
+                </button>
+                <button
+                  onClick={handleMarkAllExcellent}
+                  disabled={!selectedClassId || students.length === 0}
+                  className="px-3 py-1.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-medium hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                >
+                  全班优秀
+                </button>
+                {retestStudents.length > 0 && (
+                  <button
+                    onClick={handleCopyRetestList}
+                    className="inline-flex items-center px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/50 transition-all text-sm font-medium"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-1.5" />
+                    复制重测名单 ({retestStudents.length}人)
+                  </button>
+                )}
+                {retestStudents.length === 0 && selectedClassId && (
+                  <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <CheckCircle2 className="h-4 w-4" />
+                    全班通过，无人需要重测
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -642,6 +843,12 @@ export default function QuizzesPage() {
                   >
                     导出词汇+语法两列（可直接粘贴分列）
                   </button>
+                  <button
+                    onClick={() => { setIsExportDropdownOpen(false); exportCSV() }}
+                    className="w-full px-5 py-3 text-left text-sm transition-colors hover:bg-accent text-foreground whitespace-nowrap border-t border-border"
+                  >
+                    📥 导出 CSV 文件
+                  </button>
                 </div>
               </div>
             </motion.div>,
@@ -656,6 +863,23 @@ export default function QuizzesPage() {
           </div>
           <h3 className="text-lg font-medium text-foreground">请选择一个班级</h3>
           <p className="text-muted-foreground mt-1">从上方选择班级以查看学生和小测记录</p>
+        </div>
+      ) : gridMode ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-medium text-foreground">
+              批量录入 - {selectedClass?.name}
+            </h3>
+            <span className="text-xs text-muted-foreground">({students.length} 名学生)</span>
+          </div>
+          <ScoreGridTable
+            columns={gridColumns}
+            rows={gridRows}
+            onCellChange={handleGridCellChange}
+            onSave={handleGridSave}
+            onBatchMark={handleGridBatchMark}
+            batchLabel="标记修改"
+          />
         </div>
       ) : (
         <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -887,15 +1111,15 @@ export default function QuizzesPage() {
                                           <span className="text-sm font-medium text-foreground">
                                             {record.wordScore}/{record.wordTotal}
                                           </span>
-                                          {wordAccuracy != null && (
-                                            <span className={cn(
-                                              'text-xs px-1.5 py-0.5 rounded font-medium',
-                                              wordAccuracy >= 85 ? 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20' :
-                                              wordAccuracy >= 50 ? 'text-orange-500 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/20' :
-                                              'text-red-500 bg-red-50 dark:text-red-400 dark:bg-red-900/20'
-                                            )}>
+                                          {wordAccuracy !== null ? (
+                                            <span className={wordAccuracy < 80
+                                              ? 'text-red-600 dark:text-red-400 font-semibold'
+                                              : accuracyColor(wordAccuracy)
+                                            }>
                                               {wordAccuracy}%
                                             </span>
+                                          ) : (
+                                            <span className="text-muted-foreground">-</span>
                                           )}
                                         </div>
                                       ) : (

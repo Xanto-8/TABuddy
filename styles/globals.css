@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    --background: 35 20% 96%;
-    --foreground: 220 15% 25%;
+    --background: 200 30% 97%;
+    --foreground: 215 25% 25%;
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 25%;
+    --card-foreground: 215 25% 25%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 25%;
-    --primary: 210 20% 55%;
+    --popover-foreground: 215 25% 25%;
+    --primary: 195 75% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 10 25% 65%;
+    --secondary: 170 60% 42%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 35 15% 92%;
-    --muted-foreground: 220 10% 50%;
-    --accent: 35 15% 94%;
-    --accent-foreground: 220 15% 25%;
-    --destructive: 0 45% 60%;
+    --muted: 200 20% 94%;
+    --muted-foreground: 215 15% 50%;
+    --accent: 200 25% 93%;
+    --accent-foreground: 215 25% 25%;
+    --destructive: 0 55% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 35 15% 88%;
-    --input: 35 15% 88%;
-    --ring: 210 20% 55%;
+    --border: 195 20% 88%;
+    --input: 195 20% 88%;
+    --ring: 195 75% 45%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 220 15% 12%;
-    --foreground: 35 20% 92%;
-    --card: 220 15% 16%;
-    --card-foreground: 35 20% 92%;
-    --popover: 220 15% 16%;
-    --popover-foreground: 35 20% 92%;
-    --primary: 210 20% 60%;
-    --primary-foreground: 220 15% 12%;
-    --secondary: 10 20% 60%;
-    --secondary-foreground: 220 15% 12%;
-    --muted: 220 12% 20%;
-    --muted-foreground: 35 15% 60%;
-    --accent: 220 12% 22%;
-    --accent-foreground: 35 20% 92%;
-    --destructive: 0 40% 55%;
-    --destructive-foreground: 35 20% 92%;
-    --border: 220 12% 24%;
-    --input: 220 12% 24%;
-    --ring: 210 20% 60%;
+    --background: 215 25% 10%;
+    --foreground: 195 20% 92%;
+    --card: 215 25% 14%;
+    --card-foreground: 195 20% 92%;
+    --popover: 215 25% 14%;
+    --popover-foreground: 195 20% 92%;
+    --primary: 195 65% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 170 50% 48%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 215 20% 18%;
+    --muted-foreground: 195 15% 60%;
+    --accent: 215 20% 20%;
+    --accent-foreground: 195 20% 92%;
+    --destructive: 0 50% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 20% 22%;
+    --input: 215 20% 22%;
+    --ring: 195 65% 52%;
   }
 
   /* 深色模式卡片 - 磨砂玻璃效果 */
@@ -76,43 +76,6 @@
     background: hsl(220 15% 12%);
   }
 
-  /* 深色模式 - 覆盖浅色背景类为深色调 */
-  .dark .bg-slate-100,
-  .dark .bg-stone-100,
-  .dark .bg-gray-100,
-  .dark .bg-orange-50,
-  .dark .bg-orange-100,
-  .dark .bg-red-50,
-  .dark .bg-red-100,
-  .dark .bg-amber-50,
-  .dark .bg-amber-100,
-  .dark .bg-green-50,
-  .dark .bg-green-100,
-  .dark .bg-blue-50,
-  .dark .bg-blue-100,
-  .dark .bg-indigo-50,
-  .dark .bg-indigo-100,
-  .dark .bg-purple-50,
-  .dark .bg-purple-100,
-  .dark .bg-emerald-50,
-  .dark .bg-emerald-100,
-  .dark .bg-teal-50,
-  .dark .bg-teal-100,
-  .dark .bg-cyan-50,
-  .dark .bg-cyan-100,
-  .dark .bg-rose-50,
-  .dark .bg-rose-100,
-  .dark .bg-violet-50,
-  .dark .bg-violet-100,
-  .dark .bg-sky-50,
-  .dark .bg-sky-100,
-  .dark .bg-pink-50,
-  .dark .bg-pink-100,
-  .dark .bg-lime-50,
-  .dark .bg-lime-100 {
-    background: hsl(220 12% 20% / 0.4) !important;
-  }
-
   /* 深色模式 - 覆盖浅色半透明背景 */
   .dark .bg-slate-100\/50,
   .dark .bg-stone-100\/50,
@@ -126,46 +89,6 @@
   .dark .bg-red-50\/50,
   .dark .bg-orange-50\/50 {
     background: hsl(220 12% 20% / 0.3) !important;
-  }
-
-  /* 深色模式 - 覆盖浅色文字为深色文字（在浅色背景卡片上） */
-  .dark .text-slate-600,
-  .dark .text-slate-700,
-  .dark .text-stone-600,
-  .dark .text-stone-700,
-  .dark .text-gray-600,
-  .dark .text-gray-700,
-  .dark .text-orange-600,
-  .dark .text-orange-700,
-  .dark .text-orange-800,
-  .dark .text-red-600,
-  .dark .text-red-700,
-  .dark .text-blue-600,
-  .dark .text-blue-700,
-  .dark .text-indigo-600,
-  .dark .text-indigo-700,
-  .dark .text-emerald-600,
-  .dark .text-emerald-700,
-  .dark .text-green-600,
-  .dark .text-green-700,
-  .dark .text-purple-600,
-  .dark .text-purple-700,
-  .dark .text-amber-600,
-  .dark .text-amber-700,
-  .dark .text-amber-800,
-  .dark .text-rose-600,
-  .dark .text-rose-700,
-  .dark .text-teal-600,
-  .dark .text-teal-700,
-  .dark .text-cyan-600,
-  .dark .text-cyan-700,
-  .dark .text-violet-600,
-  .dark .text-violet-700,
-  .dark .text-sky-600,
-  .dark .text-sky-700,
-  .dark .text-pink-600,
-  .dark .text-pink-700 {
-    color: hsl(35 20% 85%) !important;
   }
 
   /* 深色模式主背景 - TA 水印 */

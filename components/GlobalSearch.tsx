@@ -1,8 +1,9 @@
-﻿'use client'
+'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-store'
-import { Search, Users, X, Loader2 } from 'lucide-react'
+import { Search, Users, X, Loader2, Clock, ArrowUpLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -17,6 +18,32 @@ const ROLE_STYLES: Record<string, string> = {
   classadmin: 'bg-slate-100 text-slate-700 dark:bg-orange-900/30 dark:text-orange-300',
   assistant: 'bg-stone-100 text-stone-700 dark:bg-orange-900/30 dark:text-orange-300',
   student: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+}
+
+const HISTORY_KEY = 'tabuddy_search_history'
+const MAX_HISTORY = 5
+
+function getHistory(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveHistory(items: string[]) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(items))
+  } catch {}
+}
+
+function addToHistory(q: string) {
+  const trimmed = q.trim()
+  if (!trimmed) return
+  const history = getHistory().filter(h => h !== trimmed)
+  history.unshift(trimmed)
+  saveHistory(history.slice(0, MAX_HISTORY))
 }
 
 function getColor(name: string) {
@@ -69,11 +96,13 @@ interface GlobalSearchProps {
 
 export default function GlobalSearch({ className, placeholder = '搜索用户、班级...', onResultClick }: GlobalSearchProps) {
   const { getToken } = useAuth()
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [history, setHistory] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
@@ -113,7 +142,8 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
 
     if (!value.trim()) {
       setResults(null)
-      setOpen(false)
+      setOpen(true)
+      setHistory(getHistory())
       return
     }
 
@@ -124,19 +154,36 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
     setQuery('')
     setResults(null)
     setOpen(false)
+    setSelectedIndex(-1)
     inputRef.current?.focus()
   }
 
+  const handleFocus = () => {
+    if (!query.trim()) {
+      setHistory(getHistory())
+      setOpen(true)
+    } else if (results) {
+      setOpen(true)
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    const historyOffset = !query.trim() ? history.length : 0
+    const actualTotal = totalItems + historyOffset
+
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setSelectedIndex(prev => (prev < totalItems - 1 ? prev + 1 : 0))
+      setSelectedIndex(prev => (prev < actualTotal - 1 ? prev + 1 : 0))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setSelectedIndex(prev => (prev > 0 ? prev - 1 : totalItems - 1))
+      setSelectedIndex(prev => (prev > 0 ? prev - 1 : actualTotal - 1))
     } else if (e.key === 'Enter' && selectedIndex >= 0) {
       e.preventDefault()
-      selectItem(selectedIndex)
+      if (!query.trim() && selectedIndex < history.length) {
+        applyHistory(history[selectedIndex])
+      } else {
+        selectItem(selectedIndex - historyOffset)
+      }
     } else if (e.key === 'Escape') {
       setOpen(false)
       inputRef.current?.blur()
@@ -146,13 +193,34 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
   const selectItem = (index: number) => {
     if (!results) return
     const userCount = results.users.length
+    addToHistory(query)
+    setOpen(false)
     if (index < userCount) {
       const user = results.users[index]
+      if (user.role === 'student') {
+        router.push('/students')
+      } else {
+        router.push('/students')
+      }
     } else {
       const cls = results.classes[index - userCount]
+      router.push(`/classes/${cls.id}`)
     }
-    setOpen(false)
     onResultClick?.()
+  }
+
+  const applyHistory = (q: string) => {
+    setQuery(q)
+    setOpen(false)
+    addToHistory(q)
+    doSearch(q)
+  }
+
+  const removeHistoryItem = (q: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const updated = history.filter(h => h !== q)
+    setHistory(updated)
+    saveHistory(updated)
   }
 
   useEffect(() => {
@@ -166,10 +234,27 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
   }, [])
 
   useEffect(() => {
+    const handleGlobalFocus = () => {
+      inputRef.current?.focus()
+      if (query.trim() && results) setOpen(true)
+      if (!query.trim()) {
+        setHistory(getHistory())
+        setOpen(true)
+      }
+    }
+    window.addEventListener('global-search:focus', handleGlobalFocus)
+    return () => {
+      window.removeEventListener('global-search:focus', handleGlobalFocus)
+    }
+  }, [query, results])
+
+  useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [])
+
+  const showHistory = !query.trim() && history.length > 0
 
   return (
     <div ref={dropdownRef} className={cn('relative', className)}>
@@ -184,7 +269,7 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
           type="text"
           value={query}
           onChange={handleInputChange}
-          onFocus={() => { if (results) setOpen(true) }}
+          onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="w-full h-9 pl-9 pr-8 rounded-lg border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -199,6 +284,35 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
         )}
       </div>
 
+      {open && showHistory && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50">
+          <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/50 flex items-center gap-1.5">
+            <Clock className="w-3 h-3" />
+            最近搜索
+          </div>
+          {history.map((q, i) => (
+            <button
+              key={q}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-accent transition-colors text-left',
+                selectedIndex === i && 'bg-accent'
+              )}
+              onMouseEnter={() => setSelectedIndex(i)}
+              onClick={() => applyHistory(q)}
+            >
+              <ArrowUpLeft className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="flex-1 truncate">{q}</span>
+              <button
+                onClick={(e) => removeHistoryItem(q, e)}
+                className="p-0.5 rounded hover:bg-muted-foreground/20 transition-colors shrink-0"
+              >
+                <X className="w-3 h-3 text-muted-foreground" />
+              </button>
+            </button>
+          ))}
+        </div>
+      )}
+
       {open && results && (results.users.length > 0 || results.classes.length > 0) && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50 max-h-[70vh] overflow-y-auto">
           {results.users.length > 0 && (
@@ -212,9 +326,9 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
                   key={user.id}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-accent transition-colors text-left',
-                    selectedIndex === i && 'bg-accent'
+                    selectedIndex === i + history.length && 'bg-accent'
                   )}
-                  onMouseEnter={() => setSelectedIndex(i)}
+                  onMouseEnter={() => setSelectedIndex(i + history.length)}
                   onClick={() => selectItem(i)}
                 >
                   {user.avatar ? (
@@ -257,7 +371,7 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
                 班级 ({results.classes.length})
               </div>
               {results.classes.map((cls, i) => {
-                const idx = results.users.length + i
+                const idx = results.users.length + i + history.length
                 return (
                   <button
                     key={cls.id}
@@ -266,7 +380,7 @@ export default function GlobalSearch({ className, placeholder = '搜索用户、
                       selectedIndex === idx && 'bg-accent'
                     )}
                     onMouseEnter={() => setSelectedIndex(idx)}
-                    onClick={() => selectItem(idx)}
+                    onClick={() => selectItem(results.users.length + i)}
                   >
                     <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Users className="w-4 h-4" />

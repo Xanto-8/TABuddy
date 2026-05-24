@@ -116,3 +116,11 @@ export function formatFileSize(bytes: number) {
 export function generateId() {
   return Math.random().toString(36).substring(2) + Date.now().toString(36)
 }
+
+export function getLocalDateString(d?: Date | string): string {
+  const date = d ? new Date(d) : new Date()
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}

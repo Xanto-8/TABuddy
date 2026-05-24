@@ -292,6 +292,8 @@ export type WorkflowNodeType =
   | 'homework_feedback'
   | 'grade_quiz'
   | 'quiz_analysis'
+  | 'writing_correction'
+  | 'speaking_assessment'
   | 'course_feedback'
   | 'send_content'
   | 'send_homework'
@@ -304,6 +306,8 @@ export const WORKFLOW_NODE_LABELS: Record<WorkflowNodeType, string> = {
   homework_feedback: '作业反馈',
   grade_quiz: '小测批改',
   quiz_analysis: '记录小测学情',
+  writing_correction: '写作批改',
+  speaking_assessment: '口语评分',
   course_feedback: '撰写课程反馈',
   send_content: '家长群发送当日学习内容',
   send_homework: '家长群发送课后作业',
@@ -317,6 +321,8 @@ export const WORKFLOW_NODE_ICONS: Record<WorkflowNodeType, string> = {
   homework_feedback: '💬',
   grade_quiz: '📊',
   quiz_analysis: '📋',
+  writing_correction: '✏️',
+  speaking_assessment: '🗣️',
   course_feedback: '✍️',
   send_content: '📤',
   send_homework: '📚',
@@ -335,6 +341,8 @@ export const DEFAULT_WORKFLOW_NODES: WorkflowNodeType[] = [
   'send_homework',
   'sync_quiz',
   'retest_list',
+  'writing_correction',
+  'speaking_assessment',
 ]
 
 export interface WorkflowNode {
@@ -438,5 +446,14 @@ export interface InviteCodeInfo {
   expiresAt: string | null
   status: 'active' | 'unbinded'
   createdAt: string
+}
+
+export interface ObservationRecord {
+  id: string
+  studentId: string
+  className: string
+  studentName: string
+  content: string
+  createdAt: Date
 }
 

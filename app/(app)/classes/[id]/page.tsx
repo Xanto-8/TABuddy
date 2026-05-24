@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Plus, Users, BookOpen, Trash2, Pencil, Search, UserPlus, GraduationCap, ClipboardList, BarChart3, Archive, ExternalLink, Link as LinkIcon, Clock, Calendar, Upload, ChevronDown, Download } from 'lucide-react'
 import ResourcesTab from '@/components/lms/resources-tab'
+import BatchImportDialog from '@/components/students/batch-import-dialog'
 import Link from 'next/link'
 import { Class, Student, ClassType, ClassSchedule } from '@/types'
 import { getClasses, getStudentsByClass, deleteStudent, getClassTypeLabel, getClassTypeColor, getStudents, getClassSchedules, saveClassSchedule, updateClassSchedule, deleteClassSchedule } from '@/lib/store'
@@ -26,6 +27,7 @@ export default function ClassDetailPage() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showCreateStudentModal, setShowCreateStudentModal] = useState(false)
   const [showImportStudentsModal, setShowImportStudentsModal] = useState(false)
+  const [showBatchImportDialog, setShowBatchImportDialog] = useState(false)
   const [activeTab, setActiveTab] = useState<'students' | 'records' | 'resources' | 'schedule'>('students')
   const [, forceUpdate] = useState(0)
   const [dragTargetId, setDragTargetId] = useState<string | null>(null)
@@ -195,6 +197,15 @@ export default function ClassDetailPage() {
                     >
                       <Upload className="h-4 w-4 mr-2" />
                       导入学生
+                    </button>
+                  )}
+                  {canEdit && (
+                    <button
+                      onClick={() => setShowBatchImportDialog(true)}
+                      className="inline-flex items-center px-4 py-2.5 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-colors text-sm font-medium whitespace-nowrap"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      批量导入
                     </button>
                   )}
                   {canEdit && (
@@ -379,6 +390,17 @@ export default function ClassDetailPage() {
                   onClose={() => setShowImportStudentsModal(false)}
                   onImported={() => {
                     setShowImportStudentsModal(false)
+                    refreshStudents()
+                  }}
+                />
+              )}
+
+              {showBatchImportDialog && (
+                <BatchImportDialog
+                  classId={cls.id}
+                  onClose={() => setShowBatchImportDialog(false)}
+                  onImported={() => {
+                    setShowBatchImportDialog(false)
                     refreshStudents()
                   }}
                 />
