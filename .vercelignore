@@ -18,5 +18,8 @@ server
 release
 login
 public/releases
+*.exe
+*.zip
+*.7z
 prisma/dev.db
 prisma/dev.db-journal
