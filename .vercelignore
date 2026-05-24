@@ -14,5 +14,9 @@ node_modules
 .trae
 electron
 scripts
+server
+release
+login
+public/releases
 prisma/dev.db
 prisma/dev.db-journal
