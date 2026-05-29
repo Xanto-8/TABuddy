@@ -73,3 +73,6 @@ public/releases/*.exe
 # Build packages
 TABuddy-Setup-*.7z
 TABuddy*.zip
+
+# Auto-generated plan documents
+.trae/documents/
