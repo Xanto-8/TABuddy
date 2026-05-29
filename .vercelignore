@@ -12,11 +12,11 @@ README.md
 node_modules
 .next
 .trae
-electron
-scripts
-server
-release
-login
+/electron
+/scripts
+/server
+/release
+/login
 public/releases
 *.exe
 *.zip
