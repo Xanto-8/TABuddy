@@ -1,7 +1,7 @@
 'use client'
 
 import { Class, Student, ClassType, ClassSchedule } from '@/types'
-import { cache, generateId, authHeaders, debouncedSyncStore } from './cache'
+import { cache, generateId, authHeaders, debouncedSyncStore, markSaveInProgress } from './cache'
 import { getClassSchedules, saveClassScheduleAsync } from './schedules'
 
 export function getClasses(): Class[] {
@@ -62,6 +62,7 @@ export function saveClass(data: Omit<Class, 'id' | 'studentCount' | 'createdAt' 
     updatedAt: new Date(),
   }
   cache.classes.push(newClass)
+  markSaveInProgress()
   saveClassAsync(data).then(serverClass => {
     if (serverClass && serverClass.id) {
       const idx = cache.classes.findIndex(c => c.id === newClass.id)

@@ -16,6 +16,7 @@ export {
   loadAllDataFromAPI,
   startAutoRefresh,
   stopAutoRefresh,
+  markSaveInProgress,
   debouncedSyncStore,
   generateId,
 } from './store/cache'

@@ -282,10 +282,16 @@ export function debouncedSyncStore(): void {
 }
 
 let autoRefreshTimer: ReturnType<typeof setInterval> | null = null
+let lastSaveTime = 0
+
+export function markSaveInProgress(): void {
+  lastSaveTime = Date.now()
+}
 
 export function startAutoRefresh(intervalMs: number = 30000): void {
   if (autoRefreshTimer) return
   autoRefreshTimer = setInterval(() => {
+    if (Date.now() - lastSaveTime < 5000) return
     loadAllDataFromAPI()
   }, intervalMs)
 }
