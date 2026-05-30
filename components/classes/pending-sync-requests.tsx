@@ -10,6 +10,7 @@ interface PendingSync {
   color: string
   assistantId: string
   assistantName: string
+  teacherName: string
   status: string
   createdAt: string
 }
@@ -59,7 +60,8 @@ export function PendingSyncRequests() {
       if (res.ok) {
         setMessage({ type: 'success', text: data.data?.message || '操作成功' })
         setRequests(prev => prev.filter(r => r.id !== requestId))
-        window.dispatchEvent(new CustomEvent('classDataChanged'))
+        import('@/lib/store').then(m => m.loadAllDataFromAPI()).catch(console.error)
+        setTimeout(() => window.dispatchEvent(new CustomEvent('classDataChanged')), 500)
       } else {
         setMessage({ type: 'error', text: data.error || '操作失败' })
       }

@@ -16,13 +16,17 @@ export async function GET(request: NextRequest) {
       return errorResponse('权限不足', 403)
     }
 
+    const whereClause = user.role === 'superadmin'
+      ? { status: 'pending' as const }
+      : { teacherId: userId, status: 'pending' as const }
+
     const pendingRequests = await prisma.pendingClassSync.findMany({
-      where: {
-        teacherId: userId,
-        status: 'pending',
-      },
+      where: whereClause,
       include: {
         assistant: {
+          select: { id: true, displayName: true, username: true },
+        },
+        teacher: {
           select: { id: true, displayName: true, username: true },
         },
       },
@@ -36,6 +40,7 @@ export async function GET(request: NextRequest) {
       color: r.color,
       assistantId: r.assistantId,
       assistantName: r.assistant.displayName || r.assistant.username,
+      teacherName: r.teacher.displayName || r.teacher.username,
       status: r.status,
       createdAt: r.createdAt,
     }))
@@ -69,7 +74,12 @@ export async function PATCH(request: NextRequest) {
       return errorResponse('请求不存在', 404)
     }
 
-    if (pendingRequest.teacherId !== userId) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    })
+
+    if (pendingRequest.teacherId !== userId && currentUser?.role !== 'superadmin') {
       return errorResponse('无权操作该请求', 403)
     }
 
@@ -78,23 +88,24 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (body.action === 'approve') {
-      await prisma.class.create({
-        data: {
-          name: pendingRequest.className,
-          type: pendingRequest.classType,
-          color: pendingRequest.color,
-          userId: userId,
-          createdBy: '',
-        },
-      })
-
-      await prisma.pendingClassSync.update({
-        where: { id: body.requestId },
-        data: { status: 'approved' },
-      })
+      await prisma.$transaction([
+        prisma.class.create({
+          data: {
+            name: pendingRequest.className,
+            type: pendingRequest.classType,
+            color: pendingRequest.color,
+            userId: pendingRequest.teacherId,
+            createdBy: '',
+          },
+        }),
+        prisma.pendingClassSync.update({
+          where: { id: body.requestId },
+          data: { status: 'approved' },
+        }),
+      ])
 
       return successResponse({
-        message: `班级「${pendingRequest.className}」已同步到您的班级管理`,
+        message: `班级「${pendingRequest.className}」已同步到班级管理`,
         className: pendingRequest.className,
       })
     } else {
