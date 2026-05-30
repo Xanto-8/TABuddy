@@ -186,6 +186,7 @@ export async function loadAllDataFromAPI(): Promise<void> {
     cacheLoaded = true
 
     restoreFromLocalBackup()
+    startAutoRefresh()
   } catch (error) {
     console.error('loadAllDataFromAPI failed:', error)
     cacheLoaded = false
@@ -278,6 +279,22 @@ export function debouncedSyncStore(): void {
   saveLocalBackup()
   if (syncTimer) clearTimeout(syncTimer)
   syncTimer = setTimeout(() => { syncStoreToAPI() }, 500)
+}
+
+let autoRefreshTimer: ReturnType<typeof setInterval> | null = null
+
+export function startAutoRefresh(intervalMs: number = 30000): void {
+  if (autoRefreshTimer) return
+  autoRefreshTimer = setInterval(() => {
+    loadAllDataFromAPI()
+  }, intervalMs)
+}
+
+export function stopAutoRefresh(): void {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+  }
 }
 
 function restoreFromLocalBackup(): void {

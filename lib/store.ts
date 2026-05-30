@@ -14,6 +14,8 @@ export {
   isCacheLoading,
   triggerSync,
   loadAllDataFromAPI,
+  startAutoRefresh,
+  stopAutoRefresh,
   debouncedSyncStore,
   generateId,
 } from './store/cache'

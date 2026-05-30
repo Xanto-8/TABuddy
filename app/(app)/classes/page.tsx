@@ -10,6 +10,7 @@ import { getClasses, deleteClass, getClassTypeLabel, getClassTypeColor, getClass
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/ui/page-container'
 import { TeacherSwitcher } from '@/components/assistant/teacher-switcher'
+import { PendingSyncRequests } from '@/components/classes/pending-sync-requests'
 import { useAuth } from '@/lib/auth-store'
 import { useRoleAccess } from '@/lib/use-role-access'
 import { toast } from 'sonner'
@@ -115,6 +116,8 @@ export default function ClassesPage() {
             </button>
           )}
         </div>
+
+        {(isClassAdmin || isSuperAdmin) && <PendingSyncRequests />}
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -464,7 +467,7 @@ function ClassFormModal({
             type,
           })
           if (syncResult && syncResult.syncedTo > 0) {
-            alert(`班级已同步至 ${syncResult.syncedTo} 位老师的班级管理`)
+            alert(`已发送同步请求给 ${syncResult.syncedTo} 位老师，等待对方审批`)
           } else {
             alert('同步失败，请稍后重试')
           }

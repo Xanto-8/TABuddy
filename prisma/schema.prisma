@@ -59,6 +59,8 @@ model User {
   teacherBinds     TeacherAssistantBind[] @relation("TeacherBindRelation")
   assistantBinds   TeacherAssistantBind[] @relation("AssistantBindRelation")
   teacherRegCodes  TeacherRegCode[]
+  pendingSyncAssistants PendingClassSync[] @relation("PendingSyncAssistant")
+  pendingSyncTeachers   PendingClassSync[] @relation("PendingSyncTeacher")
 }
 
 model SystemConfig {
@@ -384,4 +386,22 @@ model TeacherRegCode {
 
   @@index([code, isActive])
   @@index([creatorId])
+}
+
+model PendingClassSync {
+  id          String   @id @default(cuid())
+  className   String
+  classType   String   @default("")
+  color       String   @default("")
+  assistantId String
+  teacherId   String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assistant User @relation("PendingSyncAssistant", fields: [assistantId], references: [id], onDelete: Cascade)
+  teacher   User @relation("PendingSyncTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId, status])
+  @@index([assistantId])
 }

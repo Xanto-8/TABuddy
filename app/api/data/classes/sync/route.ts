@@ -39,34 +39,44 @@ export async function POST(request: NextRequest) {
       return errorResponse('No bound teachers found', 400)
     }
 
-    const createdClasses: Array<{ id: string; userId: string }> = []
     const creatorName = user.displayName || user.id.slice(0, 8)
+    const createdRequests: Array<{ id: string; teacherId: string }> = []
 
     for (const bind of binds) {
-      const teacherClass = await prisma.class.create({
-        data: {
-          name: body.name,
-          type: body.type ?? '',
-          color: body.color ?? '',
-          isArchived: body.isArchived ?? false,
-          createdBy: creatorName,
-          userId: bind.teacher.id,
+      const existing = await prisma.pendingClassSync.findFirst({
+        where: {
+          assistantId: userId,
+          teacherId: bind.teacher.id,
+          className: body.name,
+          status: 'pending',
         },
       })
-      createdClasses.push({ id: teacherClass.id, userId: bind.teacher.id })
+
+      if (existing) continue
+
+      const request = await prisma.pendingClassSync.create({
+        data: {
+          className: body.name,
+          classType: body.type ?? '',
+          color: body.color ?? '',
+          assistantId: userId,
+          teacherId: bind.teacher.id,
+          status: 'pending',
+        },
+      })
+      createdRequests.push({ id: request.id, teacherId: bind.teacher.id })
 
       const notificationData = {
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        classId: teacherClass.id,
-        className: body.name,
-        type: 'workflow_node',
-        title: '新班级同步通知',
-        message: `助教 ${creatorName} 创建了新班级「${body.name}」并已同步到您的班级管理`,
+        type: 'sync_request',
+        title: '班级同步请求',
+        message: `助教 ${creatorName} 请求将班级「${body.name}」同步到您的班级管理`,
         createdAt: new Date().toISOString(),
         read: false,
         dismissed: false,
         completed: false,
         link: '/classes',
+        requestId: request.id,
       }
 
       try {
@@ -99,9 +109,9 @@ export async function POST(request: NextRequest) {
     }
 
     return successResponse({
-      syncedTo: binds.length,
+      syncedTo: createdRequests.length,
       teachers: binds.map(b => ({ id: b.teacher.id, displayName: b.teacher.displayName })),
-      classIds: createdClasses.map(c => c.id),
+      message: `已发送同步请求给 ${createdRequests.length} 位老师，等待对方审批`,
     }, 201)
   } catch (error) {
     console.error('Classes sync error:', error)
