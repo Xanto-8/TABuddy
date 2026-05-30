@@ -88,6 +88,30 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (body.action === 'approve') {
+      const existingClass = await prisma.class.findFirst({
+        where: {
+          userId: pendingRequest.teacherId,
+          name: pendingRequest.className,
+        },
+      })
+
+      if (existingClass) {
+        await prisma.pendingClassSync.update({
+          where: { id: body.requestId },
+          data: { status: 'approved' },
+        })
+        return successResponse({
+          message: `班级「${pendingRequest.className}」已存在，无需重复创建`,
+          className: pendingRequest.className,
+        })
+      }
+
+      const assistant = await prisma.user.findUnique({
+        where: { id: pendingRequest.assistantId },
+        select: { displayName: true, username: true },
+      })
+      const assistantName = assistant?.displayName || assistant?.username || ''
+
       await prisma.$transaction([
         prisma.class.create({
           data: {
@@ -95,7 +119,7 @@ export async function PATCH(request: NextRequest) {
             type: pendingRequest.classType,
             color: pendingRequest.color,
             userId: pendingRequest.teacherId,
-            createdBy: '',
+            createdBy: assistantName,
           },
         }),
         prisma.pendingClassSync.update({
