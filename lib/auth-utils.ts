@@ -34,7 +34,9 @@ export function verifyToken(token: string): TokenPayload | null {
 export async function getUserFromToken(token: string) {
   const decoded = verifyToken(token)
   if (!decoded) return null
-  const user = await prisma.user.findUnique({ where: { id: decoded.userId } })
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.userId, deletedAt: null },
+  })
   return user
 }
 

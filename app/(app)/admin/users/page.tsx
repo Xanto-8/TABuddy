@@ -1,8 +1,8 @@
-﻿﻿﻿﻿﻿﻿﻿'use client'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-store'
-import { Search, Shield, User, ChevronDown, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle, MapPin, Globe, Ban } from 'lucide-react'
+import { Search, Shield, User, ChevronDown, Key, X, Check, Users as UsersIcon, RefreshCw, Trash2, AlertTriangle, MapPin, Globe, Ban, RotateCcw, Archive } from 'lucide-react'
 import Link from 'next/link'
 
 interface ClassGroup {
@@ -24,6 +24,7 @@ interface UserInfo {
   lastLoginCountry: string
   lastLoginCity: string
   lastLoginRegion: string
+  deletedAt: string | null
   createdAt: string
 }
 
@@ -84,6 +85,9 @@ export default function AdminUsersPage() {
   const [newClassGroupId, setNewClassGroupId] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active')
+  const [deletedUsers, setDeletedUsers] = useState<UserInfo[]>([])
+  const [restoringUser, setRestoringUser] = useState<string | null>(null)
 
   const token = getToken()
   const [tick, setTick] = useState(0)
@@ -110,9 +114,27 @@ export default function AdminUsersPage() {
     }
   }, [token])
 
+  const fetchDeletedUsers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/users/deleted', {
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.data) setDeletedUsers(data.data)
+    } catch {
+      console.error('获取已注销用户列表失败')
+    }
+  }, [token])
+
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    if (activeTab === 'deleted' && token) {
+      fetchDeletedUsers()
+    }
+  }, [activeTab, token, fetchDeletedUsers])
 
   useEffect(() => {
     if (user?.role !== 'superadmin') return
@@ -220,6 +242,30 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleRestoreUser = async (userId: string) => {
+    setRestoringUser(userId)
+    setMessage(null)
+
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/restore`, {
+        method: 'PATCH',
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const result = await res.json()
+      if (res.ok) {
+        setMessage({ type: 'success', text: result.data?.message || '账号已恢复' })
+        setDeletedUsers(prev => prev.filter(u => u.id !== userId))
+        fetchData()
+      } else {
+        setMessage({ type: 'error', text: result.error || '恢复失败' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: '网络错误' })
+    } finally {
+      setRestoringUser(null)
+    }
+  }
+
   function isOnline(lastActiveAt: string | null): boolean {
     if (!lastActiveAt) return false
     const diff = Date.now() - new Date(lastActiveAt).getTime()
@@ -248,6 +294,21 @@ export default function AdminUsersPage() {
           <p className="text-sm text-muted-foreground mt-1">管理所有注册用户的角色、班级和密码</p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${activeTab === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+            >
+              活跃用户
+            </button>
+            <button
+              onClick={() => setActiveTab('deleted')}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1 ${activeTab === 'deleted' ? 'bg-red-500 text-white' : 'hover:bg-accent text-muted-foreground'}`}
+            >
+              <Archive className="w-3 h-3" />
+              已注销
+            </button>
+          </div>
           <Link
             href="/admin/banned-ips"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border hover:bg-accent transition-colors"
@@ -274,14 +335,14 @@ export default function AdminUsersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="搜索用户名..."
+            placeholder={activeTab === 'active' ? '搜索用户名...' : '搜索已注销用户名...'}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <button
-          onClick={fetchData}
+          onClick={activeTab === 'active' ? fetchData : fetchDeletedUsers}
           className="p-2 rounded-lg border border-border hover:bg-accent transition-colors"
           title="刷新"
         >
@@ -289,6 +350,7 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
+      {activeTab === 'active' && (
       <div className="grid gap-3">
         {filteredUsers.map((u, index) => (
           <div
@@ -398,6 +460,71 @@ export default function AdminUsersPage() {
           <div className="text-center py-12 text-muted-foreground">暂无用户数据</div>
         )}
       </div>
+      )}
+
+      {activeTab === 'deleted' && (
+      <div className="grid gap-3">
+        {deletedUsers.filter(u => {
+          if (!searchQuery) return true
+          const q = searchQuery.toLowerCase()
+          return u.username.toLowerCase().includes(q) || (u.displayName || '').toLowerCase().includes(q)
+        }).map((u, index) => (
+          <div
+            key={u.id}
+            className="rounded-xl border border-red-200 dark:border-red-900/50 bg-card overflow-hidden transition-all duration-200 hover:shadow-md animate-slide-in"
+            style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'backwards' }}
+          >
+            <div className="flex items-center gap-4 p-4">
+              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                <Archive className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium truncate text-muted-foreground">{u.displayName || u.username}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${getRoleStyle(u.role)}`}>
+                    {getRoleLabel(u.role)}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800">
+                    已注销
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                  <span className="text-xs text-muted-foreground">@{u.username}</span>
+                  {u.className && (
+                    <span className="text-xs text-muted-foreground">{u.className}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    <Globe className="w-3 h-3 inline mr-0.5" />
+                    {u.lastLoginIp || '暂无'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    注销时间: {u.deletedAt ? new Date(u.deletedAt).toLocaleString('zh-CN') : '未知'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => handleRestoreUser(u.id)}
+                disabled={restoringUser === u.id}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50 shrink-0"
+              >
+                {restoringUser === u.id ? (
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <RotateCcw className="w-3.5 h-3.5" />
+                )}
+                恢复账号
+              </button>
+            </div>
+          </div>
+        ))}
+        {deletedUsers.length === 0 && (
+          <div className="text-center py-12 space-y-2">
+            <Archive className="w-10 h-10 text-muted-foreground mx-auto" />
+            <p className="text-sm text-muted-foreground">暂无已注销的用户</p>
+          </div>
+        )}
+      </div>
+      )}
 
       {editingUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setEditingUser(null)}>
@@ -485,13 +612,14 @@ export default function AdminUsersPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-red-500">注销账号</h3>
-                <p className="text-xs text-muted-foreground">此操作不可撤销</p>
+                <p className="text-xs text-muted-foreground">注销后可从已注销列表恢复</p>
               </div>
             </div>
 
             <div className="bg-red-50 dark:bg-orange-900/30 border border-red-200 dark:border-orange-900 rounded-lg p-3 text-sm space-y-1">
               <p>确定要注销用户 <strong>{deletingUser.displayName || deletingUser.username}</strong> 吗？</p>
-              <p>该用户的 IP <strong>{deletingUser.lastLoginIp || '未知'}</strong> 将被永久封禁，无法再注册或登录。</p>
+              <p>该用户的 IP <strong>{deletingUser.lastLoginIp || '未知'}</strong> 将被封禁。</p>
+              <p className="text-xs text-muted-foreground">注销后可从「已注销」列表中恢复账号。</p>
             </div>
 
             <div className="flex gap-2 pt-2">

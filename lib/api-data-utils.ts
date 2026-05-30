@@ -28,7 +28,7 @@ export async function getBody<T>(request: NextRequest): Promise<T | null> {
 
 export async function getAllUserData(userId: string) {
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: userId, deletedAt: null },
     select: { id: true, username: true, displayName: true, role: true, avatar: true, settings: true, createdAt: true },
   })
 

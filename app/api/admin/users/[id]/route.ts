@@ -20,6 +20,10 @@ export async function PATCH(
       return NextResponse.json({ error: '用户不存在' }, { status: 404 })
     }
 
+    if (user.deletedAt) {
+      return NextResponse.json({ error: '该账号已被注销，无法编辑' }, { status: 400 })
+    }
+
     const updateData: Record<string, unknown> = {}
 
     if (username !== undefined) {
@@ -109,10 +113,20 @@ export async function DELETE(
       return NextResponse.json({ error: '不能注销超级管理员账号' }, { status: 403 })
     }
 
+    if (user.deletedAt) {
+      return NextResponse.json({ error: '该账号已被注销' }, { status: 400 })
+    }
+
     const clientIP = getClientIP(request)
     const banIp = user.lastLoginIp || clientIP
 
-    await prisma.user.delete({ where: { id } })
+    await prisma.user.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        lastActiveAt: new Date(),
+      },
+    })
 
     if (banIp !== 'unknown') {
       const existing = await prisma.bannedIP.findUnique({ where: { ip: banIp } })

@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const users = await prisma.user.findMany({
+      where: { deletedAt: null },
       select: {
         id: true,
         username: true,
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
       data: updateData,
       select: {
         id: true,

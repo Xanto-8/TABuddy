@@ -45,6 +45,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '缺少IP或ID' }, { status: 400 })
     }
 
+    const whereClause = id ? { id } : { ip }
+    const record = await prisma.bannedIP.findFirst({ where: whereClause })
+
+    if (!record) {
+      return NextResponse.json({ error: '该封禁记录不存在，可能已被解除' }, { status: 404 })
+    }
+
     if (id) {
       await prisma.bannedIP.delete({ where: { id } })
     } else {
@@ -52,9 +59,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({
-      data: { message: `IP ${ip || id} 已解封` },
+      data: { message: `IP ${record.ip} 已解封` },
     })
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: '该封禁记录不存在，可能已被解除' }, { status: 404 })
+    }
     console.error('[admin/banned-ips] DELETE error:', error)
     return NextResponse.json({ error: '撤销封禁失败' }, { status: 500 })
   }

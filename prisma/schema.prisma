@@ -32,6 +32,7 @@ model User {
   lastLoginCity    String   @default("")
   lastLoginRegion  String   @default("")
   classGroupId String?
+  deletedAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

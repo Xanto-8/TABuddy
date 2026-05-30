@@ -27,7 +27,11 @@ export async function POST(request: NextRequest) {
 
     const existing = await prisma.user.findUnique({ where: { username } })
     if (existing) {
-      return errorResponse('Username already exists')
+      if (existing.deletedAt) {
+        await prisma.user.delete({ where: { id: existing.id } })
+      } else {
+        return errorResponse('Username already exists')
+      }
     }
 
     const userCount = await prisma.user.count()

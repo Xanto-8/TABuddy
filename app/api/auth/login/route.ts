@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
       return errorResponse('Invalid username or password', 401)
     }
 
+    if (user.deletedAt) {
+      return errorResponse('该账号已被注销，无法登录', 403)
+    }
+
     if (user.password !== password) {
       return errorResponse('Invalid username or password', 401)
     }
